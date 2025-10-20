@@ -1,0 +1,22 @@
+version: '3.9'
+services:
+  backend:
+    image: ${BACKEND_IMAGE}
+    container_name: backend
+    env_file:
+      - .env.prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      RDS_ENDPOINT: ${RDS_ENDPOINT}
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    container_name: frontend
+    depends_on:
+      - backend
+    restart: unless-stopped
+    ports:
+      - "80:80"
