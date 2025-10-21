@@ -17,10 +17,10 @@ jobs:
         include:
           - name: backend
             context: backend
-            imagename: myapp-backend     # ← 앞의 네임스페이스는 빼고
+            imagename: hirehub-backend     # ← 앞의 네임스페이스는 빼고
           - name: frontend
             context: frontend
-            imagename: myapp-frontend
+            imagename: hirehub-frontend
     steps:
       - uses: actions/checkout@v4
 
