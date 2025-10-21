@@ -54,7 +54,7 @@ jobs:
             key: ${{ secrets.EC2_SSH_KEY }}
             script: |
               set -e
-              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/myapp-backend:latest
-              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/myapp-frontend:latest
+              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-backend:latest
+              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-frontend:latest
               cd ~/app || { mkdir -p ~/app; cd ~/app; }
               docker compose -f infra/docker-compose.prod.yml --env-file infra/.env.prod up -d
