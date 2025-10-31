@@ -1,0 +1,31 @@
+# ===== 공통 =====
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.log
+.DS_Store
+
+# ===== Frontend (Vite/React 등) =====
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# ===== Backend (Node/Spring 등) =====
+backend/node_modules/
+backend/dist/
+backend/target/
+frontend/.env
+
+# ===== Infra (Docker, compose, etc.) =====
+infra/.env
+infra/.env.*
+infra/docker-data/
+infra/tmp/
+
+# ===== 기타 =====
+*.lock
+coverage/
+.vscode/
+.idea/

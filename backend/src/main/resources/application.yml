@@ -1,0 +1,53 @@
+server:
+  port: 8080
+
+aws:
+  s3:
+    bucket: hirehub-s3-bucket
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+  region: ap-northeast-2
+
+spring:
+  profiles:
+    active: aws
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  # SPA라면 thymeleaf 설정은 무의미 → 제거 가능 (남겨둬도 무해)
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+
+  output:
+    ansi:
+      enabled: always
+
+logging:
+  level:
+    com.we.hirehub: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# ★ 프론트 기준 URL (구글 로그인 성공 시 여기로 보냄)
+app:
+  jwt:
+    secret: "change-this-to-at-least-32-characters-secret-key-!!"
+    access-expire-seconds: 3600
+  front:
+    base-url: "http://localhost:3000"   # ← 필요에 따라 5173으로 바꾸면 됨
+  cors:
+    allowed-origins:
+      - "http://localhost:3000"
+      - "http://localhost:5173"

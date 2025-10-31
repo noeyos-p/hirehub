@@ -1,0 +1,21 @@
+version: '3.9'
+services:
+  db:
+    image: mysql:8.0
+    container_name: db
+    environment:
+      SPRING_PROFILES_ACTIVE: aws
+      USERNAME: ${DB_USERNAME}
+      PASSWORD: ${DB_PASSWORD}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_SECRET: ${GOOGLE_SECRET}
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+      # 도커 컨테이너 안에 있는 데이터를 db데이터 라고 하는 곳에 저장
+      # 영구적으로 보관, docker image를 삭제해도 안없어짐
+volumes:
+  dbdata:

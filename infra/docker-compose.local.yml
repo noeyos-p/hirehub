@@ -1,0 +1,52 @@
+version: '3.9'
+services:
+  db:
+    image: mysql:8.0
+    container_name: db
+    env_file:
+      - .env.local.db
+    environment:
+      # MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: hirehub
+    ports:
+      - "3307:3306"   # 호스트 3307 → 컨테이너 3306
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      # MySQL 클라이언트 유틸리티인 mysqladmin 을 이용해서 
+      # DB가 살아있는지 확인.
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      # test 명령을 실행했을 때 5초 안에 응답이 없으면 실패로 간주
+      timeout: 5s
+      retries: 10
+
+  backend:
+    # ../backend 경로에 있는 Dockerfile로 이미지 빌드
+    build: ../backend
+    container_name: backend
+    env_file:
+      - .env.local.back
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      # 컨테이너 간 접속 → DB 호스트는 localhost가 아니라 'db'
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/hirehub?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: root
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ../frontend
+    container_name: frontend
+    environment: {}
+    ports:
+    # 로컬 PC에서는 http://localhost:3000, 내부 컨테이너는 80번 포트
+      - "80:80"  # Nginx로 서빙(개발 시 Vite dev 서버를 쓰고 싶으면 로컬 npm run dev 권장)
+    depends_on:
+      - backend
+
+volumes:
+  dbdata:

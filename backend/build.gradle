@@ -1,0 +1,88 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.6'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.we'
+version = '0.0.1-SNAPSHOT'
+description = 'Demo project for Spring Boot'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+
+	implementation 'software.amazon.awssdk:s3:2.25.38'
+	implementation 'software.amazon.awssdk:auth:2.25.38'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	// ★ WebSocket/STOMP
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.springframework:spring-messaging'
+
+	// ★ Security + OAuth2 Client (구글 로그인 사용 시 필요)
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	// ★ Bean Validation
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	// ★ Thymeleaf (템플릿 설정 사용 중)
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+	// ★ Hibernate extra types (이미 사용 중)
+	implementation 'com.vladmihalcea:hibernate-types-60:2.21.1'
+
+	// ★ MySQL JDBC 드라이버 (핵심)
+	runtimeOnly 'com.mysql:mysql-connector-j:9.0.0'
+	// 로컬로 H2로만 띄우고 싶으면 위 줄 대신:
+	// runtimeOnly 'com.h2database:h2:2.3.232'
+
+	compileOnly 'org.projectlombok:lombok:1.18.32'
+	annotationProcessor 'org.projectlombok:lombok:1.18.32'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly  'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.11.5' // JSON 직렬화(파서) 용
+
+}
+
+/* ▼▼▼ 여기부터 추가 ▼▼▼ */
+tasks.named('test') {
+	useJUnitPlatform()
+	jvmArgs '--add-opens=java.base/java.lang=ALL-UNNAMED'
+}
+
+tasks.named('bootRun') {
+	jvmArgs '--add-opens=java.base/java.lang=ALL-UNNAMED'
+}
+
+// IDE로 “Application.main()” 실행할 때도 적용
+tasks.withType(JavaExec).configureEach {
+	jvmArgs '--add-opens=java.base/java.lang=ALL-UNNAMED'
+}
+/* ▲▲▲ 여기까지 추가 ▲▲▲ */
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
