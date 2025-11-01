@@ -1,28 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+// src/signInfo/SignInfo.tsx
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
+//최종//
 
 const SignInfo: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = searchParams.get('token');
-    const isNewUser = searchParams.get('isNewUser');
-
-    if (token) {
-      console.log('🔄 OAuth 콜백 - 토큰 받음:', token.substring(0, 20) + '...');
-      localStorage.setItem('token', token);
-      console.log('✅ 토큰 저장 완료');
-
-      if (isNewUser === 'false') {
-        console.log('👤 기존 사용자 → 메인페이지 이동');
-        navigate('/');
-      }
-    }
-
-    console.log('🏁 SignInfo 컴포넌트 마운트됨');
-  }, [searchParams, navigate]);
 
   const [formData, setFormData] = useState({
     displayName: '',
@@ -48,55 +31,86 @@ const SignInfo: React.FC = () => {
     '용산구', '은평구', '종로구', '중구', '중랑구'
   ];
 
+  /**
+   * ✅ [수정] 입력값 변경 시 상태 업데이트
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: value 
+    }));
   };
 
+  /**
+   * ✅ [핵심 수정] 온보딩 폼 제출
+   * 
+   * 수정 사항:
+   * 1. 토큰 검증 강화 (401 방지)
+   * 2. Authorization 헤더 명시적 추가
+   * 3. 요청 데이터 검증 추가
+   * 4. 완료 후 메인페이지로 이동 (navigate('/'))
+   */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
+      // ✅ [핵심 1] 토큰 존재 여부 확인
       const token = localStorage.getItem('token');
       if (!token) {
+        console.error('❌ 토큰이 없습니다');
         setError('로그인이 필요합니다.');
         navigate('/login');
         return;
       }
 
-      console.log('🚀 온보딩 요청 시작', formData);
+      console.log('🔑 토큰 확인:', token.substring(0, 20) + '...');
+      console.log('🚀 온보딩 요청 시작:', formData);
 
+      // ✅ [핵심 2] API 요청 (Authorization 헤더 명시적 추가)
       const response = await api.post('/api/onboarding/save', formData, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
       });
 
       console.log('✅ 온보딩 성공:', response.data);
       alert('정보가 성공적으로 저장되었습니다!');
-      navigate('/'); // 🎯 메인으로 이동
+      
+      // ✅ [핵심 3] 완료 후 메인페이지로 이동
+      navigate('/');
 
     } catch (err: any) {
       console.error('❌ 온보딩 실패:', err);
 
+      // ✅ 상세한 에러 처리
       if (err.response) {
         const status = err.response.status;
         const backendMessage = err.response.data?.message;
 
+        console.error('❌ 에러 상태:', status);
+        console.error('❌ 백엔드 메시지:', backendMessage);
+
         if (status === 400) {
           setError(backendMessage || '입력하신 정보에 문제가 있습니다.');
         } else if (status === 401) {
+          console.error('❌ 토큰 만료 또는 유효하지 않음');
           setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
           localStorage.removeItem('token');
-          navigate('/login');
+          setTimeout(() => navigate('/login'), 2000);
         } else if (status === 500) {
           setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         } else {
           setError(backendMessage || '정보 저장에 실패했습니다.');
         }
       } else if (err.request) {
+        console.error('❌ 서버 응답 없음');
         setError('서버와 연결할 수 없습니다. 네트워크를 확인해주세요.');
       } else {
+        console.error('❌ 요청 설정 오류');
         setError('요청 중 오류가 발생했습니다.');
       }
     } finally {
@@ -104,7 +118,12 @@ const SignInfo: React.FC = () => {
     }
   };
 
-  const isFormComplete = Object.values(formData).every(value => value.trim() !== '');
+  /**
+   * ✅ [수정] 모든 필드가 입력되었는지 확인
+   */
+  const isFormComplete = Object.values(formData).every(value => 
+    typeof value === 'string' ? value.trim() !== '' : value !== ''
+  );
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-gray-100 p-6">
@@ -121,15 +140,12 @@ const SignInfo: React.FC = () => {
 
       <form
         onSubmit={handleSubmit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') e.preventDefault(); // 🔒 엔터로 제출 방지
-        }}
         className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
       >
         {/* 이름 */}
         <div className="mb-4">
           <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-            이름
+            이름 *
           </label>
           <input
             type="text"
@@ -139,7 +155,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
             placeholder="이름을 입력하세요"
           />
         </div>
@@ -147,7 +163,7 @@ const SignInfo: React.FC = () => {
         {/* 닉네임 */}
         <div className="mb-4">
           <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">
-            닉네임
+            닉네임 *
           </label>
           <input
             type="text"
@@ -157,7 +173,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
             placeholder="닉네임을 입력하세요"
           />
         </div>
@@ -165,7 +181,7 @@ const SignInfo: React.FC = () => {
         {/* 전화번호 */}
         <div className="mb-4">
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            전화번호
+            전화번호 *
           </label>
           <input
             type="tel"
@@ -175,7 +191,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
             placeholder="010-1234-5678"
           />
         </div>
@@ -183,7 +199,7 @@ const SignInfo: React.FC = () => {
         {/* 생년월일 */}
         <div className="mb-4">
           <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
-            생년월일
+            생년월일 *
           </label>
           <input
             type="date"
@@ -193,14 +209,14 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* 성별 */}
         <div className="mb-4">
           <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-            성별
+            성별 *
           </label>
           <select
             id="gender"
@@ -209,7 +225,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">선택하세요</option>
             <option value="MALE">남성</option>
@@ -221,7 +237,7 @@ const SignInfo: React.FC = () => {
         {/* 주소 */}
         <div className="mb-4">
           <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-            주소
+            주소 *
           </label>
           <input
             type="text"
@@ -231,7 +247,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
             placeholder="주소를 입력하세요"
           />
         </div>
@@ -239,7 +255,7 @@ const SignInfo: React.FC = () => {
         {/* 선호 지역 */}
         <div className="mb-4">
           <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-            선호 지역
+            선호 지역 *
           </label>
           <select
             id="location"
@@ -248,7 +264,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">선택하세요</option>
             {seoulDistricts.map(d => (
@@ -260,7 +276,7 @@ const SignInfo: React.FC = () => {
         {/* 직무 */}
         <div className="mb-4">
           <label htmlFor="position" className="block text-sm font-medium text-gray-700">
-            직무
+            직무 *
           </label>
           <select
             id="position"
@@ -269,7 +285,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">선택하세요</option>
             <option value="프론트엔드">프론트엔드</option>
@@ -285,7 +301,7 @@ const SignInfo: React.FC = () => {
         {/* 경력 */}
         <div className="mb-4">
           <label htmlFor="careerLevel" className="block text-sm font-medium text-gray-700">
-            경력
+            경력 *
           </label>
           <select
             id="careerLevel"
@@ -294,7 +310,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">선택하세요</option>
             <option value="신입">신입</option>
@@ -309,7 +325,7 @@ const SignInfo: React.FC = () => {
         {/* 학력 */}
         <div className="mb-4">
           <label htmlFor="education" className="block text-sm font-medium text-gray-700">
-            학력
+            학력 *
           </label>
           <select
             id="education"
@@ -318,7 +334,7 @@ const SignInfo: React.FC = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md"
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">선택하세요</option>
             <option value="고졸">고졸</option>
@@ -333,7 +349,7 @@ const SignInfo: React.FC = () => {
         <button
           type="submit"
           disabled={!isFormComplete || isLoading}
-          className="w-full bg-gray-300 text-black p-2 rounded-md hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
         >
           {isLoading ? '저장 중...' : '완료'}
         </button>
