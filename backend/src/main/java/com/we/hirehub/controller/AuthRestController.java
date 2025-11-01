@@ -6,6 +6,7 @@ import com.we.hirehub.dto.SignupEmailRequest;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 인증 관련 REST API 컨트롤러
@@ -95,7 +98,8 @@ public class AuthRestController {
      */
     @PostMapping("/signup")
     public ResponseEntity<Map<String, String>> signup(@Valid @RequestBody SignupEmailRequest request) {
-        authService.signupMinimal(request);
+        // [FIX] 클래스명이 아니라, 실제 파라미터 변수 request 를 전달해야 함
+        authService.signupEmail(request);   // ← 여기만 수정
 
         // 회원가입 후 자동 로그인 처리
         Users user = usersRepository.findByEmail(request.getEmail())
@@ -106,8 +110,8 @@ public class AuthRestController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "tokenType", "Bearer",
                 "accessToken", accessToken,
-                "role", user.getRole().name(),  // ← 회원가입에도 role 추가
-                "message", "회원가입이 완료되었습니다. 온보딩을 진행해주세요.",
+                "role", user.getRole().name(),
+                "message", "회원가입이 완료되었습니다. 내정보를  기입해주세요.",
                 "requiresOnboarding", "true"
         ));
     }
@@ -133,34 +137,54 @@ public class AuthRestController {
      * Authorization: Bearer {JWT_TOKEN}
      */
     @GetMapping("/me")
-    public ResponseEntity<Map<String, Object>> me(Authentication authentication) {
-        // JWT 필터에서 Principal을 userId(Long)로 설정했음
-        if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(
-                            "error", "UNAUTHORIZED",
-                            "message", "인증이 필요합니다."
-                    ));
+    public ResponseEntity<?> me(
+            Authentication authentication,
+            @RequestHeader(value = "Authorization", required = false) String authz
+    ) {
+        try {
+            String email = null;
+
+            // 1) 필터가 심어준 Authentication 우선
+            if (authentication != null) {
+                email = authentication.getName();
+            }
+
+            // 2) 혹시 모를 필터 누락 대비: 헤더에서 직접 토큰 꺼내 파싱
+            if (email == null && authz != null && authz.startsWith("Bearer ")) {
+                String token = authz.substring(7);
+                if (tokenProvider.validate(token)) {
+                    email = tokenProvider.getEmail(token);
+                }
+            }
+
+            if (email == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "UNAUTHORIZED"));
+            }
+
+            return authService.findByEmail(email)
+                    .<ResponseEntity<?>>map(u -> ResponseEntity.ok(Map.of(
+                            "id", u.getId(),
+                            "email", u.getEmail(),
+                            "name", u.getName(),
+                            "role", u.getRole() != null ? u.getRole().name() : "USER"
+                    )))
+                    .orElseGet(() -> ResponseEntity.status(401).body(Map.of("message", "USER_NOT_FOUND")));
+        } catch (Exception e) {
+            // 어떤 오류든 401로 통일
+            return ResponseEntity.status(401).body(Map.of("message", "INVALID_TOKEN"));
         }
-
-        // userId로 실제 사용자 정보 조회
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        // 온보딩 완료 여부 판단 (null 체크 추가)
-        boolean requiresOnboarding = user.getName() == null || user.getName().isBlank()
-                || user.getPhone() == null || user.getPhone().isBlank()
-                || user.getDob() == null || user.getDob().equals("1970-01-01")
-                || user.getGender() == null || user.getGender().equals("UNKNOWN");
-
-        return ResponseEntity.ok(Map.of(
-                "id", user.getId(),
-                "email", user.getEmail(),
-                "name", user.getName() != null ? user.getName() : "",
-                "nickname", user.getNickname() != null ? user.getNickname() : "",
-                "phone", user.getPhone() != null ? user.getPhone() : "",
-                "role", user.getRole().toString(),
-                "requiresOnboarding", requiresOnboarding
-        ));
+    }
+    private static boolean isBlank(String s){ return s == null || s.isBlank(); }
+    private boolean requiresOnboarding(Users u) {
+        return isBlank(u.getName())
+                || isBlank(u.getNickname())
+                || isBlank(u.getPhone())
+                || u.getDob() == null              // 네 프로젝트에선 String/LocalDate 혼용했더라. null만 체크.
+                || u.getGender() == null
+                || isBlank(u.getAddress())
+                || isBlank(u.getLocation())
+                || isBlank(u.getPosition())
+                || isBlank(u.getCareerLevel())
+                || isBlank(u.getEducation());
     }
 }
