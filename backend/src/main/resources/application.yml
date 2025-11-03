@@ -51,5 +51,6 @@ app:
     base-url: "https://byeongarigaebaldan.store"   # ← 필요에 따라 5173으로 바꾸면 됨
   cors:
     allowed-origins:
+      - "https://byeongarigaebaldan.store"
       - "http://localhost:3000"
       - "http://localhost:5173"
