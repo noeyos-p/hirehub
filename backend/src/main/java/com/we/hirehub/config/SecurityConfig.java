@@ -28,22 +28,21 @@ public class SecurityConfig {
                 .headers(h -> h.frameOptions(f -> f.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-
-                                "/ws/**",
+                                "/ws/**",                           // WebSocket (중복 제거)
                                 "/api/chatbot/faq",
                                 "/api/chatbot/faq/**",
-                                "/ws/**", "/api/auth/**", "/api/public/**",
+                                "/api/auth/**",
+                                "/api/public/**",
+                                "/api/onboarding/**",
+                                "/api/board/popular",
+                                "/api/jobposts/**",
                                 "/", "/error",
                                 "/favicon.ico", "/css/**", "/js/**", "/images/**",
                                 "/swagger-ui/**", "/v3/api-docs/**",
-                                "/actuator/**",
+                                "/actuator/**",                     // ⚠️ 프로덕션에서는 보안 설정 필요
                                 "/login/**", "/oauth2/**",
                                 "/google", "/kakao", "/naver",
-                                "/naver/**", "/kakao/**", "/google/**",
-                                "/api/auth/**",
-                                "/api/onboarding/**",   // ✅ 온보딩 요청 허용
-                                "/api/board/popular",
-                                "/api/jobposts/**"
+                                "/naver/**", "/kakao/**", "/google/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/").permitAll()
                         .anyRequest().authenticated()

@@ -48,7 +48,7 @@ app:
     secret: "change-this-to-at-least-32-characters-secret-key-!!"
     access-expire-seconds: 3600
   front:
-    base-url: "http://localhost:3000"   # ← 필요에 따라 5173으로 바꾸면 됨
+    base-url: "https://byeongarigaebaldan.store"   # ← 필요에 따라 5173으로 바꾸면 됨
   cors:
     allowed-origins:
       - "http://localhost:3000"
