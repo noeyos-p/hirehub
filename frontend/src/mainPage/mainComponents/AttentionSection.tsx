@@ -73,17 +73,23 @@ const AttentionSection: React.FC = () => {
         {popularJobs.slice(startIndex, endIndex).map(job => (
           <div
             key={job.id}
-            className="min-w-[238px] h-60 bg-white rounded-lg shadow-md overflow-hidden flex-shrink-0 p-3 cursor-pointer hover:shadow-lg transition-shadow"
+            className="min-w-[238px] h-60 bg-white rounded-lg shadow-md overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => handleJobClick(job.id)}
           >
-            <p className="font-semibold text-gray-800 text-sm">{job.companyName}</p>
-            <p className="text-gray-900 font-bold mt-1">{job.title}</p>
-            <p className="text-gray-500 text-xs mt-2">
-              {job.position} / {job.careerLevel} / {job.education} / {job.location}
-            </p>
-            <div className="flex items-center space-x-1 mt-2 text-gray-500 text-xs">
-              <EyeIcon className="w-3 h-3" />
-              <span>{job.views ?? 0}</span>
+            {/* 이미지 영역 */}
+            <div className="w-full h-28 bg-gray-300"></div>
+            
+            {/* 텍스트 영역 */}
+            <div className="p-3">
+              <p className="font-semibold text-gray-800 text-sm">{job.companyName}</p>
+              <p className="text-gray-900 font-bold mt-1">{job.title}</p>
+              <p className="text-gray-500 text-xs mt-2">
+                {job.position} / {job.careerLevel} / {job.education} / {job.location}
+              </p>
+              <div className="flex items-center space-x-1 mt-2 text-gray-500 text-xs">
+                <EyeIcon className="w-3 h-3" />
+                <span>{job.views ?? 0}</span>
+              </div>
             </div>
           </div>
         ))}

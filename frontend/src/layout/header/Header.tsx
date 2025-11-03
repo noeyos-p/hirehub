@@ -55,7 +55,7 @@ export default function Header() {
           {/* 로고 */}
           <Link to="/">
           <img
-            src="/HIREHUB_LOGO.png"
+            src="/HIREHUB_LOGO.PNG"
             alt="HireHub Logo"
             className="w-[117px] h-[33px] object-contain"
           />
@@ -67,13 +67,13 @@ export default function Header() {
           <nav className="hidden md:flex space-x-8 text-gray-800 font-medium text-sm">
             <Link
               to="/jobPostings"
-              className="inline-block font-light text-[16px] text-black hover:text-[#006AFF] transition"
+              className="inline-block font-bord text-[16px] text-black hover:text-[#006AFF] transition"
             >
               채용정보
             </Link>
 
             <Link to="/board"
-              className="inline-block mr-[405px] font-light text-[16px] text-black hover:text-[#006AFF] transition">자유게시판</Link>
+              className="inline-block mr-[405px] font-bord text-[16px] text-black hover:text-[#006AFF] transition">자유게시판</Link>
           </nav>
         </div>
 
@@ -86,7 +86,7 @@ export default function Header() {
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="어떤 공고를 찾으세요?"
-              className="w-[400px] h-[41px] border border-black rounded-[10px] px-4 py-1.5 pr-9 text-sm focus:outline-none focus:border-[#006AFF]"
+              className="w-[400px] h-[41px] border border-gray-400 rounded-[10px] px-4 py-1.5 pr-9 text-sm focus:outline-none focus:border-[#006AFF]"
             />
             <button onClick={handleSearch}>
               <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 absolute right-3 top-2.5 cursor-pointer hover:text-blue-500 transition translate-y-[3px]" />
