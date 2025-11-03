@@ -18,8 +18,8 @@ public class CorsConfig {
                 // 배포 도메인 추가: "https://byeongarigaebaldan.store"
         ));
         c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        c.setAllowedHeaders(List.of("Authorization","Content-Type","Accept"));
-        c.setAllowCredentials(false);
+        c.setAllowedHeaders(List.of("*"));
+        c.setAllowCredentials(true);
         c.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
         s.registerCorsConfiguration("/**", c);
