@@ -5,15 +5,21 @@ import { CompatClient, Stomp } from "@stomp/stompjs";
 
 interface FaqItem {
   id: number;
-  content: string;
-  botAnswer: string;
+  question: string;
+  answer: string;
   category: string;
+}
+
+interface FaqCategory {
+  id: number;
+  category: string;
+  description: string;
+  items: FaqItem[];
 }
 
 const ChatBot: React.FC = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-  // ✅ roomId를 localStorage에 저장하여 브라우저 종료 후에도 유지
   const roomId = useMemo(() => {
     const stored = localStorage.getItem('chatbot-roomId');
     if (stored) return stored;
@@ -24,7 +30,6 @@ const ChatBot: React.FC = () => {
 
   const [input, setInput] = useState("");
 
-  // ✅ 메시지도 localStorage에 저장하여 브라우저 종료 후에도 유지
   const [messages, setMessages] = useState<Array<{ role: 'BOT' | 'USER' | 'AGENT' | 'SYS', text: string }>>(() => {
     const stored = localStorage.getItem('chatbot-messages');
     if (stored) {
@@ -33,26 +38,25 @@ const ChatBot: React.FC = () => {
       } catch {
         return [
           { role: 'BOT', text: '안녕하세요 반갑습니다.' },
-          { role: 'BOT', text: '아래 내용이 궁금하다면 클릭하여 빠르게 안내를 받아 보세요.' },
+          { role: 'BOT', text: '카테고리를 선택하여 자주 묻는 질문을 확인해보세요.' },
         ];
       }
     }
     return [
       { role: 'BOT', text: '안녕하세요 반갑습니다.' },
-      { role: 'BOT', text: '아래 내용이 궁금하다면 클릭하여 빠르게 안내를 받아 보세요.' },
+      { role: 'BOT', text: '카테고리를 선택하여 자주 묻는 질문을 확인해보세요.' },
     ];
   });
 
-  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [faqCategories, setFaqCategories] = useState<FaqCategory[]>([]);
+  const [openCategoryId, setOpenCategoryId] = useState<number | null>(null);
   const [openFaqId, setOpenFaqId] = useState<number | null>(null);
 
-  // ✅ 연결 상태를 localStorage에 저장하여 브라우저 종료 후에도 유지
   const [isAgentConnected, setIsAgentConnected] = useState(() => {
     const stored = localStorage.getItem('chatbot-isAgentConnected');
     return stored === 'true';
   });
 
-  // ✅ JWT 토큰 디코딩 함수
   const decodeJWT = (token: string) => {
     try {
       const base64Url = token.split('.')[1];
@@ -70,64 +74,43 @@ const ChatBot: React.FC = () => {
     }
   };
 
-  // ✅ 실제 유저 정보 가져오기 (localStorage에서)
-  const [userInfo, setUserInfo] = useState(() => {
-    console.log("=== 유저 정보 초기화 시작 ===");
-    
-    // 1. localStorage에서 직접 userId 확인
+  const [userInfo] = useState(() => {
     let userId = localStorage.getItem('userId');
-    console.log("📦 localStorage userId:", userId);
     
-    // "undefined" 문자열 체크
     if (userId === "undefined" || !userId) {
-      // 2. JWT 토큰에서 userId 추출 시도
       const token = localStorage.getItem('token');
-      console.log("📦 localStorage token:", token);
-      
       if (token) {
         const decoded = decodeJWT(token);
-        console.log("🔓 JWT 디코딩 결과:", decoded);
-        
         if (decoded) {
-          // JWT에서 userId 추출 (uid, userId, id, sub 등 다양한 필드명 시도)
           userId = decoded.uid || decoded.userId || decoded.id || decoded.sub;
-          console.log("✅ JWT에서 userId 추출:", userId);
         }
       }
     }
     
-    // 3. email과 role 가져오기
     const email = localStorage.getItem('email') || 'user@example.com';
-    const role = localStorage.getItem('role') || 'USER';
-    
-    console.log("최종 유저 정보:", { userId, email, role });
     
     return {
       userId: userId && userId !== "undefined" ? userId : null,
-      name: email.split('@')[0], // 이메일의 @ 앞부분을 이름으로
+      name: email.split('@')[0],
       nickname: email.split('@')[0]
     };
   });
 
-  // ✅ userName 추출 (이 줄 추가!)
   const userName = userInfo.name;
 
   const stompRef = useRef<CompatClient | null>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const processedMessagesRef = useRef<Set<string>>(new Set());
-  const isInitialMount = useRef(true); // ✅ 초기 마운트 구분
+  const isInitialMount = useRef(true);
 
-  // ✅ 메시지 변경 시 localStorage에 저장
   useEffect(() => {
     localStorage.setItem('chatbot-messages', JSON.stringify(messages));
   }, [messages]);
 
-  // ✅ 연결 상태 변경 시 localStorage 업데이트
   useEffect(() => {
     localStorage.setItem('chatbot-isAgentConnected', String(isAgentConnected));
   }, [isAgentConnected]);
 
-  // ✅ 10분 비활성 시 자동 연결 해제
   const resetInactivityTimer = React.useCallback(() => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
@@ -135,17 +118,13 @@ const ChatBot: React.FC = () => {
     }
 
     if (isAgentConnected) {
-      console.log("⏰ 타이머 시작: 10분 후 자동 연결 해제");
       inactivityTimerRef.current = setTimeout(() => {
-        console.log("⏰ 10분 비활성으로 자동 연결 해제 실행");
-        // disconnectAgent 함수를 직접 호출하지 않고 상태 업데이트로 처리
         setIsAgentConnected(false);
         setMessages(prev => [...prev, {
           role: 'SYS',
           text: '10분간 활동이 없어 상담사 연결이 자동으로 해제되었습니다.'
         }]);
 
-        // 서버에 연결 해제 전송
         if (stompRef.current) {
           stompRef.current.send(
             `/app/support.disconnect/${roomId}`,
@@ -153,35 +132,41 @@ const ChatBot: React.FC = () => {
             JSON.stringify({ userName: "user" })
           );
         }
-      }, 10 * 60 * 1000); // 10분
+      }, 10 * 60 * 1000);
     }
   }, [isAgentConnected, roomId]);
 
-  // FAQ 데이터 로드
+  // ✅ 계층형 FAQ 로드 (중복 제거)
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/chatbot/faq`)
+    console.log("=== 계층형 FAQ 로드 시작 ===");
+    
+    fetch(`${API_BASE_URL}/api/chatbot/faq/categories`)
       .then(res => {
+        console.log("응답 상태:", res.status);
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.json();
       })
       .then(data => {
-        console.log("FAQ 데이터:", data);
+        console.log("받은 계층형 데이터:", data);
         if (Array.isArray(data)) {
-          setFaqs(data);
+          console.log("✅ 카테고리 개수:", data.length);
+          data.forEach((cat: FaqCategory) => {
+            console.log(`  📁 ${cat.category}: ${cat.items.length}개 질문`);
+          });
+          setFaqCategories(data);
         } else {
           console.error("FAQ 데이터가 배열이 아닙니다:", data);
-          setFaqs([]);
+          setFaqCategories([]);
         }
       })
       .catch(err => {
         console.error("FAQ 로드 실패:", err);
-        setFaqs([]);
+        setFaqCategories([]);
       });
   }, [API_BASE_URL]);
 
-  // WebSocket 연결
   useEffect(() => {
     const sock = new SockJS(`${API_BASE_URL}/ws`);
     const client = Stomp.over(() => sock);
@@ -195,38 +180,29 @@ const ChatBot: React.FC = () => {
       headers,
       () => {
         stompRef.current = client;
-        console.log("✅ WebSocket 연결 성공");
 
         client.subscribe(`/topic/rooms/${roomId}`, (frame) => {
           try {
             const body = JSON.parse(frame.body);
             const messageId = `user-${body.type}-${body.role}-${body.text}-${Date.now()}`;
 
-            // ✅ 중복 메시지 방지
             if (processedMessagesRef.current.has(messageId)) {
-              console.log("🚫 중복 메시지 무시:", messageId);
               return;
             }
             processedMessagesRef.current.add(messageId);
 
-            console.log("📩 받은 메시지:", body);
-
             if (body.type === "HANDOFF_REQUESTED") {
               setMessages(prev => [...prev, { role: 'SYS', text: '상담사 연결을 요청했습니다. 잠시만 기다려주세요.' }]);
             } else if (body.type === "HANDOFF_ACCEPTED") {
-              console.log("✅ 상담사 연결됨!");
               setIsAgentConnected(true);
               setMessages(prev => [...prev, { role: 'SYS', text: '상담사가 연결되었습니다. 지금부터 실시간 상담이 가능합니다.' }]);
-              // resetInactivityTimer는 useEffect에서 자동 호출됨
             } else if (body.type === "AGENT_DISCONNECTED") {
-              console.log("❌ 상담사 연결 해제됨");
               setIsAgentConnected(false);
               setMessages(prev => [...prev, { role: 'SYS', text: '상담사가 연결을 해제했습니다.' }]);
               if (inactivityTimerRef.current) {
                 clearTimeout(inactivityTimerRef.current);
               }
             } else if (body.type === "USER_DISCONNECTED") {
-              console.log("✅ 본인이 연결 해제함");
               if (inactivityTimerRef.current) {
                 clearTimeout(inactivityTimerRef.current);
               }
@@ -235,7 +211,6 @@ const ChatBot: React.FC = () => {
               const text = (body.text as string) ?? '';
               setMessages(prev => [...prev, { role, text }]);
               if (role === 'AGENT') {
-                console.log("📨 상담사 메시지 수신 - 타이머 리셋");
                 resetInactivityTimer();
               }
             }
@@ -245,12 +220,7 @@ const ChatBot: React.FC = () => {
           }
         });
 
-        // ✅ 새로고침 후 재연결 시 타이머 시작
         if (isAgentConnected) {
-          console.log("🔄 연결 상태 복원");
-          // resetInactivityTimer는 useEffect에서 자동 호출됨
-
-          // ✅ 초기 마운트가 아니고 재연결인 경우에만 복귀 메시지 추가
           if (!isInitialMount.current) {
             setMessages(prev => [...prev, { role: 'SYS', text: '연결이 복원되었습니다.' }]);
           }
@@ -274,37 +244,19 @@ const ChatBot: React.FC = () => {
   const sendText = () => {
     if (!stompRef.current || !input.trim() || !isAgentConnected) return;
 
-    console.log("📤 메시지 전송 - 타이머 리셋");
     stompRef.current.send(
       `/app/support.send/${roomId}`,
       {},
       JSON.stringify({ type: "TEXT", role: "USER", text: input })
     );
     setInput("");
-    resetInactivityTimer(); // 메시지 전송 시 타이머 리셋
+    resetInactivityTimer();
   };
 
   const requestHandoff = React.useCallback(() => {
     if (!stompRef.current || isAgentConnected) return;
 
-    console.log("📩 핸드오프 요청 전송 준비");
-    console.log("  - userInfo:", userInfo);
-    console.log("  - userId:", userInfo.userId);
-    console.log("  - userName:", userName);
-    console.log("  - userNickname:", userInfo.nickname);
-
-    // ✅ userId가 없으면 경고
     if (!userInfo.userId) {
-      console.error("❌ userId가 없습니다! 로그인이 필요합니다.");
-      console.log("💡 디버깅 정보:");
-      console.log("  - localStorage 전체:", { ...localStorage });
-      console.log("  - 모든 localStorage 키:", Object.keys(localStorage));
-      
-      // 각 키의 값 출력
-      Object.keys(localStorage).forEach(key => {
-        console.log(`  - ${key}:`, localStorage.getItem(key));
-      });
-      
       setMessages(prev => [...prev, { 
         role: 'SYS', 
         text: '로그인 후 상담사 연결을 요청할 수 있습니다.' 
@@ -324,16 +276,12 @@ const ChatBot: React.FC = () => {
       })
     );
 
-    console.log("✅ 핸드오프 요청 전송 완료");
     setMessages(prev => [...prev, { role: 'SYS', text: '상담사 연결을 요청했습니다.' }]);
   }, [roomId, isAgentConnected, userName, userInfo]);
 
   const disconnectAgent = (auto = false) => {
     if (!stompRef.current) return;
 
-    console.log("🔌 유저가 연결 해제 요청:", roomId);
-
-    // ✅ 먼저 상태와 메시지 업데이트
     setIsAgentConnected(false);
     const disconnectMessage = auto
       ? '10분간 활동이 없어 상담사 연결이 자동으로 해제되었습니다.'
@@ -341,7 +289,6 @@ const ChatBot: React.FC = () => {
 
     setMessages(prev => [...prev, { role: 'SYS', text: disconnectMessage }]);
 
-    // 서버에 연결 해제 전송
     stompRef.current.send(
       `/app/support.disconnect/${roomId}`,
       {},
@@ -353,11 +300,9 @@ const ChatBot: React.FC = () => {
     }
   };
 
-  // ✅ 탭 비활성화 시 타이머 관리 (연결 해제는 하지 않음)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isAgentConnected) {
-        console.log("👁️ 탭 활성화 - 타이머 리셋");
         resetInactivityTimer();
       }
     };
@@ -369,15 +314,11 @@ const ChatBot: React.FC = () => {
     };
   }, [isAgentConnected]);
 
-  // ✅ 컴포넌트 마운트/연결 상태 변경 시 타이머 시작
   useEffect(() => {
-    console.log("🔄 연결 상태 변경:", isAgentConnected);
     if (isAgentConnected) {
       resetInactivityTimer();
     } else {
-      // 연결 해제 시 타이머 정리
       if (inactivityTimerRef.current) {
-        console.log("🛑 타이머 정리");
         clearTimeout(inactivityTimerRef.current);
         inactivityTimerRef.current = null;
       }
@@ -391,18 +332,21 @@ const ChatBot: React.FC = () => {
     };
   }, [isAgentConnected, resetInactivityTimer]);
 
-  const toggleFaq = (id: number) => {
-    setOpenFaqId(prevId => prevId === id ? null : id);
+  const toggleCategory = (categoryId: number) => {
+    setOpenCategoryId(prev => prev === categoryId ? null : categoryId);
+    setOpenFaqId(null);
   };
 
-  // ✅ 대화 내용 삭제 (본인 화면에서만)
+  const toggleFaq = (faqId: number) => {
+    setOpenFaqId(prevId => prevId === faqId ? null : faqId);
+  };
+
   const clearMessages = () => {
     if (window.confirm('대화 내용을 삭제하시겠습니까?\n(상대방 화면에는 영향이 없습니다)')) {
       setMessages([
         { role: 'BOT', text: '안녕하세요 반갑습니다.' },
-        { role: 'BOT', text: '아래 내용이 궁금하다면 클릭하여 빠르게 안내를 받아 보세요.' },
+        { role: 'BOT', text: '카테고리를 선택하여 자주 묻는 질문을 확인해보세요.' },
       ]);
-      console.log("🗑️ 대화 내용 삭제됨");
     }
   };
 
@@ -435,26 +379,51 @@ const ChatBot: React.FC = () => {
               </div>
             ))}
 
-            {/* FAQ 아코디언 */}
-            <div className="ml-13 space-y-2">
-              {Array.isArray(faqs) && faqs.length > 0 ? (
-                faqs.map((faq) => (
-                  <div key={faq.id} className="w-full max-w-md">
+            {/* ✨ 계층형 FAQ 아코디언 */}
+            <div className="ml-13 space-y-3">
+              {Array.isArray(faqCategories) && faqCategories.length > 0 ? (
+                faqCategories.map((category) => (
+                  <div key={category.id} className="w-full max-w-md">
+                    {/* 카테고리 헤더 */}
                     <button
-                      onClick={() => toggleFaq(faq.id)}
-                      className="w-full text-left bg-white hover:bg-gray-50 rounded-lg px-4 py-3 shadow-sm text-sm text-gray-700 transition flex items-center justify-between"
+                      onClick={() => toggleCategory(category.id)}
+                      className="w-full text-left bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-3 shadow-md transition flex items-center justify-between font-semibold"
                     >
-                      <span>{faq.content}</span>
-                      {openFaqId === faq.id ? (
-                        <ChevronUpIcon className="w-4 h-4 flex-shrink-0" />
+                      <div>
+                        <div className="text-sm">📁 {category.category}</div>
+                        <div className="text-xs opacity-90 mt-1">{category.description}</div>
+                      </div>
+                      {openCategoryId === category.id ? (
+                        <ChevronUpIcon className="w-5 h-5 flex-shrink-0" />
                       ) : (
-                        <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
+                        <ChevronDownIcon className="w-5 h-5 flex-shrink-0" />
                       )}
                     </button>
 
-                    {openFaqId === faq.id && (
-                      <div className="mt-2 bg-blue-50 rounded-lg px-4 py-3 shadow-sm">
-                        <p className="text-sm text-gray-800">{faq.botAnswer}</p>
+                    {/* 카테고리 내 FAQ 목록 */}
+                    {openCategoryId === category.id && (
+                      <div className="mt-2 space-y-2 pl-4">
+                        {category.items.map((faq) => (
+                          <div key={faq.id}>
+                            <button
+                              onClick={() => toggleFaq(faq.id)}
+                              className="w-full text-left bg-white hover:bg-gray-50 rounded-lg px-4 py-3 shadow-sm text-sm text-gray-700 transition flex items-center justify-between"
+                            >
+                              <span>💬 {faq.question}</span>
+                              {openFaqId === faq.id ? (
+                                <ChevronUpIcon className="w-4 h-4 flex-shrink-0" />
+                              ) : (
+                                <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
+                              )}
+                            </button>
+
+                            {openFaqId === faq.id && (
+                              <div className="mt-2 bg-blue-50 rounded-lg px-4 py-3 shadow-sm">
+                                <p className="text-sm text-gray-800">{faq.answer}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
