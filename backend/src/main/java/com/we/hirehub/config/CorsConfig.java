@@ -14,12 +14,13 @@ public class CorsConfig {
         CorsConfiguration c = new CorsConfiguration();
         c.setAllowedOrigins(List.of(
                 "http://localhost:3000",
-                "http://127.0.0.1:3000"
-                // 배포 도메인 추가: "https://byeongarigaebaldan.store"
+                "http://127.0.0.1:3000",
+                "https://byeongarigaebaldan.store",
+                "http://byeongarigaebaldan.store"
         ));
         c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        c.setAllowedHeaders(List.of("Authorization","Content-Type","Accept"));
-        c.setAllowCredentials(false);
+        c.setAllowedHeaders(List.of("*"));
+        c.setAllowCredentials(true);
         c.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
         s.registerCorsConfiguration("/**", c);
