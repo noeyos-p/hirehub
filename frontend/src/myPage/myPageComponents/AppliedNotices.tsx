@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../api/api";
 
 type ApplyItem = {
@@ -27,6 +27,7 @@ const prettyDateTime = (iso?: string) => {
 
 const AppliedNotices: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ [추가됨] 수정 후 돌아올 때 새로고침용
   const [items, setItems] = useState<ApplyItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,8 +48,17 @@ const AppliedNotices: React.FC = () => {
 
   useEffect(() => { fetchApplies(); }, []);
 
+  // ✅ [추가됨] 수정 후 돌아왔을 때 자동 새로고침
+  useEffect(() => {
+    if (location.state?.refreshed) {
+      fetchApplies();
+    }
+  }, [location.state]);
+
   const handleCheckboxChange = (id: number) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
+    );
   };
 
   const allSelected = useMemo(
@@ -61,13 +71,22 @@ const AppliedNotices: React.FC = () => {
     else setSelectedIds(items.map(n => n.id));
   };
 
-  // ✅ 이력서 보기 -> ResumeViewer로 이동
+  // ✅ 이력서 보기 (읽기 전용)
   const handleOpenResume = (row: ApplyItem) => {
     if (!row.resumeId) {
       alert("이 지원 건의 이력서 ID를 찾을 수 없습니다.");
       return;
     }
     navigate(`/myPage/resume/ResumeViewer/${row.resumeId}`);
+  };
+
+  // ✅ [추가됨] 이력서 수정 기능
+  const handleEditResume = (row: ApplyItem) => {
+    if (!row.resumeId) {
+      alert("이 지원 건의 이력서 ID를 찾을 수 없습니다.");
+      return;
+    }
+    navigate(`/myPage/resume/Edit/${row.resumeId}`);
   };
 
   return (
@@ -88,7 +107,10 @@ const AppliedNotices: React.FC = () => {
       ) : (
         <div className="space-y-5">
           {items.map((notice) => (
-            <div key={notice.id} className="flex items-center justify-between border-b border-gray-200 pb-4">
+            <div
+              key={notice.id}
+              className="flex items-center justify-between border-b border-gray-200 pb-4"
+            >
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
@@ -106,15 +128,26 @@ const AppliedNotices: React.FC = () => {
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                <button
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm px-4 py-1.5 rounded-md"
-                  onClick={() => handleOpenResume(notice)}
-                  disabled={loading}
-                >
-                  이력서 보기
-                </button>
+                {/* ✅ [수정됨] 보기 + 수정 버튼 병렬 배치 */}
+                <div className="flex gap-2">
+                  <button
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm px-4 py-1.5 rounded-md"
+                    onClick={() => handleOpenResume(notice)}
+                    disabled={loading}
+                  >
+                    이력서 보기
+                  </button>
+
+                  <button
+                    className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-1.5 rounded-md"
+                    onClick={() => handleEditResume(notice)}
+                    disabled={loading}
+                  >
+                    수정
+                  </button>
+                </div>
+
                 <span className="text-sm text-gray-500">
-                  {/* ✅ 년/월/일/시간(00:00) */}
                   - {prettyDateTime(notice.appliedAt)}
                 </span>
               </div>
