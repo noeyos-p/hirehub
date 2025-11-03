@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="flex items-center space-x-4 mb-4 md:mb-0">
           <Link to="/">
           <img
-            src="/HIREHUB_LOGO.png"
+            src="/HIREHUB_LOGO.PNG"
             alt="HireHub Logo"
             className="w-[117px] h-[33px] object-contain mr-[23px]"
           />
