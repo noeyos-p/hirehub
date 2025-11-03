@@ -66,16 +66,21 @@ jobs:
             cat <<EOF > .env.prod
             RDS_ENDPOINT=${{ secrets.RDS_ENDPOINT }}
             SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}
-            USERNAME=${{ secrets.DB_USERNAME }}
-            PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_SCREET=${{ secrets.GOOGLE_SCREET }}
+            GOOGLE_SECRET=${{ secrets.GOOGLE_SECRET }}
+            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
+            NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
+            NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}
             AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
             AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
-            BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
-            FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
+            BACKEND_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/hirehub-backend:latest
+            FRONTEND_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/hirehub-frontend:latest
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
             EOF
 
             echo "🚀 Docker Compose 실행..."
