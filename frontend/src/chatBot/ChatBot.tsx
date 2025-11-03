@@ -387,7 +387,7 @@ const ChatBot: React.FC = () => {
                     {/* 카테고리 헤더 */}
                     <button
                       onClick={() => toggleCategory(category.id)}
-                      className="w-full text-left bg-gray-200 hover:bg-gray-300 text-gray-600 rounded-lg px-4 py-3 shadow-md transition flex items-center justify-between font-semibold"
+                      className="w-full text-left bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-3 shadow-md transition flex items-center justify-between font-semibold"
                     >
                       <div>
                         <div className="text-sm">📁 {category.category}</div>
@@ -436,7 +436,7 @@ const ChatBot: React.FC = () => {
               {!isAgentConnected ? (
                 <button
                   onClick={requestHandoff}
-                  className="block w-full max-w-md text-left bg-blue-400 hover:bg-blue-500 text-white rounded-lg px-4 py-3 shadow-sm text-sm transition"
+                  className="block w-full max-w-md text-left bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-3 shadow-sm text-sm transition"
                 >
                   💬 상담사 연결하기
                 </button>
