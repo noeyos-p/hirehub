@@ -5,8 +5,14 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
   withCredentials: false,
 });
+//최종//
 
-// 요청 인터셉터: 모든 요청에 자동으로 토큰 추가
+// ✅ 새로고침 시에도 기본 헤더에 토큰 반영
+const bootToken = localStorage.getItem('token');
+if (bootToken) {
+  api.defaults.headers.common['Authorization'] = `Bearer ${bootToken}`;
+}
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -18,10 +24,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
-
 
 export default api;

@@ -37,6 +37,8 @@ public class MyPageService {
     private final CertificateRepository certRepo;
     private final SkillRepository skillRepo;
     private final LanguageRepository languageRepo;
+    private final UsersRepository usersRepository; // ✅ 이거 추가
+
 
     private final ObjectMapper om = new ObjectMapper();
 
@@ -541,5 +543,24 @@ public class MyPageService {
                 resume.getTitle(),
                 saved.getApplyAt()
         );
+    }
+
+    /* 회원탈퇴기능 */
+
+    @Transactional
+    public boolean withdrawUser(String email) {
+        Optional<Users> optionalUser = usersRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            return false;
+        }
+
+        try {
+            usersRepository.delete(optionalUser.get());
+            return true;
+        } catch (Exception e) {
+            // FK 제약 등으로 물리 삭제 불가능한 경우 로그만 남기기
+            log.warn("⚠️ 회원 삭제 실패 (연관 데이터 존재 가능): {}", email, e);
+            return false;
+        }
     }
 }
