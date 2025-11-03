@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { BookmarkIcon, StarIcon, EyeIcon } from "@heroicons/react/24/outline";
+import { BookmarkIcon, StarIcon, EyeIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import {
   BookmarkIcon as BookmarkSolidIcon,
   StarIcon as StarSolidIcon,
@@ -11,7 +11,7 @@ import api from "../api/api";
 const JobPostings: React.FC = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
-  const companyFilter = searchParams.get("company") || ""; // ✅ 회사 필터 추가
+  const companyFilter = searchParams.get("company") || "";
   
   const [filters, setFilters] = useState({
     position: "",
@@ -30,7 +30,30 @@ const JobPostings: React.FC = () => {
   const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
   const itemsPerPage = 10;
 
-  // ✅ 즐겨찾기 목록 불러오기
+  // ✅ 드롭다운 상태 관리
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const positionRef = useRef<HTMLDivElement>(null);
+  const experienceRef = useRef<HTMLDivElement>(null);
+  const educationRef = useRef<HTMLDivElement>(null);
+  const locationRef = useRef<HTMLDivElement>(null);
+
+  // ✅ 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        positionRef.current && !positionRef.current.contains(event.target as Node) &&
+        experienceRef.current && !experienceRef.current.contains(event.target as Node) &&
+        educationRef.current && !educationRef.current.contains(event.target as Node) &&
+        locationRef.current && !locationRef.current.contains(event.target as Node)
+      ) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const fetchFavorites = async () => {
     try {
       const res = await api.get("/api/mypage/favorites/companies?page=0&size=1000");
@@ -50,7 +73,6 @@ const JobPostings: React.FC = () => {
     }
   };
 
-  // ✅ 공고 목록 불러오기
   useEffect(() => {
     const fetchJobs = async () => {
       setIsLoading(true);
@@ -69,7 +91,6 @@ const JobPostings: React.FC = () => {
     fetchJobs();
   }, []);
 
-  // ✅ 즐겨찾기 변경 감지
   useEffect(() => {
     fetchFavorites();
     const handleFavoriteChanged = () => {
@@ -81,7 +102,6 @@ const JobPostings: React.FC = () => {
     };
   }, []);
 
-  // ✅ 스크랩 목록 불러오기
   useEffect(() => {
     const fetchScrappedJobs = async () => {
       try {
@@ -102,17 +122,14 @@ const JobPostings: React.FC = () => {
     fetchScrappedJobs();
   }, []);
 
-  // ✅ 검색어/회사필터 변경 시 페이지 초기화
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, companyFilter]);
 
-  // ✅ 회사 필터 제거 핸들러
   const clearCompanyFilter = () => {
     window.location.href = "/jobPostings";
   };
 
-  // ✅ 즐겨찾기 토글
   const handleFavoriteClick = async (e: React.MouseEvent, companyId: number) => {
     e.stopPropagation();
     const isFavorited = favoritedCompanies.has(companyId);
@@ -126,15 +143,15 @@ const JobPostings: React.FC = () => {
             return newSet;
           });
           window.dispatchEvent(new CustomEvent("favorite-changed"));
-          alert("기업 즐겨찾기가 해제되었습니다.");
+          // alert("기업 즐겨찾기가 해제되었습니다."); => 로그인 안할때만 띄우는 게 좋을 것 같아요
         }
       } else {
         const res = await api.post(`/api/mypage/favorites/companies/${companyId}`);
         if (res.status === 200 && res.data) {
           setFavoritedCompanies((prev) => new Set(prev).add(companyId));
           window.dispatchEvent(new CustomEvent("favorite-changed"));
-          alert("기업을 즐겨찾기에 추가했습니다.");
-        }
+          // alert("기업을 즐겨찾기에 추가했습니다."); => 로그인 안할때만 띄우는 게 좋을 것 같아요
+        } 
       }
     } catch (err: any) {
       let errorMsg = "즐겨찾기 처리에 실패했습니다.";
@@ -147,7 +164,6 @@ const JobPostings: React.FC = () => {
     }
   };
 
-  // ✅ 북마크 토글
   const handleBookmarkClick = async (e: React.MouseEvent, jobId: number) => {
     e.stopPropagation();
     const isScrapped = scrappedJobs.has(jobId);
@@ -160,13 +176,13 @@ const JobPostings: React.FC = () => {
             newSet.delete(jobId);
             return newSet;
           });
-          alert("북마크가 해제되었습니다.");
+          // alert("북마크가 해제되었습니다."); => 로그인 안할때만 띄우는 게 좋을 것 같아요
         }
       } else {
         const res = await api.post(`/api/mypage/favorites/jobposts/${jobId}`);
         if (res.status === 200 && res.data) {
           setScrappedJobs((prev) => new Set(prev).add(jobId));
-          alert("북마크에 저장되었습니다.");
+          // alert("북마크에 저장되었습니다."); => 로그인 안할때만 띄우는 게 좋을 것 같아요
         }
       }
     } catch (err: any) {
@@ -180,7 +196,6 @@ const JobPostings: React.FC = () => {
     }
   };
 
-  // ✅ 조회수 증가 + 상세 이동
   const handleJobClick = async (jobId: number) => {
     try {
       await api.post(`/api/jobposts/${jobId}/views`);
@@ -202,7 +217,6 @@ const JobPostings: React.FC = () => {
     "종로구", "중구", "중랑구",
   ];
 
-  // ✅ 필터 로직 (회사 필터 추가)
   const filteredJobs = jobListings.filter((job) => {
     const jobTitle = job.title?.toLowerCase() || "";
     const jobCompany = job.companyName?.toLowerCase() || "";
@@ -212,7 +226,6 @@ const JobPostings: React.FC = () => {
     const jobLoc = job.location?.toLowerCase() || "";
     const query = searchQuery.toLowerCase();
 
-    // ✅ 회사 필터 조건 추가
     const matchesCompany = !companyFilter || job.companyName === companyFilter;
 
     const matchesSearch =
@@ -235,7 +248,7 @@ const JobPostings: React.FC = () => {
       jobLoc.includes(filters.location.toLowerCase());
 
     return (
-      matchesCompany && // ✅ 회사 필터 적용
+      matchesCompany &&
       matchesSearch &&
       matchesPosition &&
       matchesExperience &&
@@ -250,6 +263,57 @@ const JobPostings: React.FC = () => {
     currentPage * itemsPerPage
   );
 
+  // ✅ 필터 옵션 데이터
+  const filterOptions = {
+    position: [
+      { value: "", label: "전체" },
+      { value: "프론트", label: "프론트" },
+      { value: "백엔드", label: "백엔드" },
+      { value: "풀스택", label: "풀스택" },
+      { value: "DevOps", label: "DevOps" },
+      { value: "데이터", label: "데이터" },
+      { value: "AI", label: "AI" },
+    ],
+    experience: [
+      { value: "", label: "전체" },
+      { value: "신입", label: "신입" },
+      { value: "경력", label: "경력" },
+      { value: "경력무관", label: "경력무관" },
+    ],
+    education: [
+      { value: "", label: "전체" },
+      { value: "고졸", label: "고졸" },
+      { value: "대졸", label: "대졸" },
+      { value: "학력무관", label: "학력무관" },
+    ],
+    location: [
+      { value: "", label: "전체" },
+      ...seoulDistricts.map(district => ({ value: district, label: district })),
+    ],
+  };
+
+  // ✅ 드롭다운 토글
+  const toggleDropdown = (dropdownName: string) => {
+    setOpenDropdown(openDropdown === dropdownName ? null : dropdownName);
+  };
+
+  // ✅ 필터 선택 핸들러
+  const handleFilterSelect = (filterType: string, value: string) => {
+    setFilters({ ...filters, [filterType]: value });
+    setOpenDropdown(null);
+  };
+
+  // ✅ 선택된 값 표시 함수
+  const getDisplayLabel = (filterType: string) => {
+    const value = filters[filterType as keyof typeof filters];
+    if (!value) {
+      return filterType === 'position' ? '직무' :
+             filterType === 'experience' ? '경력' :
+             filterType === 'education' ? '학력' : '희망지역';
+    }
+    return value;
+  };
+
   if (selectedJobId) {
     return (
       <div className="max-w-6xl mx-auto py-6 px-4">
@@ -259,15 +323,14 @@ const JobPostings: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto py-6 px-4">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-[1440px] mx-auto px-[55px] py-3">
         {error && (
           <div className="mb-4 px-4 py-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
             {error}
           </div>
         )}
 
-        {/* ✅ 회사 필터 배너 */}
         {companyFilter && (
           <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm flex items-center justify-between">
             <span>
@@ -298,215 +361,295 @@ const JobPostings: React.FC = () => {
           </div>
         )}
 
-        {/* 필터 */}
-        <div className="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-700 ">
-          <select
-            value={filters.position}
-            onChange={(e) => setFilters({ ...filters, position: e.target.value })}
-            className="px-3 py-2"
-            disabled={isLoading}
-          >
-            <option value="">직무</option>
-            <option value="프론트">프론트</option>
-            <option value="백엔드">백엔드</option>
-            <option value="풀스택">풀스택</option>
-            <option value="DevOps">DevOps</option>
-            <option value="데이터">데이터</option>
-            <option value="AI">AI</option>
-          </select>
+        {/* ✅ 필터 드롭다운 */}
+        <div className="flex flex-wrap items-center gap-4 mb-3">
+          {/* 직무 필터 */}
+          <div className="relative" ref={positionRef}>
+            <button
+              onClick={() => toggleDropdown('position')}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-[16px] text-black min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>{getDisplayLabel('position')}</span>
+              <ChevronDownIcon className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === 'position' ? 'rotate-180' : ''}`} />
+            </button>
 
-          <select
-            value={filters.experience}
-            onChange={(e) =>
-              setFilters({ ...filters, experience: e.target.value })
-            }
-            className="px-3 py-2"
-            disabled={isLoading}
-          >
-            <option value="">경력</option>
-            <option value="신입">신입</option>
-            <option value="경력">경력</option>
-            <option value="경력무관">경력무관</option>
-          </select>
+            {openDropdown === 'position' && (
+              <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                {filterOptions.position.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleFilterSelect('position', option.value)}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
+                      filters.position === option.value
+                        ? 'text-[#006AFF] font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-          <select
-            value={filters.education}
-            onChange={(e) =>
-              setFilters({ ...filters, education: e.target.value })
-            }
-            className="px-3 py-2"
-            disabled={isLoading}
-          >
-            <option value="">학력</option>
-            <option value="고졸">고졸</option>
-            <option value="대졸">대졸</option>
-            <option value="학력무관">학력무관</option>
-          </select>
+          {/* 경력 필터 */}
+          <div className="relative" ref={experienceRef}>
+            <button
+              onClick={() => toggleDropdown('experience')}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-[16px] text-black min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>{getDisplayLabel('experience')}</span>
+              <ChevronDownIcon className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === 'experience' ? 'rotate-180' : ''}`} />
+            </button>
 
-          <select
-            value={filters.location}
-            onChange={(e) =>
-              setFilters({ ...filters, location: e.target.value })
-            }
-            className="px-3 py-2"
-            disabled={isLoading}
-          >
-            <option value="">희망지역</option>
-            {seoulDistricts.map((district) => (
-              <option key={district} value={district}>
-                {district}
-              </option>
-            ))}
-          </select>
+            {openDropdown === 'experience' && (
+              <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                {filterOptions.experience.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleFilterSelect('experience', option.value)}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
+                      filters.experience === option.value
+                        ? 'text-[#006AFF] font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 학력 필터 */}
+          <div className="relative" ref={educationRef}>
+            <button
+              onClick={() => toggleDropdown('education')}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-[16px] text-black min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>{getDisplayLabel('education')}</span>
+              <ChevronDownIcon className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === 'education' ? 'rotate-180' : ''}`} />
+            </button>
+
+            {openDropdown === 'education' && (
+              <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                {filterOptions.education.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleFilterSelect('education', option.value)}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
+                      filters.education === option.value
+                        ? 'text-[#006AFF] font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 희망지역 필터 */}
+          <div className="relative" ref={locationRef}>
+            <button
+              onClick={() => toggleDropdown('location')}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-[16px] text-black min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>{getDisplayLabel('location')}</span>
+              <ChevronDownIcon className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === 'location' ? 'rotate-180' : ''}`} />
+            </button>
+
+            {openDropdown === 'location' && (
+              <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-[300px] overflow-y-auto">
+                {filterOptions.location.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleFilterSelect('location', option.value)}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
+                      filters.location === option.value
+                        ? 'text-[#006AFF] font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 공고 목록 */}
-        {isLoading ? (
-          <div className="text-center py-10 text-gray-600">로딩 중...</div>
-        ) : filteredJobs.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
-            {companyFilter 
-              ? `${companyFilter}의 채용 공고가 없습니다.`
-              : searchQuery 
-              ? "검색 결과가 없습니다." 
-              : "채용 공고가 없습니다."}
+{isLoading ? (
+  <div className="text-center py-10 text-gray-600">로딩 중...</div>
+) : filteredJobs.length === 0 ? (
+  <div className="text-center py-10 text-gray-500">
+    {companyFilter 
+      ? `${companyFilter}의 채용 공고가 없습니다.`
+      : searchQuery 
+      ? "검색 결과가 없습니다." 
+      : "채용 공고가 없습니다."}
+  </div>
+) : (
+  <>
+    <div className="divide-y divide-gray-200">
+      {paginatedJobs.map((job) => (
+        <div
+          key={job.id}
+          className="flex justify-between items-start hover:bg-gray-50 px-2 rounded-md transition py-[26px] px-[24px]"
+        >
+          {/* 왼쪽: 회사명 + 세로선 + 공고 정보 */}
+          <div
+            className="flex-1 flex gap-4 cursor-pointer"
+            onClick={() => handleJobClick(job.id)}
+          >
+            {/* 회사명 (너비 고정) */}
+            <div className="w-[160px] flex items-center gap-2">
+              <p className="text-[20px] font-semibold text-gray-900 truncate">
+                {job.companyName}
+              </p>
+              <button
+                onClick={(e) => handleFavoriteClick(e, job.companyId)}
+                className="transition-all hover:scale-110 flex-shrink-0"
+                title={
+                  favoritedCompanies.has(job.companyId)
+                    ? "즐겨찾기 해제"
+                    : "즐겨찾기"
+                }
+              >
+                {favoritedCompanies.has(job.companyId) ? (
+                  <StarSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                ) : (
+                  <StarIcon className="w-5 h-5 text-gray-400 hover:text-[#006AFF]" />
+                )}
+              </button>
+            </div>
+
+            {/* 세로 구분선 */}
+            <div className="w-px bg-gray-300"></div>
+
+            {/* 공고 정보 */}
+            <div className="flex-1 ml-[20px]">
+              <p className="text-[16px] font-normal text-gray-800 mb-[9px]">
+                {job.title}
+              </p>
+              <p className="text-sm text-gray-500">
+                {job.position && <span>{job.position} / </span>}
+                {job.careerLevel} / {job.education} / {job.location}
+              </p>
+            </div>
           </div>
-        ) : (
-          <>
-            <div className="divide-y divide-gray-200">
-              {paginatedJobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="flex justify-between items-center py-4 hover:bg-gray-100 px-2 rounded-md transition"
-                >
-                  <div
-                    className="flex-1 cursor-pointer"
-                    onClick={() => handleJobClick(job.id)}
-                  >
-                    <div className="flex items-center space-x-2 mb-1">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {job.companyName}
-                      </p>
-                      <button
-                        onClick={(e) => handleFavoriteClick(e, job.companyId)}
-                        className="transition-all hover:scale-110"
-                        title={
-                          favoritedCompanies.has(job.companyId)
-                            ? "즐겨찾기 해제"
-                            : "즐겨찾기"
-                        }
-                      >
-                        {favoritedCompanies.has(job.companyId) ? (
-                          <StarSolidIcon className="w-4 h-4 text-yellow-500" />
-                        ) : (
-                          <StarIcon className="w-4 h-4 text-gray-400 hover:text-yellow-500" />
-                        )}
-                      </button>
-                    </div>
 
-                    <p className="text-sm text-gray-800">{job.title}</p>
-                    <p className="text-sm text-gray-500">
-                      {job.position && <span>{job.position} / </span>}
-                      {job.careerLevel} / {job.education} / {job.location}
-                    </p>
-                  </div>
+          {/* 오른쪽: 조회수, 스크랩, 날짜 */}
+          <div className="flex flex-col items-end gap-2 ml-4">
+            {/* 조회수 + 스크랩 */}
+            <div className="flex items-center gap-3 mb-[9px]">
+              <div className="flex items-center gap-1 text-gray-500 ">
+                <EyeIcon className="w-4 h-4" />
+                <span className="text-sm">{job.views ?? 0}</span>
+              </div>
 
-                  <div className="flex items-center space-x-3 text-sm text-gray-600">
-                    {/* 👁 조회수 */}
-                    <div className="flex items-center space-x-1 text-gray-500">
-                      <EyeIcon className="w-4 h-4" />
-                      <span>{job.views ?? 0}</span>
-                    </div>
-
-                    <span>
-                      {job.startAt} - {job.endAt}
-                    </span>
-
-                    <button
-                      onClick={(e) => handleBookmarkClick(e, job.id)}
-                      className="transition-all hover:scale-110"
-                      title={
-                        scrappedJobs.has(job.id)
-                          ? "북마크 해제"
-                          : "북마크 추가"
-                      }
-                    >
-                      {scrappedJobs.has(job.id) ? (
-                        <BookmarkSolidIcon className="w-5 h-5 text-yellow-500" />
-                      ) : (
-                        <BookmarkIcon className="w-5 h-5 text-gray-600 hover:text-yellow-500" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <button
+                onClick={(e) => handleBookmarkClick(e, job.id)}
+                className="transition-all hover:scale-110"
+                title={
+                  scrappedJobs.has(job.id)
+                    ? "북마크 해제"
+                    : "북마크 추가"
+                }
+              >
+                {scrappedJobs.has(job.id) ? (
+                  <BookmarkSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                ) : (
+                  <BookmarkIcon className="w-5 h-5 text-gray-600 hover:text-[#006AFF]" />
+                )}
+              </button>
             </div>
 
-            {/* ✅ 페이지네이션 */}
-            <div className="flex justify-center items-center space-x-1 mt-8">
-              <button
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-              >
-                «
-              </button>
+            {/* 날짜 */}
+            <span className="text-sm text-gray-600 whitespace-nowrap">
+              {job.startAt?.replace(/-/g, '.')} - {job.endAt?.replace(/-/g, '.')}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
 
-              <button
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                ‹
-              </button>
+    {/* ✅ 페이지네이션 - 새로운 디자인 */}
+    <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
+      {/* 처음으로 */}
+      <button
+        onClick={() => setCurrentPage(1)}
+        disabled={currentPage === 1}
+        className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronDoubleLeftIcon className="w-5 h-5" />
+      </button>
 
-              {(() => {
-                const pages = [];
-                const maxVisible = 5;
-                let startPage = Math.max(
-                  1,
-                  currentPage - Math.floor(maxVisible / 2)
-                );
-                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-                if (endPage - startPage + 1 < maxVisible) {
-                  startPage = Math.max(1, endPage - maxVisible + 1);
-                }
-                for (let i = startPage; i <= endPage; i++) {
-                  pages.push(
-                    <button
-                      key={i}
-                      className={`px-3 py-1 text-sm border rounded transition-colors ${
-                        currentPage === i
-                          ? "bg-gray-300 text-white border-gray-300 hover:bg-gray-400"
-                          : "text-gray-700 border-gray-300 hover:bg-gray-100"
-                      }`}
-                      onClick={() => setCurrentPage(i)}
-                    >
-                      {i}
-                    </button>
-                  );
-                }
-                return pages;
-              })()}
+      {/* 이전 */}
+      <button
+        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+        disabled={currentPage === 1}
+        className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeftIcon className="w-5 h-5" />
+      </button>
 
-              <button
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                ›
-              </button>
+      {/* 페이지 번호 */}
+      {(() => {
+        const pages = [];
+        const maxVisible = 5;
+        let startPage = Math.max(
+          1,
+          currentPage - Math.floor(maxVisible / 2)
+        );
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+        if (endPage - startPage + 1 < maxVisible) {
+          startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+        for (let i = startPage; i <= endPage; i++) {
+          pages.push(
+            <button
+              key={i}
+              onClick={() => setCurrentPage(i)}
+              className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${
+                currentPage === i
+                  ? "bg-white text-[#006AFF] border-[#006AFF]"
+                  : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
+              }`}
+            >
+              {i}
+            </button>
+          );
+        }
+        return pages;
+      })()}
 
-              <button
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-              >
-                »
-              </button>
-            </div>
-          </>
-        )}
+      {/* 다음 */}
+      <button
+        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+        disabled={currentPage === totalPages}
+        className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRightIcon className="w-5 h-5" />
+      </button>
+
+      {/* 마지막으로 */}
+      <button
+        onClick={() => setCurrentPage(totalPages)}
+        disabled={currentPage === totalPages}
+        className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronDoubleRightIcon className="w-5 h-5" />
+      </button>
+    </div>
+  </>
+)}
       </div>
     </div>
   );

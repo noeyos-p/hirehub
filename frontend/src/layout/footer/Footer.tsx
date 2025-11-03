@@ -1,15 +1,36 @@
+import { Headphones } from "lucide-react";
+import { Link } from "react-router-dom";
+
 export default function Footer() {
   return (
-    <footer className="bg-white text-gray-700 py-6 border-t border-gray-200">
-      <div className="max-w-5xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-        <div className="mb-4 md:mb-0 text-center md:text-left">
-          <h4 className="text-lg font-semibold">@병아리 개발단</h4>
-          <p className="text-sm text-gray-500">
-            © {new Date().getFullYear()} All rights reserved.
-          </p>
+    <footer className="bg-white text-gray-700 py-3 border-t border-gray-200 flex justify-center">
+      <div className="w-[1440px] px-[55px] flex items-center justify-between py-3 px-4">
+        {/* 왼쪽 로고 + 회사 정보 */}
+        <div className="flex items-center space-x-4 mb-4 md:mb-0">
+          <Link to="/">
+          <img
+            src="/HIREHUB_LOGO.png"
+            alt="HireHub Logo"
+            className="w-[117px] h-[33px] object-contain mr-[23px]"
+          />
+          </Link>
+          <div>
+            <h4 className="text-[16px] font-medium text-gray-500">(주)병아리 개발단</h4>
+            <p className="text-[13px] text-gray-400">
+              © {new Date().getFullYear()} All rights reserved.
+            </p>
+          </div>
         </div>
-        <div className="flex space-x-4">
-          <a href="/chatBot" className="hover:text-gray-900 transition-colors">고객 상담</a>
+
+        {/* 오른쪽 고객 상담 센터 */}
+        <div className="flex items-center space-x-2 group cursor-pointer">
+          <Headphones className="w-5 h-5 text-black group-hover:text-[#006AFF] transition" />
+          <a
+            href="/chatBot"
+            className="font-semibold text-[16px] text-black group-hover:text-[#006AFF] transition"
+          >
+            고객 상담 센터
+          </a>
         </div>
       </div>
     </footer>
