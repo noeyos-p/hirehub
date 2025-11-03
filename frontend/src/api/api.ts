@@ -1,6 +1,7 @@
 // src/api/api.ts
 import axios from "axios";
 
+//경로 변경//
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "https://byeongarigaebaldan.store",
   withCredentials: false,
