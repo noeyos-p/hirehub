@@ -1,5 +1,5 @@
 // src/main/java/com/we/hirehub/security/JwtUserPrincipal.java
-package com.we.hirehub.security;
+package com.we.hirehub.config;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;

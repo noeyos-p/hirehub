@@ -1,6 +1,5 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.PagedResponse;
 import com.we.hirehub.dto.ReviewDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.entity.Review;
@@ -9,9 +8,6 @@ import com.we.hirehub.repository.CompanyRepository;
 import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.ReviewService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -62,31 +58,6 @@ public class ReviewRestController {
         return reviewService.getAllReviews();
     }
 
-    /** ✅ 관리자용 페이징/정렬된 리뷰 조회 */
-    @GetMapping("/admin")
-    public ResponseEntity<PagedResponse<ReviewDto>> getReviewsForAdmin(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "DESC") String direction
-    ) {
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("ASC")
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
-        Sort sort = Sort.by(sortDirection, sortBy);
-        PageRequest pageable = PageRequest.of(page, size, sort);
-
-        Page<ReviewDto> reviewPage = reviewService.getAllReviewsPaged(pageable);
-
-        return ResponseEntity.ok(new PagedResponse<>(
-                reviewPage.getContent(),
-                reviewPage.getNumber(),
-                reviewPage.getSize(),
-                reviewPage.getTotalElements(),
-                reviewPage.getTotalPages()
-        ));
-    }
-
     /** ✅ 특정 회사 리뷰 조회 */
     @GetMapping("/company/{companyName}")
     public ResponseEntity<List<ReviewDto>> getReviewsByCompany(@PathVariable String companyName) {
@@ -111,12 +82,5 @@ public class ReviewRestController {
         Company company = companies.get(0);
         Double avgScore = reviewService.getAverageScore(company.getId());
         return ResponseEntity.ok(avgScore);
-    }
-
-    /** ✅ 관리자용 리뷰 삭제 */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteReview(@PathVariable Long id) {
-        reviewService.deleteReview(id);
-        return ResponseEntity.noContent().build();
     }
 }
