@@ -37,6 +37,9 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
             throws IOException, ServletException {
 
         log.info("=== OAuth2 로그인 성공 ===");
+        log.info("🌐 Request URL: {}", request.getRequestURL());
+        log.info("🌐 X-Forwarded-Proto: {}", request.getHeader("X-Forwarded-Proto"));
+        log.info("🌐 Host: {}", request.getHeader("Host"));
 
         try {
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
