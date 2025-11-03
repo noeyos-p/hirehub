@@ -8,16 +8,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SupportQueue {
 
     public static class RoomState {
-        public volatile boolean handoffRequested = false;
-        public volatile boolean handoffAccepted = false;
-        public volatile String userName = "";
+        public boolean handoffRequested = false;
+        public boolean handoffAccepted = false;
+        public String userName = "user";
+        public String userNickname = "user"; // ✅ 닉네임 필드 추가
     }
 
-    private final Map<String, RoomState> rooms = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, RoomState> rooms = new ConcurrentHashMap<>();
 
-    public RoomState state(String roomId){
+    public RoomState state(String roomId) {
         return rooms.computeIfAbsent(roomId, k -> new RoomState());
     }
 
-    public Map<String, RoomState> all() { return rooms; }
+    public void remove(String roomId) {
+        rooms.remove(roomId);
+    }
 }

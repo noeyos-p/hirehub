@@ -7,12 +7,20 @@ export default defineConfig({
   define: {
     global: 'window', // 🔥 브라우저에서 global을 window로 대체
   },
+  
   server: {
     port: 3000,
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        secure: false,
+      },
+       // ✅ WebSocket 프록시 추가
+      '/ws': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        ws: true, // WebSocket 지원
         secure: false,
       },
     },

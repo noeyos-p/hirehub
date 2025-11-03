@@ -68,8 +68,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         String token = authToken.substring(7);
 
                         try {
-                            if (jwtTokenProvider.validateToken(token)) {
-                                String email = jwtTokenProvider.getEmailFromToken(token);
+                            if (jwtTokenProvider.validate(token)) {
+                                String email = jwtTokenProvider.getEmail(token);
                                 UserDetails userDetails = dbUserDetailsService.loadUserByUsername(email);
 
                                 UsernamePasswordAuthenticationToken authentication =

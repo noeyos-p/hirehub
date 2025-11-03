@@ -16,4 +16,6 @@ public class HandoffDto {
     private String userId;
     private String status; // PENDING/ACCEPTED/REJECTED 등
     private String lastMessage;
+    private String userName;
+    private String nickname;
 }

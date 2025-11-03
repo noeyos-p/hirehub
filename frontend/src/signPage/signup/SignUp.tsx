@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/api';
-//최종//
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');

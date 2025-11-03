@@ -28,6 +28,11 @@ public class SecurityConfig {
                 .headers(h -> h.frameOptions(f -> f.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+
+                                "/ws/**",
+                                "/api/chatbot/faq",
+                                "/api/chatbot/faq/**",
+                                "/ws/**", "/api/auth/**", "/api/public/**",
                                 "/", "/error",
                                 "/favicon.ico", "/css/**", "/js/**", "/images/**",
                                 "/swagger-ui/**", "/v3/api-docs/**",

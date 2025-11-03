@@ -1,6 +1,5 @@
 package com.we.hirehub.config;
 
-import com.we.hirehub.security.JwtUserPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

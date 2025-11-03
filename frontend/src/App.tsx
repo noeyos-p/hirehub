@@ -15,7 +15,7 @@ import CompanyDetail from './jobPostings/jopPostingComponents/CompanyDetail';
 import JobDetailWrapper from './jobPostings/jopPostingComponents/JobDetailWrapper';
 import ChatBot from './chatBot/ChatBot';
 import ResumeViewer from './myPage/resume/ResumeViewer';
-
+import AuthCallback from './page/AuthCallback';
 
 function App() {
   return (
@@ -42,14 +42,18 @@ function App() {
         {/* 로그인/회원가입 */}
         <Route path="/login" element={<Layout><Login /></Layout>} />
         <Route path="/signup" element={<Layout><Signup /></Layout>} />
-        <Route path="/signInfo" element={<SignInfo />} />
+
+        {/* ✅ 온보딩 (회원가입 후 정보 입력) */}
+        <Route path="/signInfo" element={<Layout><SignInfo /></Layout>} />
+
+        {/* ✅ OAuth 콜백 (카카오/구글/네이버 로그인 후) */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* 챗봇/기업 상세 */}
         <Route path="/chatBot" element={<Layout><ChatBot /></Layout>} />
         <Route path="/company/:companyName" element={<Layout><CompanyDetail onBack={() => window.history.back()} /></Layout>} />
 
         <Route path="/myPage/resume/ResumeViewer/:id" element={<ResumeViewer />} />
-
       </Routes>
     </BrowserRouter>
   );

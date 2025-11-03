@@ -7,8 +7,6 @@ import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.CompanyRepository;
 import com.we.hirehub.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,48 +41,35 @@ public class ReviewService {
         return reviewRepository.save(review);
     }
 
-    /** ✅ 전체 리뷰 조회 */
+    /** 전체 리뷰 조회 */
     public List<ReviewDto> getAllReviews() {
         return reviewRepository.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
-    /** ✅ 관리자용 페이징/정렬된 리뷰 조회 */
-    public Page<ReviewDto> getAllReviewsPaged(Pageable pageable) {
-        Page<Review> reviews = reviewRepository.findAll(pageable);
-        return reviews.map(this::convertToDto);
-    }
-
-    /** ✅ 특정 회사 리뷰 조회 */
+    /** 특정 회사 리뷰 조회 */
     public List<ReviewDto> getReviewsByCompany(Long companyId) {
         return reviewRepository.findByCompanyId(companyId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
-    /** ✅ 특정 회사의 평균 별점 조회 */
+    /** 특정 회사의 평균 별점 조회 */
     public Double getAverageScore(Long companyId) {
         Double avg = reviewRepository.findAverageScoreByCompanyId(companyId);
         return avg != null ? Math.round(avg * 10) / 10.0 : 0.0; // 소수점 1자리 반올림
     }
 
-    /** ✅ 리뷰 삭제 */
-    @Transactional
-    public void deleteReview(Long id) {
-        reviewRepository.deleteById(id);
-    }
-
-    /** ✅ 엔티티 → DTO 변환 */
+    /** 엔티티 → DTO 변환 */
     private ReviewDto convertToDto(Review review) {
         return ReviewDto.builder()
                 .id(review.getId())
                 .score(review.getScore())
                 .content(review.getContent())
-                .usersId(review.getUsers() != null ? review.getUsers().getId() : null)
-                .nickname(review.getUsers() != null ? review.getUsers().getNickname() : null)
-                .companyId(review.getCompany() != null ? review.getCompany().getId() : null)
-                .companyName(review.getCompany() != null ? review.getCompany().getName() : null)
+                .usersId(review.getUsers().getId())
+                .nickname(review.getUsers().getNickname())
+                .companyId(review.getCompany().getId())
                 .build();
     }
 }

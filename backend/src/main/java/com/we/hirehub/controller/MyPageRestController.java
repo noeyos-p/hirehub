@@ -43,7 +43,7 @@ public class MyPageRestController {
                 p != null ? p.getClass().getSimpleName() : "null", p);
 
         // 1️⃣ JwtUserPrincipal (JWT 방식)
-        if (p instanceof com.we.hirehub.security.JwtUserPrincipal jwt) {
+        if (p instanceof com.we.hirehub.config.JwtUserPrincipal jwt) {
             Long userId = jwt.getUserId();
             log.debug("✅ JwtUserPrincipal에서 userId 추출: {}", userId);
             return userId;

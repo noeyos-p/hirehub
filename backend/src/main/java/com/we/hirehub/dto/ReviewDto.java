@@ -14,5 +14,4 @@ public class ReviewDto {
     private Long usersId;    // FK
     private String nickname;
     private Long companyId;  // FK
-    private String companyName;
 }
