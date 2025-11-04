@@ -285,4 +285,21 @@ public class MyPageRestController {
                     .body(Map.of("message", "서버 오류로 탈퇴를 완료하지 못했습니다."));
         }
     }
+
+
+    /** ✅ 내가 지원한 공고 내역 삭제 (복수 ID 지원) */
+    @DeleteMapping("/applies")
+    public ResponseEntity<?> deleteMyApplies(
+            Authentication auth,
+            @RequestBody List<Long> applyIds
+    ) {
+        try {
+            myPageService.deleteMyApplies(userId(auth), applyIds);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("❌ 지원 내역 삭제 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "지원 내역 삭제에 실패했습니다."));
+        }
+    }
 }

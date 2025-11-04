@@ -7,9 +7,9 @@ interface Review {
   score: number;
   content: string | null;
   usersId: number;
-  nickname: string;
+  nickname: string | null;
   companyId: number;
-  companyName: string;
+  companyName: string | null;
 }
 
 const ReviewManagement: React.FC = () => {
@@ -20,19 +20,18 @@ const ReviewManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 수정 모달
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editReview, setEditReview] = useState<Review | null>(null);
 
   const pageSize = 10;
 
-  // ✅ 리뷰 목록 불러오기
+  // 리뷰 목록 불러오기
   const fetchReviews = async (page: number = 0) => {
     setLoading(true);
     setError("");
 
     try {
-      const response = await api.get("/api/reviews/admin", {
+      const response = await api.get("/api/admin/reviews", {
         params: {
           page,
           size: pageSize,
@@ -41,9 +40,10 @@ const ReviewManagement: React.FC = () => {
         },
       });
 
-      // PagedResponse 형식으로 응답
-      setReviews(response.data.content);
-      setTotalPages(response.data.totalPages);
+      const data = response.data;
+      // DTO 기반 Page 구조
+      setReviews(data.content || []);
+      setTotalPages(data.totalPages || 0);
       setCurrentPage(page);
     } catch (err: any) {
       console.error("❌ 리뷰 목록 조회 실패:", err);
@@ -57,15 +57,15 @@ const ReviewManagement: React.FC = () => {
     fetchReviews(0);
   }, []);
 
-  // ✅ 리뷰 삭제
+  // 리뷰 삭제
   const handleDelete = async (reviewId: number) => {
     if (!window.confirm("정말 이 리뷰를 삭제하시겠습니까?")) return;
 
     try {
-      await api.delete(`/api/reviews/${reviewId}`);
+      await api.delete(`/api/admin/reviews/${reviewId}`);
       alert("리뷰가 삭제되었습니다.");
-      
-      // 현재 페이지 마지막 항목 삭제 시 이전 페이지로 이동
+
+      // 마지막 항목 삭제 시 페이지 이동 처리
       if (reviews.length === 1 && currentPage > 0) {
         fetchReviews(currentPage - 1);
       } else {
@@ -77,27 +77,23 @@ const ReviewManagement: React.FC = () => {
     }
   };
 
-  // ✅ 리뷰 수정 모달 열기
+  // 리뷰 수정 모달 열기
   const handleEdit = (review: Review) => {
     setEditReview({ ...review });
     setIsEditModalOpen(true);
   };
 
-  // ✅ 리뷰 수정 제출 (수정 API가 없으므로 임시로 alert만 표시)
+  // 리뷰 수정 제출
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editReview) return;
 
-    // TODO: 백엔드에 리뷰 수정 API가 필요합니다
-    alert("리뷰 수정 기능은 백엔드 API가 추가되어야 합니다.");
-    setIsEditModalOpen(false);
-    
-    /* 백엔드 수정 API 추가 후 사용할 코드:
     try {
-      await api.put(`/api/reviews/${editReview.id}`, {
+      await api.put(`/api/admin/reviews/${editReview.id}`, {
         content: editReview.content,
         score: editReview.score,
       });
+
       alert("리뷰 수정 완료!");
       setIsEditModalOpen(false);
       fetchReviews(currentPage);
@@ -105,10 +101,9 @@ const ReviewManagement: React.FC = () => {
       console.error("❌ 리뷰 수정 실패:", err);
       alert(err.response?.data?.message || "리뷰 수정 중 오류가 발생했습니다.");
     }
-    */
   };
 
-  // ✅ 별점 렌더링 함수
+  // 별점 렌더링
   const renderStars = (score: number) => (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -123,15 +118,17 @@ const ReviewManagement: React.FC = () => {
     </div>
   );
 
-  // ✅ 검색 필터
-  const filteredReviews = reviews.filter(
-    (review) =>
-      review.nickname?.toLowerCase().includes(searchQuery.toLowerCase())
+  // 검색 필터
+  const filteredReviews = reviews.filter((review) =>
+    (review.nickname || "").toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
 
-  // ✅ 페이지네이션 렌더링
+  // 페이지네이션 렌더링
   const renderPagination = () => {
     if (totalPages <= 1) return null;
+
+    const startPage = Math.max(0, currentPage - 2);
+    const endPage = Math.min(totalPages, startPage + 5);
 
     return (
       <div className="flex justify-center items-center gap-2 mt-6">
@@ -143,12 +140,8 @@ const ReviewManagement: React.FC = () => {
           이전
         </button>
 
-        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-          // 현재 페이지 주변 5개만 표시
-          let page = currentPage - 2 + i;
-          if (page < 0) page = i;
-          if (page >= totalPages) return null;
-          
+        {Array.from({ length: endPage - startPage }, (_, i) => {
+          const page = startPage + i;
           return (
             <button
               key={page}
@@ -177,7 +170,6 @@ const ReviewManagement: React.FC = () => {
 
   return (
     <div className="p-8">
-      {/* 상단 타이틀 + 검색 */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">리뷰 관리</h2>
 
@@ -189,59 +181,38 @@ const ReviewManagement: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 text-sm outline-none"
           />
-          <svg
-            className="w-4 h-4 text-gray-500"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
       </div>
 
-      {/* 상태 표시 */}
       {loading && <div className="text-center py-8 text-gray-500">로딩 중...</div>}
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
-      {/* 리뷰 목록 */}
       {!loading && !error && (
         <>
           <div className="grid grid-cols-2 gap-4">
             {filteredReviews.map((review) => (
-              <div
-                key={review.id}
-                className="flex justify-between items-center border border-gray-100 bg-white rounded-md px-4 py-3 hover:bg-gray-50 transition"
-              >
+              <div key={review.id} className="flex justify-between items-center border border-gray-100 bg-white rounded-md px-4 py-3 hover:bg-gray-50 transition">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="text-sm font-semibold text-gray-800">
-                      {review.companyName}
-                    </div>
+                    <div className="text-sm font-semibold text-gray-800">{review.companyName}</div>
                     {renderStars(review.score)}
                   </div>
                   <div className="text-sm text-gray-600">작성자: {review.nickname || "익명"}</div>
                   <div className="text-sm text-gray-700 mt-1 line-clamp-1">{review.content}</div>
                 </div>
                 <div className="flex space-x-3">
-                  <PencilIcon
-                    onClick={() => handleEdit(review)}
-                    className="w-5 h-5 text-gray-400 hover:text-gray-700 cursor-pointer"
-                  />
-                  <TrashIcon
-                    onClick={() => handleDelete(review.id)}
-                    className="w-5 h-5 text-gray-400 hover:text-red-500 cursor-pointer"
-                  />
+                  <PencilIcon onClick={() => handleEdit(review)} className="w-5 h-5 text-gray-400 hover:text-gray-700 cursor-pointer" />
+                  <TrashIcon onClick={() => handleDelete(review.id)} className="w-5 h-5 text-gray-400 hover:text-red-500 cursor-pointer" />
                 </div>
               </div>
             ))}
           </div>
 
           {filteredReviews.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              {searchQuery ? "검색 결과가 없습니다." : "리뷰가 없습니다."}
-            </div>
+            <div className="text-center py-8 text-gray-500">{searchQuery ? "검색 결과가 없습니다." : "리뷰가 없습니다."}</div>
           )}
 
           {renderPagination()}
@@ -284,17 +255,10 @@ const ReviewManagement: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
-                >
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200">
                   취소
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                   수정
                 </button>
               </div>

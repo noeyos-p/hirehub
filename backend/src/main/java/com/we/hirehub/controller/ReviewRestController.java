@@ -26,6 +26,8 @@ public class ReviewRestController {
     /** ✅ 리뷰 등록 (로그인 사용자 자동 연결) */
     @PostMapping
     public ReviewDto createReview(@RequestBody ReviewDto dto, Authentication authentication) {
+        System.out.println("DTO 내용: " + dto);
+        System.out.println("Auth: " + authentication);
         // ✅ 로그인 사용자 ID 추출
         Long userId = Long.parseLong(authentication.getName());
 

@@ -563,4 +563,9 @@ public class MyPageService {
             return false;
         }
     }
+
+    @Transactional
+    public void deleteMyApplies(Long userId, List<Long> applyIds) {
+        applyRepository.deleteAllByUserIdAndApplyIds(userId, applyIds);
+    }
 }
