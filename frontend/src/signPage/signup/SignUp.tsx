@@ -52,18 +52,15 @@ const Signup: React.FC = () => {
   };
 
   const handleGoogleSignup = () => {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-    window.location.href = `${baseURL}/api/auth/google`;
+    window.location.href = `${api.defaults.baseURL}/api/auth/google`;
   };
 
   const handleKakaoSignup = () => {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-    window.location.href = `${baseURL}/api/auth/kakao`;
+    window.location.href = `${api.defaults.baseURL}/api/auth/kakao`;
   };
 
   const handleNaverSignup = () => {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-    window.location.href = `${baseURL}/api/auth/naver`;
+    window.location.href = `${api.defaults.baseURL}/api/auth/naver`;
   };
 
   return (
