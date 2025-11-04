@@ -6,45 +6,55 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final OAuth2LoginHandler oAuth2LoginHandler;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final JwtTokenProvider tokenProvider;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .headers(h -> h.frameOptions(f -> f.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
+                        // ✅ 인증 없이 접근 가능한 경로
                         .requestMatchers(
-                                "/ws/**",                           // WebSocket (중복 제거)
-                                "/api/chatbot/faq",
-                                "/api/chatbot/faq/**",
+                                "/ws/**",
+                                "/api/chatbot/faq", "/api/chatbot/faq/**",
                                 "/api/auth/**",
                                 "/api/public/**",
                                 "/api/onboarding/**",
-                                "/api/board/popular",
                                 "/api/jobposts/**",
                                 "/", "/error",
                                 "/favicon.ico", "/css/**", "/js/**", "/images/**",
                                 "/swagger-ui/**", "/v3/api-docs/**",
-                                "/actuator/**",                     // ⚠️ 프로덕션에서는 보안 설정 필요
+                                "/actuator/**",
                                 "/login/**", "/oauth2/**",
                                 "/google", "/kakao", "/naver",
                                 "/naver/**", "/kakao/**", "/google/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/").permitAll()
+
+                        // ✅ 게시판: 조회만 허용, 나머지는 인증 필요
+                        .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/board/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/board/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/board/**").authenticated()
+
+                        // ✅ 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
@@ -54,7 +64,9 @@ public class SecurityConfig {
                         .failureHandler(oAuth2LoginHandler)
                 );
 
+        // ✅ JWT 필터 추가
         http.addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }

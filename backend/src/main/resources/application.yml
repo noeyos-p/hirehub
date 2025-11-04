@@ -46,7 +46,7 @@ logging:
 app:
   jwt:
     secret: "change-this-to-at-least-32-characters-secret-key-!!"
-    access-expire-seconds: 3600
+    access-expire-seconds: 360000
   front:
     base-url: "https://byeongarigaebaldan.store"   # ← 필요에 따라 5173으로 바꾸면 됨
   cors:

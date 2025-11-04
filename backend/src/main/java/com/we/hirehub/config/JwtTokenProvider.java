@@ -49,17 +49,21 @@ public class JwtTokenProvider {
         }
     }
 
-    // ✅ 사용자 ID 가져오기
     public Long getUserId(String token) {
         try {
             Claims claims = Jwts.parserBuilder().setSigningKey(key).build()
                     .parseClaimsJws(token).getBody();
-            return claims.get("id", Long.class);
+            Object idObj = claims.get("id");
+            if (idObj instanceof Integer i) return i.longValue();
+            if (idObj instanceof Long l) return l;
+            if (idObj instanceof String s) return Long.parseLong(s);
+            return null;
         } catch (Exception e) {
             log.error("❌ getUserId 실패: {}", e.getMessage());
             return null;
         }
     }
+
 
     // ✅ 이메일(Subject) 가져오기
     public String getUsername(String token) {
