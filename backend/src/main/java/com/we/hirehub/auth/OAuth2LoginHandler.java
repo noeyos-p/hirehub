@@ -29,7 +29,7 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
     private final JwtTokenProvider jwtTokenProvider;
     private final UsersRepository usersRepository;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.front.base-url}")
     private String frontendUrl;
 
     @Override
