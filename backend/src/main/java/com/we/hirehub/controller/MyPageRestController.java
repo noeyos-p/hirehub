@@ -1,6 +1,7 @@
 package com.we.hirehub.controller;// MyPageRestController.java의 userId() 메서드만 교체
 
 import com.we.hirehub.dto.*;
+import com.we.hirehub.entity.Resume;
 import com.we.hirehub.service.JobPostScrapService;
 import com.we.hirehub.service.MyPageService;
 import jakarta.validation.Valid;
@@ -12,9 +13,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -129,14 +134,17 @@ public class MyPageRestController {
         if (obj instanceof String s) {
             try {
                 return Long.parseLong(s);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
         return null;
     }
 
     // ========== 이하 기존 메서드들 그대로 유지 ==========
 
-    /** ✅ 이력서 목록 조회 */
+    /**
+     * ✅ 이력서 목록 조회
+     */
     @GetMapping("/resumes")
     public PagedResponse<ResumeDto> list(Authentication auth,
                                          @RequestParam(defaultValue = "0") int page,
@@ -144,19 +152,25 @@ public class MyPageRestController {
         return myPageService.list(userId(auth), page, size);
     }
 
-    /** ✅ 이력서 상세 조회 (온보딩 정보 포함됨) */
+    /**
+     * ✅ 이력서 상세 조회 (온보딩 정보 포함됨)
+     */
     @GetMapping("/resumes/{resumeId}")
     public ResumeDto get(Authentication auth, @PathVariable Long resumeId) {
         return myPageService.get(userId(auth), resumeId);
     }
 
-    /** ✅ 이력서 생성 */
+    /**
+     * ✅ 이력서 생성
+     */
     @PostMapping("/resumes")
     public ResumeDto create(Authentication auth, @Valid @RequestBody ResumeUpsertRequest req) {
         return myPageService.create(userId(auth), req);
     }
 
-    /** ✅ 이력서 수정 */
+    /**
+     * ✅ 이력서 수정
+     */
     @PutMapping("/resumes/{resumeId}")
     public ResumeDto update(Authentication auth,
                             @PathVariable Long resumeId,
@@ -164,33 +178,43 @@ public class MyPageRestController {
         return myPageService.update(userId(auth), resumeId, req);
     }
 
-    /** ✅ 이력서 삭제 */
+    /**
+     * ✅ 이력서 삭제
+     */
     @DeleteMapping("/resumes/{resumeId}")
     public ResponseEntity<Void> delete(Authentication auth, @PathVariable Long resumeId) {
         myPageService.delete(userId(auth), resumeId);
         return ResponseEntity.noContent().build();
     }
 
-    /** ✅ 내 프로필 조회 (온보딩 데이터) */
+    /**
+     * ✅ 내 프로필 조회 (온보딩 데이터)
+     */
     @GetMapping("/me")
     public ResponseEntity<MyProfileDto> getMe(Authentication auth) {
         return ResponseEntity.ok(myPageService.getProfile(userId(auth)));
     }
 
-    /** ✅ 내 프로필 수정 */
+    /**
+     * ✅ 내 프로필 수정
+     */
     @PutMapping("/me")
     public ResponseEntity<MyProfileDto> updateMe(Authentication auth,
                                                  @Valid @RequestBody MyProfileUpdateRequest req) {
         return ResponseEntity.ok(myPageService.updateProfile(userId(auth), req));
     }
 
-    /** ✅ 내가 지원한 공고 내역 조회 */
+    /**
+     * ✅ 내가 지원한 공고 내역 조회
+     */
     @GetMapping("/applies")
     public ResponseEntity<List<ApplyResponse>> getMyApplies(Authentication auth) {
         return ResponseEntity.ok(myPageService.getMyApplyList(userId(auth)));
     }
 
-    /** ✅ 특정 공고에 지원 (이력서 선택) */
+    /**
+     * ✅ 특정 공고에 지원 (이력서 선택)
+     */
     @PostMapping("/applies")
     public ResponseEntity<ApplyResponse> applyToJob(
             Authentication auth,
@@ -207,9 +231,12 @@ public class MyPageRestController {
     public record ApplyRequest(
             Long jobPostId,
             Long resumeId
-    ) {}
+    ) {
+    }
 
-    /** ✅ 즐겨찾기 추가 (기업) */
+    /**
+     * ✅ 즐겨찾기 추가 (기업)
+     */
     @PostMapping("/favorites/companies/{companyId}")
     public ResponseEntity<FavoriteCompanySummaryDto> addFavoriteCompany(
             Authentication auth,
@@ -219,7 +246,9 @@ public class MyPageRestController {
         return ResponseEntity.ok(dto);
     }
 
-    /** ✅ 즐겨찾기 목록 조회 (기업) */
+    /**
+     * ✅ 즐겨찾기 목록 조회 (기업)
+     */
     @GetMapping("/favorites/companies")
     public PagedResponse<FavoriteCompanySummaryDto> favoriteCompanies(Authentication auth,
                                                                       @RequestParam(defaultValue = "0") int page,
@@ -227,14 +256,18 @@ public class MyPageRestController {
         return myPageService.listFavoriteCompanies(userId(auth), page, size);
     }
 
-    /** ✅ 즐겨찾기 삭제 (기업) */
+    /**
+     * ✅ 즐겨찾기 삭제 (기업)
+     */
     @DeleteMapping("/favorites/companies/{companyId}")
     public ResponseEntity<Void> removeFavoriteCompany(Authentication auth, @PathVariable Long companyId) {
         myPageService.removeFavoriteCompany(userId(auth), companyId);
         return ResponseEntity.noContent().build();
     }
 
-    /** ✅ 스크랩 추가 (공고) */
+    /**
+     * ✅ 스크랩 추가 (공고)
+     */
     @PostMapping("/favorites/jobposts/{jobPostId}")
     public ResponseEntity<FavoriteJobPostSummaryDto> addScrapJobPost(
             Authentication auth,
@@ -244,7 +277,9 @@ public class MyPageRestController {
         return ResponseEntity.ok(dto);
     }
 
-    /** ✅ 스크랩 목록 조회 (공고) */
+    /**
+     * ✅ 스크랩 목록 조회 (공고)
+     */
     @GetMapping("/favorites/jobposts")
     public PagedResponse<FavoriteJobPostSummaryDto> scrapJobPosts(
             Authentication auth,
@@ -254,14 +289,18 @@ public class MyPageRestController {
         return jobPostScrapService.list(userId(auth), page, size);
     }
 
-    /** ✅ 스크랩 삭제 (공고) */
+    /**
+     * ✅ 스크랩 삭제 (공고)
+     */
     @DeleteMapping("/favorites/jobposts/{jobPostId}")
     public ResponseEntity<Void> removeScrapJobPost(Authentication auth, @PathVariable Long jobPostId) {
         jobPostScrapService.remove(userId(auth), jobPostId);
         return ResponseEntity.noContent().build();
     }
 
-    /**db삭제기능 */
+    /**
+     * db삭제기능
+     */
     @DeleteMapping("/withdraw")
     public ResponseEntity<?> withdraw(Authentication auth) {
         if (auth == null || auth.getName() == null) {
@@ -287,7 +326,9 @@ public class MyPageRestController {
     }
 
 
-    /** ✅ 내가 지원한 공고 내역 삭제 (복수 ID 지원) */
+    /**
+     * ✅ 내가 지원한 공고 내역 삭제 (복수 ID 지원)
+     */
     @DeleteMapping("/applies")
     public ResponseEntity<?> deleteMyApplies(
             Authentication auth,
@@ -300,6 +341,36 @@ public class MyPageRestController {
             log.error("❌ 지원 내역 삭제 중 오류 발생", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "지원 내역 삭제에 실패했습니다."));
+        }
+    }
+
+    @PostMapping("/resumes/{id}/photo")
+    public ResponseEntity<?> uploadResumePhoto(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file
+    ) {
+        log.info("📸 S3 사진 업로드 요청 - resumeId={}, file={}", id, file.getOriginalFilename());
+        try {
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "파일이 비어 있습니다."));
+            }
+
+            // ✅ 1. S3에 업로드 요청 (Service로 분리)
+            String photoUrl = myPageService.uploadResumePhotoToS3(id, file);
+
+            return ResponseEntity.ok(Map.of(
+                    "url", photoUrl,
+                    "idPhoto", photoUrl
+            ));
+
+        } catch (IOException e) {
+            log.error("❌ 파일 업로드 실패", e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "파일 업로드 실패", "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ 서버 처리 실패", e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "SERVER_ERROR", "message", e.getMessage()));
         }
     }
 }

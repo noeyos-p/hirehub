@@ -1,7 +1,10 @@
 // src/main/java/com/we/hirehub/controller/OnboardingRestController.java
 package com.we.hirehub.controller;
 
+import com.we.hirehub.config.JwtTokenProvider;
 import com.we.hirehub.dto.OnboardingForm;
+import com.we.hirehub.entity.Users;
+import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.OnboardingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +24,13 @@ import java.util.Map;
 public class OnboardingRestController {
 
     private final OnboardingService onboardingService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UsersRepository usersRepository;   // ✅ 추가됨
 
     /**
      * ✅ 온보딩 저장 엔드포인트
-     * - 중복 매핑 제거
      * - SecurityContext에서 이메일 추출
-     * - 서비스로 전달
+     * - 서비스 저장 후 새 JWT 발급 (로그인 유지)
      */
     @PostMapping(
             value = "/save",
@@ -49,15 +53,25 @@ public class OnboardingRestController {
         log.debug("📩 폼 내용: {}", form);
 
         try {
+            // 1️⃣ 온보딩 데이터 저장
             onboardingService.save(email, form);
             log.debug("✅ 온보딩 저장 완료 - {}", email);
 
+            // 2️⃣ 새 JWT 발급용 유저 조회
+            Users user = usersRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+
+            String newToken = jwtTokenProvider.createToken(user.getEmail(), user.getId());
+
+            // 3️⃣ 응답
             return ResponseEntity.ok(Map.of(
                     "status", "OK",
-                    "message", "온보딩이 완료되었습니다."
+                    "message", "온보딩이 완료되었습니다.",
+                    "accessToken", newToken,
+                    "tokenType", "Bearer"
             ));
+
         } catch (IllegalArgumentException e) {
-            // 닉네임/전화번호 중복 등
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of(
                             "error", "VALIDATION_ERROR",

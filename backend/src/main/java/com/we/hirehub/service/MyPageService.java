@@ -3,6 +3,7 @@ package com.we.hirehub.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.we.hirehub.config.S3Config;
 import com.we.hirehub.dto.*;
 import com.we.hirehub.entity.*;
 import com.we.hirehub.exception.ForbiddenEditException;
@@ -10,10 +11,16 @@ import com.we.hirehub.exception.ResourceNotFoundException;
 import com.we.hirehub.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,6 +45,13 @@ public class MyPageService {
     private final SkillRepository skillRepo;
     private final LanguageRepository languageRepo;
     private final UsersRepository usersRepository; // ✅ 이거 추가
+    private final S3Client s3Client;
+
+    @Value("${aws.s3.bucket}")
+    private String bucketName;
+
+    @Value("${aws.region}")
+    private String region;
 
 
     private final ObjectMapper om = new ObjectMapper();
@@ -567,5 +581,37 @@ public class MyPageService {
     @Transactional
     public void deleteMyApplies(Long userId, List<Long> applyIds) {
         applyRepository.deleteAllByUserIdAndApplyIds(userId, applyIds);
+    }
+
+    @Transactional
+    public String uploadResumePhotoToS3(Long resumeId, MultipartFile file) throws IOException {
+        Resume r = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new IllegalArgumentException("이력서를 찾을 수 없습니다."));
+
+        // ✅ 1. 파일명 설정
+        String key = "photos/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+        // ✅ 2. S3 업로드 요청
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .acl(ObjectCannedACL.PUBLIC_READ) // 공개 읽기 (URL 접근 가능)
+                        .contentType(file.getContentType())
+                        .build(),
+                software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
+                        file.getInputStream(), file.getSize()
+                )
+        );
+
+        // ✅ 3. S3 URL 생성
+        String photoUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
+
+        // ✅ 4. DB 업데이트
+        r.setIdPhoto(photoUrl);
+        r.setUpdateAt(LocalDate.now());
+        resumeRepository.save(r);
+
+        return photoUrl;
     }
 }
