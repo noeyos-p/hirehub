@@ -34,20 +34,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         log.debug("🔍 JWT 필터 실행: {}", path);
 
+        // ✅ 1️⃣ 인증 불필요 경로 화이트리스트 처리
+        if (path.startsWith("/api/auth/")
+                || path.startsWith("/api/public/")
+                || path.startsWith("/api/onboarding/")
+                || path.startsWith("/swagger-ui/")
+                || path.startsWith("/v3/api-docs/")
+                || path.startsWith("/login")
+                || path.startsWith("/oauth2/")
+                || path.equals("/")
+                || path.startsWith("/ws/")
+        ) {
+            log.debug("🚫 인증 불필요 경로 → JWT 검증 생략: {}", path);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // ✅ 2️⃣ Authorization 헤더 직접 파싱
+        String header = request.getHeader("Authorization");
+        if (header == null || !header.startsWith("Bearer ")) {
+            log.debug("⚠️ Authorization 헤더 없음 → 필터 통과");
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = header.substring(7);
+        log.debug("🪙 추출된 토큰: {}", token.substring(0, Math.min(15, token.length())) + "...");
+
         try {
-            // ✅ Authorization 헤더 직접 파싱
-            String header = request.getHeader("Authorization");
-            if (header == null || !header.startsWith("Bearer ")) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            String token = header.substring(7);
-            log.debug("🪙 추출된 토큰: {}", token.substring(0, Math.min(15, token.length())) + "...");
-
             if (StringUtils.hasText(token) && tokenProvider.validate(token)) {
                 Long userId = tokenProvider.getUserId(token);
-                String email = tokenProvider.getUsername(token); // subject가 email임
+                String email = tokenProvider.getUsername(token);
 
                 List<GrantedAuthority> authorities =
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
@@ -63,7 +80,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } else {
                 log.debug("⚠️ 유효하지 않은 토큰");
             }
-
         } catch (Exception e) {
             log.error("❌ JWT 필터 예외: {}", e.getMessage());
         }
