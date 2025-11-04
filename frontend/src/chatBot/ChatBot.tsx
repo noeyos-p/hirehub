@@ -436,7 +436,7 @@ const ChatBot: React.FC = () => {
               {!isAgentConnected ? (
                 <button
                   onClick={requestHandoff}
-                  className="block w-full max-w-md text-left bg-blue-300 hover:bg-blue-400 text-white rounded-lg px-4 py-3 shadow-sm text-sm transition"
+                  className="block w-full max-w-md text-left bg-blue-400 hover:bg-blue-500 text-white rounded-lg px-4 py-3 shadow-sm text-sm transition"
                 >
                   💬 상담사 연결하기
                 </button>
