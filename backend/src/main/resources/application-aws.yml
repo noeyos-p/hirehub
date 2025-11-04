@@ -72,22 +72,21 @@ server:
 kakao:
   oauth:
     redirect-uri: ${KAKAO_REDIRECT_URI:https://api.your-domain.com/kakao/callback}
-    front-redirect-url: ${APP_FRONT_REDIRECT_URL:https://app.your-domain.com/auth/callback}
-naver:                                         # [ADDED]
+    front-redirect-url: "https://byeongarigaebaldan.store/auth/callback"
+naver:
   oauth:
     client-id: ${NAVER_CLIENT_ID}
     client-secret: ${NAVER_CLIENT_SECRET}
     redirect-uri: ${NAVER_REDIRECT_URI:https://api.your-domain.com/naver/callback}
-    front-redirect-url: ${APP_FRONT_REDIRECT_URL:https://app.your-domain.com/auth/callback}
+    front-redirect-url: "https://byeongarigaebaldan.store/auth/callback"
 
 # CORS 운영 도메인
 app:
   front:
-    base-url: "http://localhost:3000"
-    url: "http://localhost:3000"
+    base-url: "https://byeongarigaebaldan.store"
 
   cors:
-    allowed-origins: "http://localhost:3000"
+    allowed-origins: "https://byeongarigaebaldan.store"
 
 aws:
   s3:

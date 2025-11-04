@@ -39,7 +39,7 @@ public class AuthRestController {
     private final UsersRepository usersRepository;
     private final AuthService authService;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.front.base-url}")
     private String frontendUrl;
 
     /**
