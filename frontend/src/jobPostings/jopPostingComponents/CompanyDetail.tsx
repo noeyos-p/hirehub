@@ -6,11 +6,11 @@ import api from "../../api/api";
 
 interface Review {
   id: number;
-  usersId: string;
+  usersId: number;
   nickname: string;
   content: string;
-  date: string;
   score: number;
+  date?: string; // 백에서 전달되면 사용
 }
 
 interface Company {
@@ -53,16 +53,13 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     const fetchCompanyData = async () => {
       try {
         const decodedName = decodeURIComponent(companyName || '');
-        console.log(`🔍 회사 이름 디코딩: ${decodedName}`);
         const companyRes = await api.get(`/api/companies/${encodeURIComponent(decodedName)}`);
-        console.log("✅ 회사 데이터:", companyRes.data);
         setCompany(companyRes.data);
         if (companyRes.data?.id) {
           fetchFavoriteStatus(companyRes.data.id);
           fetchReviews(companyRes.data.name);
         }
       } catch (err: any) {
-        console.error("❌ 회사 로드 실패:", err.response?.data);
         setError(err.response?.data?.message || "회사 정보를 불러오는데 실패했습니다.");
       } finally {
         setIsLoading(false);
@@ -88,38 +85,12 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const fetchReviews = async (companyName: string) => {
     try {
       const res = await api.get(`/api/reviews/company/${encodeURIComponent(companyName)}`);
-      console.log("✅ 리뷰 데이터:", res.data);
-      setReviews(res.data);
+      setReviews(res.data || []);
     } catch (err) {
       console.error("리뷰 로드 실패:", err);
+      setReviews([]);
     }
   };
-
-  // ✅ company.id가 설정되면 즐겨찾기 상태 확인
-  useEffect(() => {
-    if (company?.id) {
-      console.log(`🔄 CompanyDetail - company.id 변경됨: ${company.id}`);
-      fetchFavoriteStatus(company.id);
-    }
-  }, [company?.id]);
-
-  // ✅ 이벤트 리스너 등록 (다른 페이지에서 변경 감지)
-  useEffect(() => {
-    const handleFavoriteChanged = () => {
-      console.log("🔔 CompanyDetail - favorite-changed 이벤트 수신!");
-      if (company?.id) {
-        fetchFavoriteStatus(company.id);
-      }
-    };
-
-    window.addEventListener("favorite-changed", handleFavoriteChanged);
-    console.log("✅ CompanyDetail - 이벤트 리스너 등록됨");
-
-    return () => {
-      window.removeEventListener("favorite-changed", handleFavoriteChanged);
-      console.log("❌ CompanyDetail - 이벤트 리스너 제거됨");
-    };
-  }, [company?.id]);
 
   // ✅ 즐겨찾기 토글
   const handleFavoriteClick = async () => {
@@ -128,24 +99,17 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     setIsFavoriteProcessing(true);
     const prev = isFavorited;
 
-    console.log(`🔄 CompanyDetail - 즐겨찾기 토글 시작 (현재: ${prev})`);
-
     try {
       if (prev) {
-        console.log(`🗑️ DELETE /api/mypage/favorites/companies/${company.id}`);
         await api.delete(`/api/mypage/favorites/companies/${company.id}`);
         setIsFavorited(false);
         window.dispatchEvent(new CustomEvent("favorite-changed"));
-        console.log("✅ 즐겨찾기 해제 완료 + 이벤트 발송");
       } else {
-        console.log(`➕ POST /api/mypage/favorites/companies/${company.id}`);
         await api.post(`/api/mypage/favorites/companies/${company.id}`);
         setIsFavorited(true);
         window.dispatchEvent(new CustomEvent("favorite-changed"));
-        console.log("✅ 즐겨찾기 추가 완료 + 이벤트 발송");
       }
     } catch (err: any) {
-      console.error("즐겨찾기 처리 실패:", err?.response?.data || err);
       setIsFavorited(prev);
       alert(
         err?.response?.status === 401
@@ -174,10 +138,13 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
         score: newRating,
         companyId: company!.id
       });
-      await fetchReviews(company!.name);
+
+      // 등록 후 리뷰 목록 즉시 갱신
+      const updatedReviewsRes = await api.get(`/api/reviews/company/${encodeURIComponent(company!.name)}`);
+      setReviews(updatedReviewsRes.data || []);
+
       setNewReview("");
       setNewRating(0);
-      alert("리뷰가 등록되었습니다.");
     } catch (err: any) {
       alert(err?.response?.data?.message || "리뷰 등록에 실패했습니다.");
     }
@@ -186,26 +153,21 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   // ✅ 이 기업의 공고 모아보기 핸들러
   const handleViewCompanyJobs = () => {
     if (company) {
-      // JobPostings 페이지로 이동하면서 회사명을 쿼리 파라미터로 전달
       navigate(`/jobPostings?company=${encodeURIComponent(company.name)}`);
     }
   };
 
   // ✅ 별점 렌더링 컴포넌트
-  const RatingStars = ({ score, size = "w-5 h-5" }: { score: number; size?: string }) => {
-    return (
-      <div className="flex items-center space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <StarSolidIcon
-            key={star}
-            className={`${size} ${
-              star <= score ? "text-yellow-400" : "text-gray-300"
-            }`}
-          />
-        ))}
-      </div>
-    );
-  };
+  const RatingStars = ({ score, size = "w-5 h-5" }: { score: number; size?: string }) => (
+    <div className="flex items-center space-x-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <StarSolidIcon
+          key={star}
+          className={`${size} ${star <= score ? "text-yellow-400" : "text-gray-300"}`}
+        />
+      ))}
+    </div>
+  );
 
   if (isLoading) return <div className="text-center py-10 text-gray-600">로딩 중...</div>;
   if (error)
@@ -245,8 +207,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
               )}
             </button>
           </div>
-          
-          {/* ✅ 오른쪽 끝으로 이동 */}
+
           <button 
             onClick={handleViewCompanyJobs}
             className="text-sm text-blue-600 hover:text-blue-800 underline transition-colors"
@@ -259,49 +220,28 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
         {reviews.length > 0 && (
           <div className="flex items-center space-x-2 mb-4">
             <RatingStars score={Math.round(averageRating)} />
-            <span className="text-lg font-semibold text-gray-700">
-              {averageRating.toFixed(1)}
-            </span>
-            <span className="text-sm text-gray-500">
-              ({reviews.length}개의 리뷰)
-            </span>
+            <span className="text-lg font-semibold text-gray-700">{averageRating.toFixed(1)}</span>
+            <span className="text-sm text-gray-500">({reviews.length}개의 리뷰)</span>
           </div>
         )}
 
         <p className="text-gray-600 mb-6">{company.description}</p>
 
+        {/* 회사 정보 */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-700 mb-6">
-          <div>
-            <p className="text-gray-500">주소</p>
-            <p>{company.address}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">홈페이지</p>
-            <p>{company.website}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">설립년도</p>
-            <p>{company.founded}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">업종</p>
-            <p>{company.industry}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">복리후생</p>
-            <p>{company.benefits}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">대표자명</p>
-            <p>{company.ceo}</p>
-          </div>
+          <div><p className="text-gray-500">주소</p><p>{company.address}</p></div>
+          <div><p className="text-gray-500">홈페이지</p><p>{company.website}</p></div>
+          <div><p className="text-gray-500">설립년도</p><p>{company.founded}</p></div>
+          <div><p className="text-gray-500">업종</p><p>{company.industry}</p></div>
+          <div><p className="text-gray-500">복리후생</p><p>{company.benefits}</p></div>
+          <div><p className="text-gray-500">대표자명</p><p>{company.ceo}</p></div>
         </div>
 
         <div className="w-full h-80 bg-gray-200 flex items-center justify-center text-gray-500 text-sm rounded-lg mb-6">
           기업 사진
         </div>
 
-        {/* ⭐ 리뷰 작성 영역 (별점 선택 추가) */}
+        {/* ⭐ 리뷰 작성 영역 */}
         <div className="border border-gray-300 rounded-lg p-4 mb-8 max-w-2xl">
           <h3 className="text-lg font-semibold mb-3">리뷰 작성</h3>
           
@@ -319,19 +259,11 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                   className="focus:outline-none transition-transform hover:scale-110"
                 >
                   <StarSolidIcon
-                    className={`w-8 h-8 ${
-                      star <= (hoverRating || newRating)
-                        ? "text-yellow-400"
-                        : "text-gray-300"
-                    }`}
+                    className={`w-8 h-8 ${star <= (hoverRating || newRating) ? "text-yellow-400" : "text-gray-300"}`}
                   />
                 </button>
               ))}
-              {newRating > 0 && (
-                <span className="ml-2 text-sm text-gray-600">
-                  {newRating}점
-                </span>
-              )}
+              {newRating > 0 && <span className="ml-2 text-sm text-gray-600">{newRating}점</span>}
             </div>
           </div>
 
@@ -356,9 +288,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
         {/* 리뷰 목록 */}
         <div className="space-y-6 mb-8">
-          <h3 className="text-lg font-semibold">
-            리뷰 ({reviews.length})
-          </h3>
+          <h3 className="text-lg font-semibold">리뷰 ({reviews.length})</h3>
           {reviews.length === 0 ? (
             <p className="text-gray-500 text-sm">아직 작성된 리뷰가 없습니다.</p>
           ) : (
@@ -371,7 +301,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                     <RatingStars score={review.score} size="w-4 h-4" />
                   </div>
                   <p className="text-sm text-gray-800 mb-1">{review.content}</p>
-                  <p className="text-xs text-gray-400">{review.date}</p>
+                  {review.date && <p className="text-xs text-gray-400">{review.date}</p>}
                 </div>
               </div>
             ))

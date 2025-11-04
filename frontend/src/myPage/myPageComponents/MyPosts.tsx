@@ -91,7 +91,7 @@ const MyPosts: React.FC = () => {
             <div className="flex items-start gap-3">
               <input
                 type="checkbox"
-                className="mt-1 accent-blue-500"
+                className="mt-5 accent-blue-500"
                 checked={selectedIds.includes(post.id)}
                 onChange={() => handleCheckboxChange(post.id)}
                 disabled={loading}

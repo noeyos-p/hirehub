@@ -13,21 +13,18 @@ type ApplyItem = {
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
 const prettyDateTime = (iso?: string) => {
   if (!iso) return "-";
-  // 백은 LocalDate만 내려오므로 시간은 00:00 표시
   const d = new Date(`${iso}T00:00:00`);
   if (isNaN(d.getTime())) return "-";
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   const w = yoil[d.getDay()];
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${y}.${m}.${dd}(${w}) ${hh}:${mm}`;
+  return `${y}.${m}.${dd}(${w})`;
 };
 
 const AppliedNotices: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // ✅ [추가됨] 수정 후 돌아올 때 새로고침용
+  const location = useLocation();
   const [items, setItems] = useState<ApplyItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,9 +43,11 @@ const AppliedNotices: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchApplies(); }, []);
+  useEffect(() => {
+    fetchApplies();
+  }, []);
 
-  // ✅ [추가됨] 수정 후 돌아왔을 때 자동 새로고침
+  // ✅ 수정 후 돌아왔을 때 자동 새로고침
   useEffect(() => {
     if (location.state?.refreshed) {
       fetchApplies();
@@ -71,7 +70,7 @@ const AppliedNotices: React.FC = () => {
     else setSelectedIds(items.map(n => n.id));
   };
 
-  // ✅ 이력서 보기 (읽기 전용)
+  // ✅ 이력서 보기
   const handleOpenResume = (row: ApplyItem) => {
     if (!row.resumeId) {
       alert("이 지원 건의 이력서 ID를 찾을 수 없습니다.");
@@ -80,13 +79,36 @@ const AppliedNotices: React.FC = () => {
     navigate(`/myPage/resume/ResumeViewer/${row.resumeId}`);
   };
 
-  // ✅ [추가됨] 이력서 수정 기능
+  // ✅ 이력서 수정 (Resume.tsx 로직과 동일하게)
   const handleEditResume = (row: ApplyItem) => {
     if (!row.resumeId) {
       alert("이 지원 건의 이력서 ID를 찾을 수 없습니다.");
       return;
     }
-    navigate(`/myPage/resume/Edit/${row.resumeId}`);
+    // Resume.tsx에서와 동일한 수정 페이지로 이동
+    navigate(`/myPage/resume/ResumeDetail?id=${row.resumeId}`);
+  };
+
+  // ✅ 삭제 기능
+  const handleDelete = async () => {
+    if (selectedIds.length === 0) {
+      alert("삭제할 항목을 선택해주세요.");
+      return;
+    }
+
+    if (!window.confirm(`${selectedIds.length}개의 지원 내역을 삭제하시겠습니까?`)) return;
+
+    try {
+      setLoading(true);
+      await api.delete("/api/mypage/applies", { data: selectedIds });
+      alert("삭제가 완료되었습니다.");
+      fetchApplies(); // ✅ 목록 새로고침
+    } catch (e) {
+      console.error(e);
+      alert("삭제에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -121,14 +143,14 @@ const AppliedNotices: React.FC = () => {
                 />
                 <div>
                   <div className="text-gray-900 font-semibold">{notice.companyName}</div>
-                  {/* 디자인의 '공고 제목' 자리에 '지원 당시 이력서 제목'을 노출 */}
                   <div className="text-gray-700 mt-1">{notice.resumeTitle}</div>
-                  <div className="text-sm text-gray-500 mt-1">-</div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    - {prettyDateTime(notice.appliedAt)}
+                  </div>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                {/* ✅ [수정됨] 보기 + 수정 버튼 병렬 배치 */}
                 <div className="flex gap-2">
                   <button
                     className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm px-4 py-1.5 rounded-md"
@@ -146,10 +168,6 @@ const AppliedNotices: React.FC = () => {
                     수정
                   </button>
                 </div>
-
-                <span className="text-sm text-gray-500">
-                  - {prettyDateTime(notice.appliedAt)}
-                </span>
               </div>
             </div>
           ))}
@@ -159,7 +177,7 @@ const AppliedNotices: React.FC = () => {
       <div className="flex justify-end mt-6">
         <button
           className="text-red-500 hover:text-red-600 text-sm font-medium"
-          onClick={() => alert("삭제 기능은 추후 연결 예정입니다.")}
+          onClick={handleDelete}
           disabled={selectedIds.length === 0 || loading}
         >
           삭제

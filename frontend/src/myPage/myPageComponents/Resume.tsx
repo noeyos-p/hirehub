@@ -122,7 +122,7 @@ const Resume = () => {
       alert("제출(잠김)된 이력서는 삭제할 수 없습니다.");
       return;
     }
-    if (!confirm(`선택한 ${deletables.length}개 이력서를 삭제할까요?`)) return;
+    if (!confirm(`선택한 이력서를 삭제할까요?`)) return;
 
     try {
       setLoading(true);

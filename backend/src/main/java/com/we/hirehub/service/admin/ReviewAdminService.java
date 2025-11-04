@@ -1,5 +1,6 @@
 package com.we.hirehub.service.admin;
 
+import com.we.hirehub.dto.ReviewDto;
 import com.we.hirehub.entity.Review;
 import com.we.hirehub.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,21 +20,25 @@ public class ReviewAdminService {
 
     // ============ 조회 ============
 
-    public Page<Review> getAllReviews(Pageable pageable) {
-        log.debug("모든 리뷰 조회");
-        return reviewRepository.findAll(pageable);
+    public Page<ReviewDto> getAllReviews(Pageable pageable) {
+        log.debug("모든 리뷰 조회 (DTO 반환)");
+        return reviewRepository.findAll(pageable)
+                .map(this::convertToDto);
     }
 
-    public Review getReviewById(Long reviewId) {
-        log.debug("리뷰 조회: {}", reviewId);
-        return reviewRepository.findById(reviewId)
+    public ReviewDto getReviewByIdDto(Long reviewId) {
+        log.debug("리뷰 조회 (DTO): {}", reviewId);
+        Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("리뷰를 찾을 수 없습니다: " + reviewId));
+        return convertToDto(review);
     }
 
-    public Page<Review> getReviewsByCompanyId(Long companyId, Pageable pageable) {
-        log.info("기업별 리뷰 조회: {}", companyId);
-        return reviewRepository.findByCompanyId(companyId, pageable);
+    public Page<ReviewDto> getReviewsByCompanyId(Long companyId, Pageable pageable) {
+        log.info("기업별 리뷰 조회 (DTO): {}", companyId);
+        return reviewRepository.findByCompanyId(companyId, pageable)
+                .map(this::convertToDto);
     }
+
     // ============ 생성 ============
 
     @Transactional
@@ -43,12 +48,19 @@ public class ReviewAdminService {
         return reviewRepository.save(review);
     }
 
+    @Transactional
+    public ReviewDto createReviewDto(Review review) {
+        Review saved = createReview(review);
+        return convertToDto(saved);
+    }
+
     // ============ 수정 ============
 
     @Transactional
     public Review updateReview(Long reviewId, Review updateData) {
         log.info("리뷰 수정: {}", reviewId);
-        Review review = getReviewById(reviewId);
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("리뷰를 찾을 수 없습니다"));
 
         if (updateData.getScore() != null) {
             validateScore(updateData.getScore());
@@ -57,6 +69,12 @@ public class ReviewAdminService {
         if (updateData.getContent() != null) review.setContent(updateData.getContent());
 
         return reviewRepository.save(review);
+    }
+
+    @Transactional
+    public ReviewDto updateReviewDto(Long reviewId, Review updateData) {
+        Review updated = updateReview(reviewId, updateData);
+        return convertToDto(updated);
     }
 
     // ============ 삭제 ============
@@ -69,6 +87,7 @@ public class ReviewAdminService {
         }
         reviewRepository.deleteById(reviewId);
     }
+
     // ============ 유효성 검사 ============
 
     private void validateReviewScore(Review review) {
@@ -82,5 +101,18 @@ public class ReviewAdminService {
         if (score < 1 || score > 5) {
             throw new IllegalArgumentException("평점은 1~5 사이의 값이어야 합니다");
         }
+    }
+
+    // ============ 엔티티 → DTO 변환 ============
+
+    private ReviewDto convertToDto(Review review) {
+        return ReviewDto.builder()
+                .id(review.getId())
+                .score(review.getScore())
+                .content(review.getContent())
+                .usersId(review.getUsers() != null ? review.getUsers().getId() : null)
+                .nickname(review.getUsers() != null ? review.getUsers().getNickname() : "익명")
+                .companyId(review.getCompany() != null ? review.getCompany().getId() : null)
+                .build();
     }
 }
