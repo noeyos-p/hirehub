@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
+import { AxiosError } from 'axios';   // ✅ 추가
 
 const SignInfo: React.FC = () => {
   const navigate = useNavigate();
@@ -22,94 +23,66 @@ const SignInfo: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const seoulDistricts = [
-    '강남구', '강동구', '강북구', '강서구', '관악구',
-    '광진구', '구로구', '금천구', '노원구', '도봉구',
-    '동대문구', '동작구', '마포구', '서대문구', '서초구',
-    '성동구', '성북구', '송파구', '양천구', '영등포구',
-    '용산구', '은평구', '종로구', '중구', '중랑구'
-  ];
+  const handleChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+) => {
+  const { name, value } = e.target;
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
 
-  /**
-   * ✅ [수정] 입력값 변경 시 상태 업데이트
-   */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: value 
-    }));
-  };
-
-  /**
-   * ✅ [핵심 수정] 온보딩 폼 제출
-   * 
-   * 수정 사항:
-   * 1. 토큰 검증 강화 (401 방지)
-   * 2. Authorization 헤더 명시적 추가
-   * 3. 요청 데이터 검증 추가
-   * 4. 완료 후 메인페이지로 이동 (navigate('/'))
-   */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
     setIsLoading(true);
 
+    
+
     try {
-      // ✅ [핵심 1] 토큰 존재 여부 확인
       const token = localStorage.getItem('token');
       if (!token) {
-        console.error('❌ 토큰이 없습니다');
         setError('로그인이 필요합니다.');
         navigate('/login');
         return;
       }
 
-      console.log('🔑 토큰 확인:', token.substring(0, 20) + '...');
-      console.log('🚀 온보딩 요청 시작:', formData);
-
-      // ✅ [핵심 2] API 요청 (Authorization 헤더 명시적 추가)
       const response = await api.post('/api/onboarding/save', formData, {
         headers: { 
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
       });
 
-      console.log('✅ 온보딩 성공:', response.data);
+      // ✅ 새 토큰 저장
+      if (response.data?.accessToken) {
+        console.log('🔁 새 토큰 수신 → 저장');
+        localStorage.setItem('token', response.data.accessToken);
+      }
+
       alert('정보가 성공적으로 저장되었습니다!');
-      
-      // ✅ [핵심 3] 완료 후 메인페이지로 이동
       navigate('/');
 
-    } catch (err: any) {
+    } catch (e) {
+      const err = e as AxiosError<{ message?: string }>;   // ✅ 타입 지정
+
       console.error('❌ 온보딩 실패:', err);
 
-      // ✅ 상세한 에러 처리
-      if (err.response) {
-        const status = err.response.status;
-        const backendMessage = err.response.data?.message;
+      const status = err.response?.status;
+      const backendMessage = err.response?.data?.message;
 
-        console.error('❌ 에러 상태:', status);
-        console.error('❌ 백엔드 메시지:', backendMessage);
-
-        if (status === 400) {
-          setError(backendMessage || '입력하신 정보에 문제가 있습니다.');
-        } else if (status === 401) {
-          console.error('❌ 토큰 만료 또는 유효하지 않음');
-          setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
-          localStorage.removeItem('token');
-          setTimeout(() => navigate('/login'), 2000);
-        } else if (status === 500) {
-          setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-        } else {
-          setError(backendMessage || '정보 저장에 실패했습니다.');
-        }
+      if (status === 400) {
+        setError(backendMessage || '입력하신 정보에 문제가 있습니다.');
+      } else if (status === 401) {
+        setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        localStorage.removeItem('token');
+        setTimeout(() => navigate('/login'), 2000);
+      } else if (status === 500) {
+        setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       } else if (err.request) {
-        console.error('❌ 서버 응답 없음');
         setError('서버와 연결할 수 없습니다. 네트워크를 확인해주세요.');
       } else {
-        console.error('❌ 요청 설정 오류');
         setError('요청 중 오류가 발생했습니다.');
       }
     } finally {
@@ -251,26 +224,23 @@ const SignInfo: React.FC = () => {
           />
         </div>
 
-        {/* 선호 지역 */}
-        <div className="mb-4">
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-            선호 지역 *
-          </label>
-          <select
-            id="location"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">선택하세요</option>
-            {seoulDistricts.map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </div>
+       {/* 선호 지역 */}
+<div className="mb-4">
+  <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+    선호 지역 *
+  </label>
+  <input
+    type="text"
+    id="location"
+    name="location"
+    value={formData.location}
+    onChange={handleChange}
+    required
+    disabled={isLoading}
+    className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
+    placeholder="선호 지역을 입력하세요"
+  />
+</div>
 
         {/* 직무 */}
         <div className="mb-4">
