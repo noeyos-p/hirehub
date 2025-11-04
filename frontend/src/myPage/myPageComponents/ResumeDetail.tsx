@@ -293,28 +293,38 @@ const ResumeDetail: React.FC = () => {
   };
 
   /** 사진 업로드 */
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const id = await ensureResumeId();
-      const localURL = URL.createObjectURL(file);
-      setPhotoPreview(localURL);
-      const form = new FormData();
-      form.append("file", file);
-      const res = await api.post(`/api/mypage/resumes/${id}/photo`, form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      const url = res?.data?.url || res?.data?.idPhoto;
-      if (url) setPhotoPreview(url);
-    } catch (err) {
-      console.error(err);
-      alert("사진 업로드 중 오류가 발생했습니다.");
-    } finally {
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
+ const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const id = await ensureResumeId();
+    const localURL = URL.createObjectURL(file);
+    setPhotoPreview(localURL);
 
+    const form = new FormData();
+    form.append("file", file);
+
+    // ✅ 토큰 가져오기 추가
+    const token = localStorage.getItem("token");
+
+    // ✅ 업로드 요청
+    const res = await api.post(`/api/mypage/resumes/${id}/photo`, form, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        "Authorization": `Bearer ${token}`,  // ✅ 이 줄 추가!
+      },
+    });
+
+    const url = res?.data?.url || res?.data?.idPhoto;
+    if (url) setPhotoPreview(url);
+
+  } catch (err) {
+    console.error("❌ 사진 업로드 실패:", err);
+    alert("사진 업로드 중 오류가 발생했습니다.");
+  } finally {
+    if (fileRef.current) fileRef.current.value = "";
+  }
+};
   /** 입력 refs */
   const eduSchoolRef = useRef<HTMLInputElement>(null);
   const eduPeriodRef = useRef<HTMLInputElement>(null);
