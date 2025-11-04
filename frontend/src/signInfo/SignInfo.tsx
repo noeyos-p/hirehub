@@ -20,6 +20,14 @@ const SignInfo: React.FC = () => {
     location: ''
   });
 
+    const seoulDistricts = [
+    '강남구', '강동구', '강북구', '강서구', '관악구',
+    '광진구', '구로구', '금천구', '노원구', '도봉구',
+    '동대문구', '동작구', '마포구', '서대문구', '서초구',
+    '성동구', '성북구', '송파구', '양천구', '영등포구',
+    '용산구', '은평구', '종로구', '중구', '중랑구'
+  ];
+
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,62 +41,61 @@ const SignInfo: React.FC = () => {
   }));
 };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError('');
-    setIsLoading(true);
+ const handleSubmit = async (event: React.FormEvent) => {
+  event.preventDefault();
+  setError('');
+  setIsLoading(true);
 
-    
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('로그인이 필요합니다.');
-        navigate('/login');
-        return;
-      }
-
-      const response = await api.post('/api/onboarding/save', formData, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
-
-      // ✅ 새 토큰 저장
-      if (response.data?.accessToken) {
-        console.log('🔁 새 토큰 수신 → 저장');
-        localStorage.setItem('token', response.data.accessToken);
-      }
-
-      alert('정보가 성공적으로 저장되었습니다!');
-      navigate('/');
-
-    } catch (e) {
-      const err = e as AxiosError<{ message?: string }>;   // ✅ 타입 지정
-
-      console.error('❌ 온보딩 실패:', err);
-
-      const status = err.response?.status;
-      const backendMessage = err.response?.data?.message;
-
-      if (status === 400) {
-        setError(backendMessage || '입력하신 정보에 문제가 있습니다.');
-      } else if (status === 401) {
-        setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
-        localStorage.removeItem('token');
-        setTimeout(() => navigate('/login'), 2000);
-      } else if (status === 500) {
-        setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      } else if (err.request) {
-        setError('서버와 연결할 수 없습니다. 네트워크를 확인해주세요.');
-      } else {
-        setError('요청 중 오류가 발생했습니다.');
-      }
-    } finally {
-      setIsLoading(false);
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('로그인이 필요합니다.');
+      navigate('/login');
+      return;
     }
-  };
+
+    const response = await api.post('/api/onboarding/save', formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // ✅ 새 토큰 저장
+    if (response.data?.accessToken) {
+      console.log('🔁 새 토큰 수신 → 저장');
+      localStorage.setItem('token', response.data.accessToken);
+    }
+
+    alert('정보가 성공적으로 저장되었습니다!');
+
+    // ✅ 추가: 로그인 상태 즉시 반영
+    window.location.href = '/'; // 새로고침 없이 메인으로 진입 (AuthContext 갱신)
+
+  } catch (e) {
+    const err = e as AxiosError<{ message?: string }>;
+    console.error('❌ 온보딩 실패:', err);
+
+    const status = err.response?.status;
+    const backendMessage = err.response?.data?.message;
+
+    if (status === 400) {
+      setError(backendMessage || '입력하신 정보에 문제가 있습니다.');
+    } else if (status === 401) {
+      setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
+      localStorage.removeItem('token');
+      setTimeout(() => navigate('/login'), 2000);
+    } else if (status === 500) {
+      setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } else if (err.request) {
+      setError('서버와 연결할 수 없습니다. 네트워크를 확인해주세요.');
+    } else {
+      setError('요청 중 오류가 발생했습니다.');
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   /**
    * ✅ [수정] 모든 필드가 입력되었는지 확인
@@ -224,23 +231,26 @@ const SignInfo: React.FC = () => {
           />
         </div>
 
-       {/* 선호 지역 */}
-<div className="mb-4">
-  <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-    선호 지역 *
-  </label>
-  <input
-    type="text"
-    id="location"
-    name="location"
-    value={formData.location}
-    onChange={handleChange}
-    required
-    disabled={isLoading}
-    className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-    placeholder="선호 지역을 입력하세요"
-  />
-</div>
+      {/* 선호 지역 */}
+        <div className="mb-4">
+          <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+            선호 지역 *
+          </label>
+          <select
+            id="location"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            required
+            disabled={isLoading}
+            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">선택하세요</option>
+            {seoulDistricts.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
 
         {/* 직무 */}
         <div className="mb-4">
