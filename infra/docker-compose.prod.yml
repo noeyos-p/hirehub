@@ -1,4 +1,5 @@
 version: '3.9'
+
 services:
   backend:
     image: ${BACKEND_IMAGE}
@@ -10,8 +11,8 @@ services:
       RDS_ENDPOINT: ${RDS_ENDPOINT}
       JAVA_OPTS: "--add-opens java.base/java.lang=ALL-UNNAMED"
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
 
   frontend:
     image: ${FRONTEND_IMAGE}
@@ -19,10 +20,21 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    expose:
+      - "80"
+    # 프론트는 정적 빌드 결과물만 제공 (nginx가 실제 요청 처리)
+
+  nginx:
+    image: ${DOCKERHUB_USERNAME}/hirehub-nginx:latest   # ✅ 새로 추가된 nginx 이미지
+    container_name: nginx
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"  # ✅ HTTPS 포트 추가
+      - "443:443"
     volumes:
-      # ✅ SSL 인증서 마운트
+      # ✅ SSL 인증서 경로
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /etc/ssl/certs:/etc/ssl/certs:ro

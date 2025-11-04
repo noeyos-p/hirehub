@@ -21,6 +21,10 @@ jobs:
           - name: frontend
             context: frontend
             imagename: hirehub-frontend
+          - name: nginx              # ✅ 추가
+            context: frontend/nginx  # ✅ nginx Dockerfile이 위치한 경로
+            imagename: hirehub-nginx # ✅ nginx 이미지 이름
+
     steps:
       - uses: actions/checkout@v4
 
@@ -46,7 +50,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy on EC2 via SSH
+      - name: 🚀 Deploy on EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -55,9 +59,10 @@ jobs:
           script: |
             set -e
 
-            echo "🛠️ Docker 이미지 pull..."
+            echo "🛠️ Docker 이미지 Pull..."
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-backend:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-frontend:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-nginx:latest   # ✅ nginx 추가
 
             echo "📂 디렉터리 준비..."
             cd ~/app || { mkdir -p ~/app; cd ~/app; }
@@ -74,9 +79,11 @@ jobs:
             AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
-            BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
-            FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
+            BACKEND_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/hirehub-backend:latest
+            FRONTEND_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/hirehub-frontend:latest
             EOF
 
             echo "🚀 Docker Compose 실행..."
             docker compose -f infra/docker-compose.prod.yml --env-file .env.prod up -d --remove-orphans
+
+            echo "✅ 배포 완료!"
