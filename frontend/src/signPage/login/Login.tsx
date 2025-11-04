@@ -54,19 +54,16 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
-    window.location.href = `${baseURL}/api/auth/google`;
-  };
+  window.location.href = `${api.defaults.baseURL}/api/auth/google`;
+};
 
-  const handleKakaoLogin = () => {
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
-    window.location.href = `${baseURL}/api/auth/kakao`;
-  };
+const handleKakaoLogin = () => {
+  window.location.href = `${api.defaults.baseURL}/api/auth/kakao`;
+};
 
-  const handleNaverLogin = () => {
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
-    window.location.href = `${baseURL}/api/auth/naver`;
-  };
+const handleNaverLogin = () => {
+  window.location.href = `${api.defaults.baseURL}/api/auth/naver`;
+};
 
   return (
     <div className="flex min-h-[80vh] bg-background-light dark:bg-background-dark font-display text-text-primary dark:text-white items-center justify-center p-12">
