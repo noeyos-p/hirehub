@@ -22,7 +22,7 @@ jobs:
             context: frontend
             imagename: hirehub-frontend
           - name: nginx              # ✅ 추가
-            context: frontend/nginx  # ✅ nginx Dockerfile이 위치한 경로
+            context: frontend  # ✅ nginx Dockerfile이 위치한 경로
             imagename: hirehub-nginx # ✅ nginx 이미지 이름
 
     steps:
