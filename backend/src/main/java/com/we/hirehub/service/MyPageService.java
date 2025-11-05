@@ -606,20 +606,22 @@ public class MyPageService {
 
     @Transactional
     public String uploadResumePhotoToS3(Long resumeId, MultipartFile file) throws IOException {
-        log.info("📸 S3 업로드 시작 - resumeId={}, file={}", resumeId, file.getOriginalFilename());
+        log.info("📸 S3 업로드 시도 - resumeId={}, file={}", resumeId, file.getOriginalFilename());
 
         Resume r = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new IllegalArgumentException("이력서를 찾을 수 없습니다."));
 
-        // ✅ key를 try문 바깥으로 올림
         String key = "photos/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String photoUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
 
         try {
+            log.info("➡️ bucket={}, region={}, key={}", bucketName, region, key);
+            log.info("➡️ file size={} bytes, contentType={}", file.getSize(), file.getContentType());
+
             s3Client.putObject(
                     PutObjectRequest.builder()
                             .bucket(bucketName)
                             .key(key)
-                            .acl(ObjectCannedACL.PUBLIC_READ)
                             .contentType(file.getContentType())
                             .build(),
                     software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
@@ -627,22 +629,22 @@ public class MyPageService {
                     )
             );
 
-            log.info("✅ S3 업로드 성공: key={}", key);
+            r.setIdPhoto(photoUrl);
+            r.setUpdateAt(LocalDate.now());
+            resumeRepository.save(r);
+
+            log.info("✅ 업로드 성공: {}", photoUrl);
+            return photoUrl;
 
         } catch (Exception e) {
-            log.error("🚨 S3 업로드 예외 발생", e);
-            throw e;
+            log.error("🚨 업로드 실패: {}", e.getMessage(), e);
+
+            // ✅ 로그 못 볼 때, 원인을 직접 응답으로 반환
+            throw new RuntimeException(
+                    "UPLOAD_ERROR: " + e.getClass().getSimpleName() + " - " + e.getMessage()
+            );
         }
-
-        // ✅ 여기서 photoUrl 생성 및 DB 업데이트
-        String photoUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
-        r.setIdPhoto(photoUrl);
-        r.setUpdateAt(LocalDate.now());
-        resumeRepository.save(r);
-
-        return photoUrl;
     }
 }
-
 
 

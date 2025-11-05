@@ -344,34 +344,21 @@ public class MyPageRestController {
         }
     }
 
-    @PostMapping(value = "/resumes/{id}/photo", consumes = "multipart/form-data")    public ResponseEntity<?> uploadResumePhoto(
-            @PathVariable Long id,
-            @RequestParam("file") MultipartFile file
-    ) {
-        log.warn("🔥🔥🔥 uploadResumePhoto 호출됨 - resumeId={}, fileName={}", id, file != null ? file.getOriginalFilename() : "null");
-
-        log.info("📸 S3 사진 업로드 요청 - resumeId={}, file={}", id, file.getOriginalFilename());
+    @PostMapping(value = "/resumes/{id}/photo", consumes = "multipart/form-data")
+    public ResponseEntity<?> uploadResumePhoto(@PathVariable Long id,
+                                               @RequestParam("file") MultipartFile file) {
         try {
-            if (file.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "파일이 비어 있습니다."));
-            }
-
-            // ✅ 1. S3에 업로드 요청 (Service로 분리)
+            log.info("🔥 uploadResumePhoto 호출됨 - resumeId={}, file={}", id, file.getOriginalFilename());
             String photoUrl = myPageService.uploadResumePhotoToS3(id, file);
-
-            return ResponseEntity.ok(Map.of(
-                    "url", photoUrl,
-                    "idPhoto", photoUrl
-            ));
-
-        } catch (IOException e) {
-            log.error("❌ 파일 업로드 실패", e);
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("error", "파일 업로드 실패", "message", e.getMessage()));
+            return ResponseEntity.ok(Map.of("url", photoUrl, "idPhoto", photoUrl));
         } catch (Exception e) {
-            log.error("❌ 서버 처리 실패", e);
+            log.error("❌ 업로드 예외: {}", e.getMessage(), e);
+            // 여기서 서버 내부 예외를 직접 반환
             return ResponseEntity.internalServerError()
-                    .body(Map.of("error", "SERVER_ERROR", "message", e.getMessage()));
+                    .body(Map.of(
+                            "error", e.getClass().getSimpleName(),
+                            "message", e.getMessage()
+                    ));
         }
     }
 }
