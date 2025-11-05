@@ -65,9 +65,15 @@ spring:
 
 # 프록시/ALB 뒤에서 baseUrl 정확히 잡히도록
 server:
-  port: 8080
   forward-headers-strategy: native
   use-forward-headers: true
+  port: 8080
+  tomcat:
+      remoteip:
+        protocol-header: X-Forwarded-Proto
+        port-header: X-Forwarded-Port
+        remote-ip-header: X-Forwarded-For
+        internal-proxies: .*
 
 # 카카오 리다이렉트/프론트 URL은 운영 도메인 기준
 kakao:
