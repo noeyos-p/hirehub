@@ -54,7 +54,11 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-  window.location.href = `${api.defaults.baseURL}/api/auth/google`;
+ const redirectUri = encodeURIComponent(
+    "https://byeongarigaebaldan.store/login/oauth2/code/google"
+  );
+
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=548080682077-auslv2ss71gqar5224a2o9n0qi5dnd37.apps.googleusercontent.com&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile%20email&access_type=offline`;
 };
 
 const handleKakaoLogin = () => {
