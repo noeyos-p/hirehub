@@ -46,8 +46,13 @@ const AttentionSection: React.FC = () => {
   const startIndex = currentPage * cardsPerPage;
   const endIndex = startIndex + cardsPerPage;
 
-  // ✅ 카드 클릭 시 상세 페이지로 이동
-  const handleJobClick = (jobId: number) => {
+  // ✅ 카드 클릭 시 조회수 증가 후 상세 페이지로 이동
+  const handleJobClick = async (jobId: number) => {
+    try {
+      await api.post(`/api/jobposts/${jobId}/views`);
+    } catch (err) {
+      console.error("조회수 증가 실패:", err);
+    }
     navigate(`/jobPostings/${jobId}`);
   };
 
