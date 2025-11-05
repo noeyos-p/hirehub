@@ -152,7 +152,7 @@ const UserManagement: React.FC = () => {
 
       if (response.data.success) {
         alert("삭제되었습니다.");
-        
+
         // 현재 페이지에 데이터가 1개만 남았고, 첫 페이지가 아니면 이전 페이지로
         if (users.length === 1 && currentPage > 0) {
           fetchUsers(currentPage - 1);
@@ -190,11 +190,10 @@ const UserManagement: React.FC = () => {
           <button
             key={page}
             onClick={() => handlePageChange(page)}
-            className={`px-4 py-2 rounded-lg border transition-colors ${
-              currentPage === page
+            className={`px-4 py-2 rounded-lg border transition-colors ${currentPage === page
                 ? "bg-blue-600 text-white border-blue-600"
                 : "border-gray-300 text-gray-700 hover:bg-gray-50"
-            }`}
+              }`}
           >
             {page + 1}
           </button>
@@ -216,7 +215,7 @@ const UserManagement: React.FC = () => {
       {/* 상단 타이틀 + 검색 + 신규 버튼 */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">유저 관리</h2>
-        
+
         <div className="flex items-center gap-4">
           {/* 검색창 */}
           <div className="flex items-center border border-gray-300 rounded-full px-3 py-1 w-64">
@@ -408,9 +407,8 @@ const UserManagement: React.FC = () => {
                 <input
                   type="email"
                   value={editUser.email}
-                  onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  required
+                  readOnly  // ✅ 수정 불가
+                  className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
                 />
               </div>
 
