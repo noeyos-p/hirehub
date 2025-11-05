@@ -53,19 +53,20 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     ? reviews.reduce((sum, review) => sum + review.score, 0) / reviews.length
     : 0;
 
-  // ✅ 로그인 상태 확인
+  // ✅ 로그인 상태 확인 (토큰 기반)
   useEffect(() => {
-    const checkLoginStatus = async () => {
-      try {
-        // 즐겨찾기 API로 로그인 확인 (이미 다른 곳에서 사용 중)
-        await api.get('/api/mypage/favorites/companies?page=0&size=1');
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem('token');
+      
+      if (token) {
         console.log("✅ 로그인 상태 확인: 로그인됨");
         setIsLoggedIn(true);
-      } catch (err: any) {
-        console.log("❌ 로그인 상태 확인: 로그인 안됨", err.response?.status);
+      } else {
+        console.log("❌ 로그인 상태 확인: 로그인 안됨");
         setIsLoggedIn(false);
       }
     };
+    
     checkLoginStatus();
   }, []);
 
@@ -190,6 +191,12 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const handleFavoriteClick = async () => {
     if (!company || isFavoriteProcessing) return;
 
+    // 🔒 로그인 체크 추가
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
     setIsFavoriteProcessing(true);
     const prev = isFavorited;
 
@@ -217,6 +224,12 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
   // ✅ 리뷰 추가
   const handleAddReview = async () => {
+    // 🔒 로그인 체크 추가
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
     if (!newReview.trim()) {
       alert("리뷰 내용을 입력해주세요.");
       return;
