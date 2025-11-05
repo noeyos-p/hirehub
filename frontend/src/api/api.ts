@@ -3,7 +3,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "https://byeongarigaebaldan.store",
-  withCredentials: false,
+  withCredentials: true,
 });
 
 // ✅ 새로고침 시에도 기본 헤더에 토큰 반영

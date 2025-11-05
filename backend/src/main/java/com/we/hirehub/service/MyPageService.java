@@ -16,6 +16,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -60,7 +61,9 @@ public class MyPageService {
      *                   [1] 이력서 CRUD
      * ========================================================== */
 
-    /** 이력서 목록 */
+    /**
+     * 이력서 목록
+     */
     public PagedResponse<ResumeDto> list(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updateAt"));
         Page<Resume> p = resumeRepository.findByUsers_Id(userId, pageable);
@@ -71,14 +74,18 @@ public class MyPageService {
         );
     }
 
-    /** 이력서 단건 */
+    /**
+     * 이력서 단건
+     */
     public ResumeDto get(Long userId, Long resumeId) {
         Resume resume = resumeRepository.findByIdAndUsers_Id(resumeId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("이력서를 찾을 수 없습니다."));
         return toDto(resume);
     }
 
-    /** 생성: htmlContent 또는 *_Json → 섹션 엔티티까지 저장 */
+    /**
+     * 생성: htmlContent 또는 *_Json → 섹션 엔티티까지 저장
+     */
     @Transactional
     public ResumeDto create(Long userId, ResumeUpsertRequest req) {
         Users user = userRepository.findById(userId)
@@ -104,7 +111,9 @@ public class MyPageService {
         return toDto(saved);
     }
 
-    /** 수정: 잠금 검사 + 섹션 전부 재저장 */
+    /**
+     * 수정: 잠금 검사 + 섹션 전부 재저장
+     */
     @Transactional
     public ResumeDto update(Long userId, Long resumeId, ResumeUpsertRequest req) {
         Resume resume = resumeRepository.findByIdAndUsers_Id(resumeId, userId)
@@ -128,7 +137,9 @@ public class MyPageService {
         return toDto(resume);
     }
 
-    /** 삭제 */
+    /**
+     * 삭제
+     */
     @Transactional
     public void delete(Long userId, Long resumeId) {
         Resume resume = resumeRepository.findByIdAndUsers_Id(resumeId, userId)
@@ -149,7 +160,9 @@ public class MyPageService {
         resumeRepository.delete(resume);
     }
 
-    /** Resume → DTO (profile 포함) */
+    /**
+     * Resume → DTO (profile 포함)
+     */
     private ResumeDto toDto(Resume r) {
         Users u = r.getUsers();
         UserProfileMiniDto profile = null;
@@ -259,20 +272,20 @@ public class MyPageService {
 
         // 2) 입력 소스 만들기 (우선순위: *_Json → htmlContent)
         List<Map<String, Object>> educations = parseList(req.educationJson());
-        List<Map<String, Object>> careers    = parseList(req.careerJson());
-        List<Map<String, Object>> certs      = parseList(req.certJson());
-        List<Map<String, Object>> skills     = parseList(req.skillJson());
-        List<Map<String, Object>> languages  = parseList(req.langJson());
+        List<Map<String, Object>> careers = parseList(req.careerJson());
+        List<Map<String, Object>> certs = parseList(req.certJson());
+        List<Map<String, Object>> skills = parseList(req.skillJson());
+        List<Map<String, Object>> languages = parseList(req.langJson());
 
 // ★ 폴백 복구: *_Json이 전부 비어 있고, htmlContent가 JSON이면 거기서 추출
         if (allEmpty(educations, careers, certs, skills, languages) && looksJson(resume.getHtmlContent())) {
             try {
                 JsonNode root = om.readTree(resume.getHtmlContent());
                 educations = extractList(root, "education");
-                careers    = extractList(root, "career");
-                certs      = extractList(root, "certificate");
-                skills     = extractList(root, "skill");
-                languages  = extractList(root, "language");
+                careers = extractList(root, "career");
+                certs = extractList(root, "certificate");
+                skills = extractList(root, "skill");
+                languages = extractList(root, "language");
             } catch (Exception e) {
                 log.warn("htmlContent 파싱 실패: {}", e.getMessage());
             }
@@ -361,7 +374,9 @@ public class MyPageService {
         return (t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"));
     }
 
-    /** "[]" 또는 배열/리스트 객체 모두 수용 */
+    /**
+     * "[]" 또는 배열/리스트 객체 모두 수용
+     */
     private List<Map<String, Object>> parseList(Object jsonOrString) {
         try {
             if (jsonOrString == null) return Collections.emptyList();
@@ -373,7 +388,8 @@ public class MyPageService {
             }
             String s = String.valueOf(jsonOrString);
             if (s.isBlank() || !looksJson(s)) return Collections.emptyList();
-            return om.readValue(s, new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {});
+            return om.readValue(s, new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {
+            });
         } catch (Exception e) {
             // @Slf4j 있는지 확인
             log.warn("parseList 실패: {}", e.getMessage());
@@ -381,20 +397,25 @@ public class MyPageService {
         }
     }
 
-    /** htmlContent의 특정 배열 필드 안전 추출 */
+    /**
+     * htmlContent의 특정 배열 필드 안전 추출
+     */
     private List<Map<String, Object>> extractList(JsonNode root, String field) {
         if (root == null || !root.has(field) || !root.get(field).isArray()) {
             return Collections.emptyList();
         }
         try {
-            return om.convertValue(root.get(field), new TypeReference<List<Map<String, Object>>>() {});
+            return om.convertValue(root.get(field), new TypeReference<List<Map<String, Object>>>() {
+            });
         } catch (Exception e) {
             log.warn("extractList 실패({}): {}", field, e.getMessage());
             return Collections.emptyList();
         }
     }
 
-    /** null/공백/빈배열 체크 */
+    /**
+     * null/공백/빈배열 체크
+     */
     @SafeVarargs
     private boolean allEmpty(List<Map<String, Object>>... lists) {
         for (List<Map<String, Object>> l : lists) {
@@ -585,29 +606,36 @@ public class MyPageService {
 
     @Transactional
     public String uploadResumePhotoToS3(Long resumeId, MultipartFile file) throws IOException {
+        log.info("📸 S3 업로드 시작 - resumeId={}, file={}", resumeId, file.getOriginalFilename());
+
         Resume r = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new IllegalArgumentException("이력서를 찾을 수 없습니다."));
 
-        // ✅ 1. 파일명 설정
+        // ✅ key를 try문 바깥으로 올림
         String key = "photos/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
 
-        // ✅ 2. S3 업로드 요청
-        s3Client.putObject(
-                PutObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(key)
-                        .acl(ObjectCannedACL.PUBLIC_READ) // 공개 읽기 (URL 접근 가능)
-                        .contentType(file.getContentType())
-                        .build(),
-                software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
-                        file.getInputStream(), file.getSize()
-                )
-        );
+        try {
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(key)
+                            .acl(ObjectCannedACL.PUBLIC_READ)
+                            .contentType(file.getContentType())
+                            .build(),
+                    software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
+                            file.getInputStream(), file.getSize()
+                    )
+            );
 
-        // ✅ 3. S3 URL 생성
+            log.info("✅ S3 업로드 성공: key={}", key);
+
+        } catch (Exception e) {
+            log.error("🚨 S3 업로드 예외 발생", e);
+            throw e;
+        }
+
+        // ✅ 여기서 photoUrl 생성 및 DB 업데이트
         String photoUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
-
-        // ✅ 4. DB 업데이트
         r.setIdPhoto(photoUrl);
         r.setUpdateAt(LocalDate.now());
         resumeRepository.save(r);
@@ -615,3 +643,6 @@ public class MyPageService {
         return photoUrl;
     }
 }
+
+
+
