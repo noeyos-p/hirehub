@@ -1,5 +1,6 @@
 package com.we.hirehub.controller;
 
+import com.we.hirehub.config.JwtUserPrincipal;
 import com.we.hirehub.dto.ReviewDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.entity.Review;
@@ -30,7 +31,8 @@ public class ReviewRestController {
         System.out.println("DTO 내용: " + dto);
         System.out.println("Auth: " + authentication);
         // ✅ 로그인 사용자 ID 추출
-        Long userId = Long.parseLong(authentication.getName());
+        JwtUserPrincipal principal = (JwtUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUserId();
 
         // ✅ 사용자 조회
         Users user = usersRepository.findById(userId)

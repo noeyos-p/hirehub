@@ -266,7 +266,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
 
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center space-x-2">
-                  <Link to={`/company/${encodeURIComponent(job.companyId)}`} className="text-2xl font-semibold text-gray-800 cursor-pointer hover:underline">
+                  <Link to={`/company/${job.companyId}`} className="text-2xl font-semibold text-gray-800 cursor-pointer hover:underline">
                     {job.companyName}
                   </Link>
                   <button onClick={handleFavoriteClick} disabled={isFavoriteProcessing} className={`transition-all ${isFavoriteProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`} title={isFavorited ? "기업 즐겨찾기 해제" : "기업 즐겨찾기"}>
@@ -283,7 +283,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                 <img
                   src={job.photo}
                   alt={job.title}
-                  className="w-full h-auto object-cover rounded-lg mb-4"
+                  className="w-full h-auto object-cover rounded-lg mb-4 mx-auto max-w-[860px]"
                   onLoad={() => console.log('✅ 이미지 로드 성공:', job.photo)}
                   onError={(e) => {
                     console.error('❌ 이미지 로드 실패:', job.photo);
@@ -313,7 +313,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
           </div>
 
           {/* 오른쪽: 고정 사이드바 */}
-          <div className="w-[340px] flex-shrink-0">
+          <div className="w-96 flex-shrink-0">
             <div className="sticky top-6 space-y-3">
               {/* 채용 정보 박스 */}
               <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">

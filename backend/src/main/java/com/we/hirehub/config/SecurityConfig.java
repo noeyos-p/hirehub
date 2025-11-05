@@ -39,6 +39,8 @@ public class SecurityConfig {
                                 "/api/public/**",
                                 "/api/onboarding/**",
                                 "/api/jobposts/**",
+                                "/api/company/**",
+                                "/api/companies/**",
                                 "/", "/error",
                                 "/favicon.ico", "/css/**", "/js/**", "/images/**",
                                 "/swagger-ui/**", "/v3/api-docs/**",

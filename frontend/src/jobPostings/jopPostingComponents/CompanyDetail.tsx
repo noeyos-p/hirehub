@@ -32,7 +32,10 @@ interface CompanyDetailProps {
 const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
-  const numericCompanyId = companyId ? parseInt(companyId, 10) : null;
+  
+  // companyId가 숫자인지 문자열(회사명)인지 판단
+  const numericCompanyId = companyId && !isNaN(Number(companyId)) ? parseInt(companyId, 10) : null;
+  const companyName = companyId && isNaN(Number(companyId)) ? decodeURIComponent(companyId) : null;
 
   const [company, setCompany] = useState<Company | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -43,40 +46,103 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const [error, setError] = useState("");
   const [isFavorited, setIsFavorited] = useState(false);
   const [isFavoriteProcessing, setIsFavoriteProcessing] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // ✅ 평균 평점 계산
   const averageRating = reviews.length > 0
     ? reviews.reduce((sum, review) => sum + review.score, 0) / reviews.length
     : 0;
 
-  // ✅ 회사 정보 + 리뷰 불러오기 (ID 기반)
+  // ✅ 로그인 상태 확인
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        // 즐겨찾기 API로 로그인 확인 (이미 다른 곳에서 사용 중)
+        await api.get('/api/mypage/favorites/companies?page=0&size=1');
+        console.log("✅ 로그인 상태 확인: 로그인됨");
+        setIsLoggedIn(true);
+      } catch (err: any) {
+        console.log("❌ 로그인 상태 확인: 로그인 안됨", err.response?.status);
+        setIsLoggedIn(false);
+      }
+    };
+    checkLoginStatus();
+  }, []);
+
+  // ✅ 회사 정보 + 리뷰 불러오기 (ID 또는 이름 기반)
   useEffect(() => {
     const fetchCompanyData = async () => {
-      if (!numericCompanyId || isNaN(numericCompanyId)) {
-        setError("유효하지 않은 회사 ID입니다.");
+      if (!companyId) {
+        setError("유효하지 않은 회사 정보입니다.");
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        // ID로 회사 정보 조회
-        const companyRes = await api.get(`/api/companies/${numericCompanyId}`);
+        console.log("🔍 회사 정보 조회 시작:", companyId);
+        
+        let companyRes;
+        
+        // ID로 조회 시도
+        if (numericCompanyId) {
+          console.log("🔢 ID로 조회:", numericCompanyId);
+          companyRes = await api.get(`/api/companies/${numericCompanyId}`);
+        } 
+        // 회사명으로 조회
+        else if (companyName) {
+          console.log("📝 회사명으로 조회:", companyName);
+          // 전체 회사 목록을 가져와서 필터링
+          const allCompaniesRes = await api.get('/api/companies');
+          const foundCompany = allCompaniesRes.data.find(
+            (c: any) => c.name === companyName
+          );
+          
+          if (!foundCompany) {
+            setError(`'${companyName}' 회사를 찾을 수 없습니다.`);
+            setIsLoading(false);
+            return;
+          }
+          
+          companyRes = { data: foundCompany };
+        } else {
+          setError("유효하지 않은 회사 정보입니다.");
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log("✅ 회사 정보 조회 성공:", companyRes.data);
         setCompany(companyRes.data);
         
         if (companyRes.data?.id) {
-          fetchFavoriteStatus(companyRes.data.id);
-          fetchReviews(companyRes.data.id);
+          // ✅ 각각 독립적으로 에러 처리 (로그인 안해도 페이지는 보이도록)
+          fetchFavoriteStatus(companyRes.data.id).catch(err => {
+            console.error("❌ 즐겨찾기 상태 확인 실패 (무시됨):", err);
+          });
+          
+          fetchReviews(companyRes.data.id).catch(err => {
+            console.error("❌ 리뷰 로드 실패 (무시됨):", err);
+          });
         }
       } catch (err: any) {
-        setError(err.response?.data?.message || "회사 정보를 불러오는데 실패했습니다.");
+        console.error("❌ 회사 정보 조회 실패:", err);
+        console.error("❌ 에러 상태:", err.response?.status);
+        console.error("❌ 에러 메시지:", err.response?.data?.message);
+        
+        if (err.response?.status === 401) {
+          setError("로그인이 필요합니다.");
+        } else if (err.response?.status === 404) {
+          setError("해당 회사를 찾을 수 없습니다.");
+        } else {
+          setError(err.response?.data?.message || "회사 정보를 불러오는데 실패했습니다.");
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCompanyData();
-  }, [numericCompanyId]);
+  }, [companyId, numericCompanyId, companyName]);
 
   // ✅ 즐겨찾기 상태 확인 함수
   const fetchFavoriteStatus = async (companyId: number) => {
@@ -142,11 +208,21 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     }
 
     try {
-      await api.post(`/api/reviews`, {
+      console.log("리뷰 등록 요청:", {
         content: newReview,
         score: newRating,
         companyId: company!.id
       });
+
+      const response = await api.post(`/api/reviews`, {
+        content: newReview,
+        score: newRating,
+        companyId: company!.id,
+        date: new Date().toISOString() // 날짜 추가
+      });
+
+      console.log("✅ 리뷰 등록 성공:", response.data);
+      alert("리뷰가 등록되었습니다!");
 
       // 등록 후 리뷰 목록 즉시 갱신 (ID 기반)
       await fetchReviews(company!.id);
@@ -154,7 +230,18 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
       setNewReview("");
       setNewRating(0);
     } catch (err: any) {
-      alert(err?.response?.data?.message || "리뷰 등록에 실패했습니다.");
+      console.error("❌ 리뷰 등록 실패:", err);
+      console.error("❌ 에러 응답:", err.response?.data);
+      console.error("❌ 에러 상태:", err.response?.status);
+      
+      if (err.response?.status === 401) {
+        alert("로그인이 필요합니다.");
+        setIsLoggedIn(false); // 로그인 상태 업데이트
+      } else if (err.response?.status === 500) {
+        alert("서버 오류가 발생했습니다.\n백엔드 개발자에게 문의해주세요.\n(ReviewRestController에서 사용자 ID 처리 오류)");
+      } else {
+        alert(err?.response?.data?.message || "리뷰 등록에 실패했습니다.");
+      }
     }
   };
 
@@ -250,49 +337,57 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
         </div>
 
         {/* ⭐ 리뷰 작성 영역 */}
-        <div className="border border-gray-300 rounded-lg p-4 mb-8 max-w-2xl">
-          <h3 className="text-lg font-semibold mb-3">리뷰 작성</h3>
-          
-          {/* 별점 선택 */}
-          <div className="mb-3">
-            <p className="text-sm text-gray-600 mb-2">별점을 선택해주세요</p>
-            <div className="flex items-center space-x-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setNewRating(star)}
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
-                  className="focus:outline-none transition-transform hover:scale-110"
-                >
-                  <StarSolidIcon
-                    className={`w-8 h-8 ${star <= (hoverRating || newRating) ? "text-yellow-400" : "text-gray-300"}`}
-                  />
-                </button>
-              ))}
-              {newRating > 0 && <span className="ml-2 text-sm text-gray-600">{newRating}점</span>}
+        {isLoggedIn ? (
+          <div className="border border-gray-300 rounded-lg p-4 mb-8 max-w-2xl">
+            <h3 className="text-lg font-semibold mb-3">리뷰 작성</h3>
+            
+            {/* 별점 선택 */}
+            <div className="mb-3">
+              <p className="text-sm text-gray-600 mb-2">별점을 선택해주세요</p>
+              <div className="flex items-center space-x-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setNewRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className="focus:outline-none transition-transform hover:scale-110"
+                  >
+                    <StarSolidIcon
+                      className={`w-8 h-8 ${star <= (hoverRating || newRating) ? "text-yellow-400" : "text-gray-300"}`}
+                    />
+                  </button>
+                ))}
+                {newRating > 0 && <span className="ml-2 text-sm text-gray-600">{newRating}점</span>}
+              </div>
+            </div>
+
+            {/* 리뷰 입력 */}
+            <div className="flex items-center border border-gray-300 rounded-full px-4 py-2">
+              <input
+                type="text"
+                placeholder="기업 리뷰를 남겨주세요"
+                className="flex-1 text-sm outline-none"
+                value={newReview}
+                onChange={(e) => setNewReview(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleAddReview()}
+              />
+              <button
+                onClick={handleAddReview}
+                className="ml-2 text-sm text-gray-600 hover:text-gray-900"
+              >
+                ➤
+              </button>
             </div>
           </div>
-
-          {/* 리뷰 입력 */}
-          <div className="flex items-center border border-gray-300 rounded-full px-4 py-2">
-            <input
-              type="text"
-              placeholder="기업 리뷰를 남겨주세요"
-              className="flex-1 text-sm outline-none"
-              value={newReview}
-              onChange={(e) => setNewReview(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddReview()}
-            />
-            <button
-              onClick={handleAddReview}
-              className="ml-2 text-sm text-gray-600 hover:text-gray-900"
-            >
-              ➤
-            </button>
+        ) : (
+          <div className="border border-gray-300 rounded-lg p-6 mb-8 max-w-2xl bg-gray-50">
+            <p className="text-center text-gray-600">
+              리뷰를 작성하려면 <span className="text-blue-600 font-semibold">로그인</span>이 필요합니다.
+            </p>
           </div>
-        </div>
+        )}
 
         {/* 리뷰 목록 */}
         <div className="space-y-6 mb-8">
