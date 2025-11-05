@@ -91,10 +91,10 @@ public class CompanyRestController {
     }
 
     // ✅ 회사 이름으로 상세 조회
-    @GetMapping("/{companyName}")
-    public ResponseEntity<CompanyDto> getCompanyByName(@PathVariable String companyName) {
+    @GetMapping("/{companyId}")
+    public ResponseEntity<CompanyDto> getCompanyById(@PathVariable Long companyId) {
         try {
-            Company company = companyService.getCompanyByName(companyName); // 리스트 첫 번째 반환
+            Company company = companyService.getCompanyById(companyId); // 리스트 첫 번째 반환
             CompanyDto dto = companyService.convertToDto(company); // DTO 변환
             return ResponseEntity.ok(dto);
         } catch (RuntimeException e) {

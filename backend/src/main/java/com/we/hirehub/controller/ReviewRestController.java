@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -61,27 +62,21 @@ public class ReviewRestController {
     }
 
     /** ✅ 특정 회사 리뷰 조회 */
-    @GetMapping("/company/{companyName}")
-    public ResponseEntity<List<ReviewDto>> getReviewsByCompany(@PathVariable String companyName) {
-        List<Company> companies = companyRepository.findByName(companyName);
-        if (companies.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<List<ReviewDto>> getReviewsByCompany(@PathVariable Long companyId) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("해당 회사를 찾을 수 없습니다."));
 
-        Company company = companies.get(0);
         List<ReviewDto> reviews = reviewService.getReviewsByCompany(company.getId());
         return ResponseEntity.ok(reviews);
     }
 
     /** ✅ 특정 회사 평균 별점 조회 */
-    @GetMapping("/company/{companyName}/average")
-    public ResponseEntity<Double> getAverageScore(@PathVariable String companyName) {
-        List<Company> companies = companyRepository.findByName(companyName);
-        if (companies.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping("/company/{companyId}/average")
+    public ResponseEntity<Double> getAverageScore(@PathVariable Long companyId) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("해당 회사를 찾을 수 없습니다."));
 
-        Company company = companies.get(0);
         Double avgScore = reviewService.getAverageScore(company.getId());
         return ResponseEntity.ok(avgScore);
     }

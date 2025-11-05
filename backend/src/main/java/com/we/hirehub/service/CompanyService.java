@@ -34,13 +34,11 @@ public class CompanyService {
     }
 
     // ✅ 이름으로 회사 조회
-    public Company getCompanyByName(String name) {
-        List<Company> list = companyRepository.findByName(name);
-        if (list.isEmpty()) {
-            throw new RuntimeException("해당 이름의 회사를 찾을 수 없습니다: " + name);
-        }
-        return list.get(0); // 첫 번째만 사용
+    public Company getCompanyById(Long id) {
+        return companyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("해당 회사를 찾을 수 없습니다: " + id));
     }
+
 
     public CompanyDto convertToDto(Company company) {
         return CompanyDto.builder()

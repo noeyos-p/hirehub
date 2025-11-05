@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j  // ✅ 로그 추가
@@ -81,13 +82,8 @@ public class JobPostServiceImpl implements JobPostsService {
 
     @Override
     public JobPostsDto createJobPost(JobPostsDto dto) {
-        List<Company> companies = companyRepository.findByName(dto.getCompanyName());
-
-        if (companies.isEmpty()) {
-            throw new RuntimeException("해당 회사가 존재하지 않습니다.");
-        }
-
-        Company company = companies.get(0);
+        Company company = companyRepository.findById(dto.getCompanyId())
+                .orElseThrow(() -> new RuntimeException("해당 회사가 존재하지 않습니다."));
 
         JobPosts job = JobPosts.builder()
                 .title(dto.getTitle())
