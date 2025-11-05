@@ -38,9 +38,9 @@ interface Job {
 const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
   const [error, setError] = useState("");
   const [isScrapped, setIsScrapped] = useState(false);
-  const [isBookmarkProcessing, setIsBookmarkProcessing] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isFavoriteProcessing, setIsFavoriteProcessing] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -71,8 +71,43 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
       const scrappedItems = res.data.rows || res.data.content || [];
       const exists = scrappedItems.some((item: any) => Number(item.jobPostId) === Number(jobId));
       setIsScrapped(exists);
+      if (exists) {
+        setScrappedJobs((prev) => new Set(prev).add(jobId));
+      }
     } catch (err: any) {
       if (err.response?.status !== 401) setIsScrapped(false);
+    }
+  };
+
+  const handleBookmarkClick = async (e: React.MouseEvent, targetJobId: number) => {
+    e.stopPropagation();
+    const isScrapped = scrappedJobs.has(targetJobId);
+    try {
+      if (isScrapped) {
+        const res = await api.delete(`/api/mypage/favorites/jobposts/${targetJobId}`);
+        if (res.status === 204 || res.status === 200) {
+          setScrappedJobs((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(targetJobId);
+            return newSet;
+          });
+          setIsScrapped(false);
+        }
+      } else {
+        const res = await api.post(`/api/mypage/favorites/jobposts/${targetJobId}`);
+        if (res.status === 200 && res.data) {
+          setScrappedJobs((prev) => new Set(prev).add(targetJobId));
+          setIsScrapped(true);
+        }
+      }
+    } catch (err: any) {
+      let errorMsg = "북마크 처리에 실패했습니다.";
+      if (err.response?.status === 401) {
+        errorMsg = "로그인이 필요합니다.";
+      } else if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      }
+      alert(errorMsg);
     }
   };
 
@@ -107,7 +142,6 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
     window.addEventListener("favorite-changed", handleFavoriteChanged);
     return () => window.removeEventListener("favorite-changed", handleFavoriteChanged);
   }, [job?.companyId]);
-
 
   // 기업 즐겨찾기 토글
   const handleFavoriteClick = async () => {
@@ -220,79 +254,144 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   
   if (!job) return null;
 
- return (
-  <>
-    <div className="bg-white rounded-lg shadow p-8">
-      <button onClick={onBack} className="text-sm text-blue-600 mb-4 hover:underline">
-        ← 목록으로 돌아가기
-      </button>
+  return (
+    <>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex gap-6 max-w-[1440px] mx-auto px-[55px] py-6">
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow p-8">
+              <button onClick={onBack} className="text-sm text-blue-600 mb-4 hover:underline">
+                ← 목록으로 돌아가기
+              </button>
 
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center space-x-2">
-          <Link to={`/company/${encodeURIComponent(job.companyName)}`} className="text-2xl font-semibold text-gray-800 cursor-pointer hover:underline">
-            {job.companyName}
-          </Link>
-          <button onClick={handleFavoriteClick} disabled={isFavoriteProcessing} className={`transition-all ${isFavoriteProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`} title={isFavorited ? "기업 즐겨찾기 해제" : "기업 즐겨찾기"}>
-            {isFavorited ? <StarSolidIcon className="w-6 h-6 text-[#006AFF]" /> : <StarIcon className="w-6 h-6 text-gray-400 hover:text-[#006AFF]" />}
-          </button>
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center space-x-2">
+                  <Link to={`/company/${encodeURIComponent(job.companyName)}`} className="text-2xl font-semibold text-gray-800 cursor-pointer hover:underline">
+                    {job.companyName}
+                  </Link>
+                  <button onClick={handleFavoriteClick} disabled={isFavoriteProcessing} className={`transition-all ${isFavoriteProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`} title={isFavorited ? "기업 즐겨찾기 해제" : "기업 즐겨찾기"}>
+                    {isFavorited ? <StarSolidIcon className="w-6 h-6 text-[#006AFF]" /> : <StarIcon className="w-6 h-6 text-gray-400 hover:text-[#006AFF]" />}
+                  </button>
+                </div>
+              </div>
+
+              <h1 className="text-xl font-bold text-gray-900 mb-2">{job.title}</h1>
+              <p className="text-sm text-gray-500 mb-6">조회수: {job.views}</p>
+
+              {/* 공고 사진 */}
+              {job.photo ? (
+                <img
+                  src={job.photo}
+                  alt={job.title}
+                  className="w-full h-auto object-cover rounded-lg mb-4"
+                  onLoad={() => console.log('✅ 이미지 로드 성공:', job.photo)}
+                  onError={(e) => {
+                    console.error('❌ 이미지 로드 실패:', job.photo);
+                    console.error('❌ Error event:', e);
+                  }}
+                />
+              ) : (
+                <div className="w-full h-64 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                  <PhotoIcon className="w-16 h-16 text-gray-400" />
+                </div>
+              )}
+
+              {/* 상세 내용 */}
+              <div className="mt-10">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">상세 내용</h2>
+                
+                {job.content ? (
+                  <div
+                    className="text-gray-800 leading-relaxed font-normal whitespace-pre-line"
+                    dangerouslySetInnerHTML={{ __html: job.content }}
+                  />
+                ) : (
+                  <p className="text-gray-500 text-center">등록된 상세 내용이 없습니다.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 오른쪽: 고정 사이드바 */}
+          <div className="w-[340px] flex-shrink-0">
+            <div className="sticky top-6 space-y-3">
+              {/* 채용 정보 박스 */}
+              <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-gray-500 mb-1 text-sm">경력</p>
+                    <p className="font-medium text-gray-900">{job.careerLevel}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1 text-sm">직무</p>
+                    <p className="font-medium text-gray-900">{job.position}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1 text-sm">학력</p>
+                    <p className="font-medium text-gray-900">{job.education}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1 text-sm">고용형태</p>
+                    <p className="font-medium text-gray-900">{job.type || "정규직"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1 text-sm">근무지역</p>
+                    <p className="font-medium text-gray-900">{job.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1 text-sm">급여</p>
+                    <p className="font-medium text-gray-900">{job.salary || "회사내규에 따름"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1 text-sm">시작일</p>
+                    <p className="font-medium text-gray-900">{job.startAt || "협의 후 결정"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1 text-sm">마감일</p>
+                    <p className="font-medium text-gray-900">{job.endAt}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 지원하기 버튼 */}
+              <button 
+                onClick={handleApplyClick}
+                className="w-full py-3 bg-[#006AFF] text-white rounded-lg text-base font-semibold hover:bg-[#0053cc] transition-colors"
+              >
+                지원하기
+              </button>
+
+              {/* 스크랩 + 이력서 바로가기 버튼 */}
+              <div className="flex gap-2">
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleBookmarkClick(e, jobId);
+                  }}
+                  className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  {scrappedJobs.has(jobId) ? (
+                    <BookmarkSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                  ) : (
+                    <BookmarkIcon className="w-5 h-5 text-gray-600" />
+                  )}
+                  <span>스크랩</span>
+                </button>
+                <Link 
+                  to="/mypage/resumes" 
+                  className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center"
+                >
+                  이력서 바로가기
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <h1 className="text-xl font-bold text-gray-900 mb-2">{job.title}</h1>
-      <p className="text-sm text-gray-500 mb-6">조회수: {job.views}</p>
-
-      {/* ✅ 렌더링 직전 로그 */}
-    {(() => {
-      console.log('🎨 렌더링 시점 체크');
-      console.log('📦 job 전체:', job);
-      console.log('🖼️ job.photo:', job.photo);
-      console.log('🔍 job.photo 타입:', typeof job.photo);
-      console.log('❓ job.photo 존재?:', !!job.photo);
-      return null;
-    })()}
-
-      {/* ✅ 공고 사진 */}
-      {job.photo ? (
-        <>
-          {console.log('✅ 조건문 통과 - 이미지 렌더링 시도')}
-          <img
-            src={job.photo}
-            alt={job.title}
-            className="w-full h-auto object-cover rounded-lg mb-4 mx-auto max-w-[860px]"
-            onLoad={() => console.log('✅ 이미지 로드 성공:', job.photo)}
-            onError={(e) => {
-              console.error('❌ 이미지 로드 실패:', job.photo);
-              console.error('❌ Error event:', e);
-            }}
-          />
-        </>
-      ) : (
-        <>
-          {console.log('❌ 조건문 실패 - 대체 아이콘 표시')}
-          <div className="w-full h-64 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-            <PhotoIcon className="w-16 h-16 text-gray-400" />
-          </div>
-        </>
-      )}
-
-      {/* ✅ 상세 내용 */}
-<div className="mt-10">
-  <h2 className="text-lg font-bold text-gray-900 mb-4">상세 내용</h2>
-  
-  {job.content ? (
-    <div
-      className="text-gray-800 leading-relaxed font-normal whitespace-pre-line"
-      dangerouslySetInnerHTML={{ __html: job.content }}
-    />
-  ) : (
-    <p className="text-gray-500 text-center">등록된 상세 내용이 없습니다.</p>
-  )}
-</div>
-    </div>
-
-    {showApplyModal && <ApplyModal />}
-  </>
-);
+      {showApplyModal && <ApplyModal />}
+    </>
+  );
 };
 
 export default JobDetail;

@@ -406,94 +406,9 @@ const JobPostings: React.FC = () => {
     
     return (
       <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex gap-6 max-w-[1440px] mx-auto px-[55px] py-6">
-          {/* 왼쪽: JobDetail */}
-          <div className="flex-1">
-            <JobDetail jobId={selectedJobId} onBack={() => setSelectedJobId(null)} />
-          </div>
-
-          {/* 오른쪽: 고정 사이드바 */}
-          <div className="w-96 flex-shrink-0">
-            <div className="sticky top-6 space-y-3">
-              {selectedJob && (
-                <>
-                  {/* 채용 정보 박스 */}
-                  <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">경력</p>
-                        <p className="font-medium text-gray-900">{selectedJob.careerLevel}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">직무</p>
-                        <p className="font-medium text-gray-900">{selectedJob.position}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">학력</p>
-                        <p className="font-medium text-gray-900">{selectedJob.education}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">고용형태</p>
-                        <p className="font-medium text-gray-900">{selectedJob.type || "정규직"}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">근무지역</p>
-                        <p className="font-medium text-gray-900">{selectedJob.location}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">급여</p>
-                        <p className="font-medium text-gray-900">{selectedJob.salary || "회사내규에 따름"}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">시작일</p>
-                        <p className="font-medium text-gray-900">{selectedJob.startAt || "협의 후 결정"}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">마감일</p>
-                        <p className="font-medium text-gray-900">{selectedJob.endAt}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 지원하기 버튼 */}
-                  <button 
-                    onClick={handleApplyClick}
-                    className="w-full py-3 bg-[#006AFF] text-white rounded-lg text-base font-semibold hover:bg-[#0053cc] transition-colors"
-                  >
-                    지원하기
-                  </button>
-
-                  {/* 스크랩 + 이력서 바로가기 버튼 */}
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleBookmarkClick(e, selectedJobId);
-                      }}
-                      className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                    >
-                      {scrappedJobs.has(selectedJobId) ? (
-                        <BookmarkSolidIcon className="w-5 h-5 text-[#006AFF]" />
-                      ) : (
-                        <BookmarkIcon className="w-5 h-5 text-gray-600" />
-                      )}
-                      <span>스크랩</span>
-                    </button>
-                    <Link 
-                      to="/mypage/resumes" 
-                      className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center"
-                    >
-                      이력서 바로가기
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      
+       <JobDetail jobId={selectedJobId} onBack={() => setSelectedJobId(null)} />
+      {showApplyModal && <ApplyModal />}
+     
       {/* 지원하기 모달 */}
       {showApplyModal && <ApplyModal />}
       </>

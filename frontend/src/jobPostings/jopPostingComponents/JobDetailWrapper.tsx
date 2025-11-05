@@ -10,9 +10,7 @@ const JobDetailWrapper: React.FC = () => {
 
   return (
     // ✅ 여기에 컨테이너 추가
-    <div className="max-w-6xl mx-auto py-6 px-4">
       <JobDetail jobId={Number(jobId)} onBack={() => navigate(-1)} />
-    </div>
   );
 };
 
