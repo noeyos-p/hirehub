@@ -344,11 +344,12 @@ public class MyPageRestController {
         }
     }
 
-    @PostMapping("/resumes/{id}/photo")
-    public ResponseEntity<?> uploadResumePhoto(
+    @PostMapping(value = "/resumes/{id}/photo", consumes = "multipart/form-data")    public ResponseEntity<?> uploadResumePhoto(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file
     ) {
+        log.warn("🔥🔥🔥 uploadResumePhoto 호출됨 - resumeId={}, fileName={}", id, file != null ? file.getOriginalFilename() : "null");
+
         log.info("📸 S3 사진 업로드 요청 - resumeId={}, file={}", id, file.getOriginalFilename());
         try {
             if (file.isEmpty()) {

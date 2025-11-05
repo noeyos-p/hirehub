@@ -45,6 +45,7 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/login/**", "/oauth2/**",
                                 "/google", "/kakao", "/naver",
+                                "/api/mypage/resumes/**",
                                 "/naver/**", "/kakao/**", "/google/**"
                         ).permitAll()
 

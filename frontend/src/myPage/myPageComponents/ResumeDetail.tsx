@@ -294,33 +294,35 @@ const ResumeDetail: React.FC = () => {
 
   /** 사진 업로드 */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  try {
-    const id = await ensureResumeId();
-    const localURL = URL.createObjectURL(file);
-    setPhotoPreview(localURL);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      console.log("📤 업로드 시작:", file);
 
-    const form = new FormData();
-    form.append("file", file);
+      const id = await ensureResumeId();
+      console.log("📤 보낼 resumeId:", id);
 
-    // ✅ 토큰 명시적으로 추가 (multipart는 인터셉터가 깨지기 쉬움)
-    const res = await api.post(`/api/mypage/resumes/${id}/photo`, form, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
+      const localURL = URL.createObjectURL(file);
+      setPhotoPreview(localURL);
 
-    const url = res?.data?.url || res?.data?.idPhoto;
-    if (url) setPhotoPreview(url);
-  } catch (err) {
-    console.error(err);
-    alert("사진 업로드 중 오류가 발생했습니다.");
-  } finally {
-    if (fileRef.current) fileRef.current.value = "";
-  }
-};
+      const form = new FormData();
+      form.append("file", file);
+
+      // ✅ 토큰 명시적으로 추가 (multipart는 인터셉터가 깨지기 쉬움)
+      const res = await api.post(`/api/mypage/resumes/${id}/photo`, form, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      const url = res?.data?.url || res?.data?.idPhoto;
+      if (url) setPhotoPreview(url);
+    } catch (err) {
+      console.error(err);
+      alert("사진 업로드 중 오류가 발생했습니다.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
 
   /** 입력 refs */
   const eduSchoolRef = useRef<HTMLInputElement>(null);
@@ -433,7 +435,7 @@ const ResumeDetail: React.FC = () => {
         essayTittle: (essayTitle || "자기소개서").trim() || "자기소개서",
         essayContent: (essayContent && essayContent.trim()) || "임시 자기소개서 내용",
         ...mapped,
-    };
+      };
 
       if (resumeId) {
         await api.put(`/api/mypage/resumes/${resumeId}`, payload, {
