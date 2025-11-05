@@ -48,8 +48,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const [isFavoriteProcessing, setIsFavoriteProcessing] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ 평균 평점 계산
-  const averageRating = reviews.length > 0
+  // ✅ 평균 평점 계산 (안전하게 처리)
+  const averageRating = Array.isArray(reviews) && reviews.length > 0
     ? reviews.reduce((sum, review) => sum + review.score, 0) / reviews.length
     : 0;
 
@@ -73,6 +73,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   useEffect(() => {
     const fetchCompanyData = async () => {
       if (!companyId) {
+        console.error("❌ companyId가 없습니다:", companyId);
         setError("유효하지 않은 회사 정보입니다.");
         setIsLoading(false);
         return;
@@ -99,6 +100,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
           );
           
           if (!foundCompany) {
+            console.error("❌ 회사를 찾을 수 없음:", companyName);
             setError(`'${companyName}' 회사를 찾을 수 없습니다.`);
             setIsLoading(false);
             return;
@@ -106,6 +108,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
           
           companyRes = { data: foundCompany };
         } else {
+          console.error("❌ ID도 이름도 없음");
           setError("유효하지 않은 회사 정보입니다.");
           setIsLoading(false);
           return;
@@ -113,6 +116,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
         
         console.log("✅ 회사 정보 조회 성공:", companyRes.data);
         setCompany(companyRes.data);
+        setError(""); // 에러 초기화
         
         if (companyRes.data?.id) {
           // ✅ 각각 독립적으로 에러 처리 (로그인 안해도 페이지는 보이도록)
@@ -128,6 +132,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
         console.error("❌ 회사 정보 조회 실패:", err);
         console.error("❌ 에러 상태:", err.response?.status);
         console.error("❌ 에러 메시지:", err.response?.data?.message);
+        console.error("❌ 전체 에러 응답:", err.response?.data);
         
         if (err.response?.status === 401) {
           setError("로그인이 필요합니다.");
@@ -160,9 +165,23 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const fetchReviews = async (companyId: number) => {
     try {
       const res = await api.get(`/api/reviews/company/${companyId}`);
-      setReviews(res.data || []);
+      console.log("✅ 리뷰 응답:", res.data);
+      
+      // 응답이 배열인지 확인
+      if (Array.isArray(res.data)) {
+        setReviews(res.data);
+      } else if (res.data?.content && Array.isArray(res.data.content)) {
+        // 페이지네이션 응답인 경우
+        setReviews(res.data.content);
+      } else if (res.data?.items && Array.isArray(res.data.items)) {
+        // items 배열인 경우
+        setReviews(res.data.items);
+      } else {
+        console.warn("⚠️ 예상치 못한 리뷰 응답 형식:", res.data);
+        setReviews([]);
+      }
     } catch (err) {
-      console.error("리뷰 로드 실패:", err);
+      console.error("❌ 리뷰 로드 실패:", err);
       setReviews([]);
     }
   };
@@ -264,18 +283,46 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     </div>
   );
 
-  if (isLoading) return <div className="text-center py-10 text-gray-600">로딩 중...</div>;
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">로딩 중...</p>
+      </div>
+    </div>
+  );
+  
   if (error)
     return (
-      <div className="text-center py-10 text-red-600">
-        {error}
-        <button onClick={onBack} className="block mt-4 text-blue-600 underline">
-          목록으로 돌아가기
-        </button>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center py-10 px-4">
+          <p className="text-red-600 text-lg mb-4">{error}</p>
+          <button 
+            onClick={onBack} 
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            목록으로 돌아가기
+          </button>
+        </div>
       </div>
     );
 
-  if (!company) return null;
+  if (!company) {
+    console.error("❌ company 상태가 null입니다");
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center py-10 px-4">
+          <p className="text-gray-600 text-lg mb-4">회사 정보를 찾을 수 없습니다.</p>
+          <button 
+            onClick={onBack} 
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            목록으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
@@ -312,7 +359,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
         </div>
 
         {/* ⭐ 평균 평점 표시 */}
-        {reviews.length > 0 && (
+        {Array.isArray(reviews) && reviews.length > 0 && (
           <div className="flex items-center space-x-2 mb-4">
             <RatingStars score={Math.round(averageRating)} />
             <span className="text-lg font-semibold text-gray-700">{averageRating.toFixed(1)}</span>
@@ -391,8 +438,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
         {/* 리뷰 목록 */}
         <div className="space-y-6 mb-8">
-          <h3 className="text-lg font-semibold">리뷰 ({reviews.length})</h3>
-          {reviews.length === 0 ? (
+          <h3 className="text-lg font-semibold">리뷰 ({Array.isArray(reviews) ? reviews.length : 0})</h3>
+          {!Array.isArray(reviews) || reviews.length === 0 ? (
             <p className="text-gray-500 text-sm">아직 작성된 리뷰가 없습니다.</p>
           ) : (
             reviews.map((review) => (
