@@ -109,7 +109,7 @@ const BoardDetail: React.FC = () => {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
-    }).replace(/\. /g, '.').replace('.', '');
+    }).replace(/\. /g, '.');
   };
 
   if (loading) {

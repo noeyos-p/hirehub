@@ -39,7 +39,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
-    }).replace(/\. /g, '.').replace('.', '');
+    }).replace(/\. /g, '.');
   };
 
   const renderProfileImage = () => {
