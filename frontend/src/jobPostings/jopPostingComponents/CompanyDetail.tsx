@@ -10,7 +10,7 @@ interface Review {
   nickname: string;
   content: string;
   score: number;
-  date?: string; // 백에서 전달되면 사용
+  date?: string;
 }
 
 interface Company {
@@ -30,15 +30,16 @@ interface CompanyDetailProps {
 }
 
 const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
-  const { companyName } = useParams<{ companyName: string }>();
+  const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
+  const numericCompanyId = companyId ? parseInt(companyId, 10) : null;
 
   const [company, setCompany] = useState<Company | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isFavorited, setIsFavorited] = useState(false);
   const [isFavoriteProcessing, setIsFavoriteProcessing] = useState(false);
@@ -48,16 +49,24 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     ? reviews.reduce((sum, review) => sum + review.score, 0) / reviews.length
     : 0;
 
-  // ✅ 회사 정보 + 리뷰 불러오기
+  // ✅ 회사 정보 + 리뷰 불러오기 (ID 기반)
   useEffect(() => {
     const fetchCompanyData = async () => {
+      if (!numericCompanyId || isNaN(numericCompanyId)) {
+        setError("유효하지 않은 회사 ID입니다.");
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const decodedName = decodeURIComponent(companyName || '');
-        const companyRes = await api.get(`/api/companies/${encodeURIComponent(decodedName)}`);
+        setIsLoading(true);
+        // ID로 회사 정보 조회
+        const companyRes = await api.get(`/api/companies/${numericCompanyId}`);
         setCompany(companyRes.data);
+        
         if (companyRes.data?.id) {
           fetchFavoriteStatus(companyRes.data.id);
-          fetchReviews(companyRes.data.name);
+          fetchReviews(companyRes.data.id);
         }
       } catch (err: any) {
         setError(err.response?.data?.message || "회사 정보를 불러오는데 실패했습니다.");
@@ -67,7 +76,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     };
 
     fetchCompanyData();
-  }, [companyName]);
+  }, [numericCompanyId]);
 
   // ✅ 즐겨찾기 상태 확인 함수
   const fetchFavoriteStatus = async (companyId: number) => {
@@ -81,10 +90,10 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     }
   };
 
-  // ✅ 리뷰 가져오기 함수
-  const fetchReviews = async (companyName: string) => {
+  // ✅ 리뷰 가져오기 함수 (ID 기반)
+  const fetchReviews = async (companyId: number) => {
     try {
-      const res = await api.get(`/api/reviews/company/${encodeURIComponent(companyName)}`);
+      const res = await api.get(`/api/reviews/company/${companyId}`);
       setReviews(res.data || []);
     } catch (err) {
       console.error("리뷰 로드 실패:", err);
@@ -139,9 +148,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
         companyId: company!.id
       });
 
-      // 등록 후 리뷰 목록 즉시 갱신
-      const updatedReviewsRes = await api.get(`/api/reviews/company/${encodeURIComponent(company!.name)}`);
-      setReviews(updatedReviewsRes.data || []);
+      // 등록 후 리뷰 목록 즉시 갱신 (ID 기반)
+      await fetchReviews(company!.id);
 
       setNewReview("");
       setNewRating(0);

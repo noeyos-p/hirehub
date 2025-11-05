@@ -51,7 +51,7 @@ function App() {
 
         {/* 챗봇/기업 상세 */}
         <Route path="/chatBot" element={<Layout><ChatBot /></Layout>} />
-        <Route path="/company/:companyName" element={<Layout><CompanyDetail onBack={() => window.history.back()} /></Layout>} />
+        <Route path="/company/:companyId" element={<Layout><CompanyDetail onBack={() => window.history.back()} /></Layout>} />
 
         <Route path="/myPage/resume/ResumeViewer/:id" element={<ResumeViewer />} />
       </Routes>
