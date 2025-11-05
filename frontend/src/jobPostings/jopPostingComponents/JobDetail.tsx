@@ -266,7 +266,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
 
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center space-x-2">
-                  <Link to={`/company/${encodeURIComponent(job.companyName)}`} className="text-2xl font-semibold text-gray-800 cursor-pointer hover:underline">
+                  <Link to={`/company/${encodeURIComponent(job.companyId)}`} className="text-2xl font-semibold text-gray-800 cursor-pointer hover:underline">
                     {job.companyName}
                   </Link>
                   <button onClick={handleFavoriteClick} disabled={isFavoriteProcessing} className={`transition-all ${isFavoriteProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`} title={isFavorited ? "기업 즐겨찾기 해제" : "기업 즐겨찾기"}>
