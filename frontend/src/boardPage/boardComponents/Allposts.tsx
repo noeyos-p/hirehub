@@ -89,7 +89,7 @@ const AllPosts: React.FC = () => {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
-    }).replace(/\. /g, '.').replace('.', '');
+    }).replace(/\. /g, '.');
   };
 
   // 게시글 클릭 핸들러
