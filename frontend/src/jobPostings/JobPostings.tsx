@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
-import { BookmarkIcon, StarIcon, EyeIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
+import { useSearchParams, Link } from "react-router-dom";
+import { BookmarkIcon, StarIcon, EyeIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import {
   BookmarkIcon as BookmarkSolidIcon,
   StarIcon as StarSolidIcon,
@@ -28,6 +28,10 @@ const JobPostings: React.FC = () => {
     new Set()
   );
   const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [resumes, setResumes] = useState<any[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
   const itemsPerPage = 10;
 
   // ✅ 드롭다운 상태 관리
@@ -143,14 +147,12 @@ const JobPostings: React.FC = () => {
             return newSet;
           });
           window.dispatchEvent(new CustomEvent("favorite-changed"));
-          // alert("기업 즐겨찾기가 해제되었습니다."); => 로그인 안할때만 띄우는 게 좋을 것 같아요
         }
       } else {
         const res = await api.post(`/api/mypage/favorites/companies/${companyId}`);
         if (res.status === 200 && res.data) {
           setFavoritedCompanies((prev) => new Set(prev).add(companyId));
           window.dispatchEvent(new CustomEvent("favorite-changed"));
-          // alert("기업을 즐겨찾기에 추가했습니다."); => 로그인 안할때만 띄우는 게 좋을 것 같아요
         } 
       }
     } catch (err: any) {
@@ -176,13 +178,11 @@ const JobPostings: React.FC = () => {
             newSet.delete(jobId);
             return newSet;
           });
-          // alert("북마크가 해제되었습니다."); => 로그인 안할때만 띄우는 게 좋을 것 같아요
         }
       } else {
         const res = await api.post(`/api/mypage/favorites/jobposts/${jobId}`);
         if (res.status === 200 && res.data) {
           setScrappedJobs((prev) => new Set(prev).add(jobId));
-          // alert("북마크에 저장되었습니다."); => 로그인 안할때만 띄우는 게 좋을 것 같아요
         }
       }
     } catch (err: any) {
@@ -208,6 +208,44 @@ const JobPostings: React.FC = () => {
       console.error("조회수 증가 실패:", err);
     }
     setSelectedJobId(jobId);
+  };
+
+  // 이력서 목록 가져오기
+  const fetchResumes = async () => {
+    try {
+      const { data } = await api.get("/api/mypage/resumes", { params: { page: 0, size: 50 } });
+      const list: any[] = data?.items ?? data?.content ?? [];
+      setResumes(list.filter((r: any) => !r.locked));
+    } catch (e) {
+      alert("이력서 목록을 불러올 수 없습니다.");
+    }
+  };
+
+  // 지원하기 클릭
+  const handleApplyClick = async () => {
+    console.log("지원하기 클릭됨!");
+    console.log("selectedJobId:", selectedJobId);
+    setShowApplyModal(true);
+    await fetchResumes();
+  };
+
+  // 지원 제출
+  const handleSubmitApply = async () => {
+    if (!selectedResumeId) return alert("이력서를 선택해주세요.");
+    if (!selectedJobId) return;
+    if (!confirm("선택한 이력서로 지원하시겠습니까? 제출 후에는 이력서를 수정할 수 없습니다.")) return;
+
+    try {
+      setIsApplying(true);
+      await api.post("/api/mypage/applies", { jobPostId: selectedJobId, resumeId: selectedResumeId });
+      alert("지원이 완료되었습니다!");
+      setShowApplyModal(false);
+      setSelectedResumeId(null);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "지원 중 오류가 발생했습니다.");
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   const seoulDistricts = [
@@ -314,11 +352,151 @@ const JobPostings: React.FC = () => {
     return value;
   };
 
-  if (selectedJobId) {
+  // 지원하기 모달
+  const ApplyModal = () => {
+    console.log("ApplyModal 렌더링됨");
+    console.log("resumes:", resumes);
     return (
-      <div className="max-w-6xl mx-auto py-6 px-4">
-        <JobDetail jobId={selectedJobId} onBack={() => setSelectedJobId(null)} />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-xl font-semibold">지원할 이력서 선택</h3>
+          <button onClick={() => { setShowApplyModal(false); setSelectedResumeId(null); }} className="text-gray-400 hover:text-gray-600">
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">
+          {resumes.length === 0 ? (
+            <div className="text-center py-10 text-gray-500">
+              <p>제출 가능한 이력서가 없습니다.</p>
+              <p className="text-sm mt-2">새 이력서를 작성해주세요.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {resumes.map((resume: any) => (
+                <label key={resume.id} className={`block border rounded-lg p-4 cursor-pointer transition-all ${selectedResumeId === resume.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
+                  <div className="flex items-center gap-3">
+                    <input type="radio" name="resume" value={resume.id} checked={selectedResumeId === resume.id} onChange={() => setSelectedResumeId(resume.id)} className="accent-blue-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{resume.title}</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        최종 수정: {new Date(resume.updateAt || resume.createAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-3 p-6 border-t">
+          <button onClick={() => { setShowApplyModal(false); setSelectedResumeId(null); }} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md" disabled={isApplying}>취소</button>
+          <button onClick={handleSubmitApply} disabled={!selectedResumeId || isApplying} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            {isApplying ? "지원 중..." : "지원하기"}
+          </button>
+        </div>
       </div>
+    </div>
+    );
+  };
+
+  // ✅ JobDetail 화면 (고정 사이드바 포함)
+  if (selectedJobId) {
+    const selectedJob = jobListings.find(j => j.id === selectedJobId);
+    
+    return (
+      <>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex gap-6 max-w-[1440px] mx-auto px-[55px] py-6">
+          {/* 왼쪽: JobDetail */}
+          <div className="flex-1">
+            <JobDetail jobId={selectedJobId} onBack={() => setSelectedJobId(null)} />
+          </div>
+
+          {/* 오른쪽: 고정 사이드바 */}
+          <div className="w-96 flex-shrink-0">
+            <div className="sticky top-6 space-y-3">
+              {selectedJob && (
+                <>
+                  {/* 채용 정보 박스 */}
+                  <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-gray-500 mb-1 text-sm">경력</p>
+                        <p className="font-medium text-gray-900">{selectedJob.careerLevel}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1 text-sm">직무</p>
+                        <p className="font-medium text-gray-900">{selectedJob.position}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1 text-sm">학력</p>
+                        <p className="font-medium text-gray-900">{selectedJob.education}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1 text-sm">고용형태</p>
+                        <p className="font-medium text-gray-900">{selectedJob.type || "정규직"}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1 text-sm">근무지역</p>
+                        <p className="font-medium text-gray-900">{selectedJob.location}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1 text-sm">급여</p>
+                        <p className="font-medium text-gray-900">{selectedJob.salary || "회사내규에 따름"}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1 text-sm">시작일</p>
+                        <p className="font-medium text-gray-900">{selectedJob.startAt || "협의 후 결정"}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1 text-sm">마감일</p>
+                        <p className="font-medium text-gray-900">{selectedJob.endAt}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 지원하기 버튼 */}
+                  <button 
+                    onClick={handleApplyClick}
+                    className="w-full py-3 bg-[#006AFF] text-white rounded-lg text-base font-semibold hover:bg-[#0053cc] transition-colors"
+                  >
+                    지원하기
+                  </button>
+
+                  {/* 스크랩 + 이력서 바로가기 버튼 */}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleBookmarkClick(e, selectedJobId);
+                      }}
+                      className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                    >
+                      {scrappedJobs.has(selectedJobId) ? (
+                        <BookmarkSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                      ) : (
+                        <BookmarkIcon className="w-5 h-5 text-gray-600" />
+                      )}
+                      <span>스크랩</span>
+                    </button>
+                    <Link 
+                      to="/mypage/resumes" 
+                      className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    >
+                      이력서 바로가기
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* 지원하기 모달 */}
+      {showApplyModal && <ApplyModal />}
+      </>
     );
   }
 
