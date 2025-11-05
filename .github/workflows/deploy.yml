@@ -74,7 +74,7 @@ jobs:
             USERNAME=${{ secrets.DB_USERNAME }}
             PASSWORD=${{ secrets.DB_PASSWORD }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_SCREET=${{ secrets.GOOGLE_SCREET }}
+            GOOGLE_SECRET=${{ secrets.GOOGLE_SECRET }}
             AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
             AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
