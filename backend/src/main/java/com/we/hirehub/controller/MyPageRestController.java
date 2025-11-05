@@ -204,7 +204,33 @@ public class MyPageRestController {
         return ResponseEntity.ok(myPageService.updateProfile(userId(auth), req));
     }
 
-    /**
+    /** ✅ 회원 탈퇴 (소프트삭제) */
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<?> withdraw(Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            log.warn("🚨 인증되지 않은 탈퇴 요청");
+            return ResponseEntity.status(401)
+                    .body(Map.of("message", "로그인이 필요합니다."));
+        }
+
+        String email = auth.getName();
+        log.info("🧹 회원 탈퇴 요청: {}", email);
+
+        try {
+            boolean result = myPageService.softWithdrawUser(email);
+            if (result) {
+                return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
+            } else {
+                return ResponseEntity.status(400).body(Map.of("message", "이미 탈퇴된 계정이거나 존재하지 않습니다."));
+            }
+        } catch (Exception e) {
+            log.error("❌ 탈퇴 처리 중 오류: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("message", "서버 오류로 탈퇴를 완료하지 못했습니다."));
+        }
+    }
+
+
+/**
      * ✅ 내가 지원한 공고 내역 조회
      */
     @GetMapping("/applies")
@@ -297,34 +323,6 @@ public class MyPageRestController {
         jobPostScrapService.remove(userId(auth), jobPostId);
         return ResponseEntity.noContent().build();
     }
-
-    /**
-     * db삭제기능
-     */
-    @DeleteMapping("/withdraw")
-    public ResponseEntity<?> withdraw(Authentication auth) {
-        if (auth == null || auth.getName() == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "UNAUTHORIZED", "message", "로그인이 필요합니다."));
-        }
-
-        String email = auth.getName();
-
-        try {
-            boolean deleted = myPageService.withdrawUser(email);
-            if (deleted) {
-                return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "회원 정보를 찾을 수 없습니다."));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "서버 오류로 탈퇴를 완료하지 못했습니다."));
-        }
-    }
-
 
     /**
      * ✅ 내가 지원한 공고 내역 삭제 (복수 ID 지원)

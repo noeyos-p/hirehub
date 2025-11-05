@@ -580,23 +580,41 @@ public class MyPageService {
         );
     }
 
-    /* 회원탈퇴기능 */
-
+    /** ✅ 소프트 삭제(논리 탈퇴): 실제 삭제 대신 식별자 변경 */
     @Transactional
-    public boolean withdrawUser(String email) {
-        Optional<Users> optionalUser = usersRepository.findByEmail(email);
-        if (optionalUser.isEmpty()) {
+    public boolean softWithdrawUser(String email) {
+        Optional<Users> optUser = usersRepository.findByEmail(email);
+
+        if (optUser.isEmpty()) {
+            log.warn("⚠️ 탈퇴 시도 실패 - 이메일 없음: {}", email);
             return false;
         }
 
-        try {
-            usersRepository.delete(optionalUser.get());
-            return true;
-        } catch (Exception e) {
-            // FK 제약 등으로 물리 삭제 불가능한 경우 로그만 남기기
-            log.warn("⚠️ 회원 삭제 실패 (연관 데이터 존재 가능): {}", email, e);
+        Users user = optUser.get();
+
+        // 이미 탈퇴 처리된 사용자 방지
+        if ("(탈퇴한 회원)".equals(user.getNickname()) || user.getEmail().contains("_deleted_")) {
+            log.info("⚠️ 이미 탈퇴된 회원: {}", email);
             return false;
         }
+
+        // ✅ 탈퇴 마킹 처리
+        String newEmail = user.getEmail() + "_deleted_" + System.currentTimeMillis();
+        user.setEmail(newEmail);
+        user.setNickname("(탈퇴한 회원)");
+
+        // 개인 식별 정보 초기화 (선택적)
+        user.setPhone(null);
+        user.setAddress(null);
+        user.setGender(null);
+        user.setPosition(null);
+        user.setCareerLevel(null);
+        user.setEducation(null);
+        user.setLocation(null);
+
+        usersRepository.save(user);
+        log.info("✅ 회원 소프트삭제 완료: {} → {}", email, newEmail);
+        return true;
     }
 
     @Transactional
@@ -645,6 +663,7 @@ public class MyPageService {
             );
         }
     }
+
 }
 
 
