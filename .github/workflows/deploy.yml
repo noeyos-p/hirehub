@@ -1,87 +1,92 @@
-name: CI/CD Monorepo
+name: HireHub CI/CD Deploy
 
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'infra/**'
-      - '.github/workflows/deploy.yml'
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - name: backend
-            context: backend
-            imagename: hirehub-backend
-          - name: frontend
-            context: frontend
-            imagename: hirehub-frontend
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: 🔐 Login to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push ${{ matrix.name }}
+      # ✅ backend용 .env.prod 자동 생성
+      - name: 🧾 Create backend .env.prod
+        run: |
+          echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}" >> ./backend/.env.prod
+          echo "RDS_ENDPOINT=${{ secrets.RDS_ENDPOINT }}" >> ./backend/.env.prod
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> ./backend/.env.prod
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> ./backend/.env.prod
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> ./backend/.env.prod
+          echo "GOOGLE_SECRET=${{ secrets.GOOGLE_SECRET }}" >> ./backend/.env.prod
+          echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> ./backend/.env.prod
+          echo "KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}" >> ./backend/.env.prod
+          echo "KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}" >> ./backend/.env.prod
+          echo "NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}" >> ./backend/.env.prod
+          echo "NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}" >> ./backend/.env.prod
+          echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> ./backend/.env.prod
+          echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> ./backend/.env.prod
+          echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}" >> ./backend/.env.prod
+          echo "APP_FRONT_REDIRECT_URL=${{ secrets.APP_FRONT_REDIRECT_URL }}" >> ./backend/.env.prod
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> ./backend/.env.prod
+
+      # ✅ frontend용 .env.prod 자동 생성
+      - name: 🧾 Create frontend .env.prod
+        run: |
+          echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" >> ./frontend/.env.prod
+
+      # ✅ Docker 이미지 빌드 및 푸시
+      - name: 🐳 Build & Push Backend
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
-          no-cache: true # ✅ 이 줄 추가
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:${{ github.sha }}
+          tags: ${{ secrets.BACKEND_IMAGE }}
+          no-cache: true
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy on EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: 🐳 Build & Push Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.FRONTEND_IMAGE }}
+          no-cache: true
+
+      # ✅ EC2로 .env.prod 업로드 (중요!)
+      - name: 📦 Upload backend .env.prod to EC2
+        uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: ./backend/.env.prod
+          target: /home/ubuntu/app/
+
+      # ✅ EC2에 SSH로 접속해서 최신 컨테이너 실행
+      - name: 🚀 Deploy to EC2
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            set -e
-
-            echo "🧹 도커 빌드 캐시 및 오래된 이미지 정리..."
-            docker builder prune -a -f || true
-            docker image prune -a -f || true
-
-            echo "🛠️ Docker 이미지 pull..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-backend:latest
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-frontend:latest
-
-            echo "📂 디렉터리 준비..."
-            cd ~/app || { mkdir -p ~/app; cd ~/app; }
-
-            echo "🧩 .env.prod 파일 생성..."
-            cat <<EOF > .env.prod
-            RDS_ENDPOINT=${{ secrets.RDS_ENDPOINT }}
-            SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}
-            USERNAME=${{ secrets.DB_USERNAME }}
-            PASSWORD=${{ secrets.DB_PASSWORD }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_SECRET=${{ secrets.GOOGLE_SECRET }}
-            AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
-            AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
-            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
-            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
-            BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
-            FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
-            EOF
-
-            echo "🚀 Docker Compose 실행..."
-            docker compose -f infra/docker-compose.prod.yml --env-file .env.prod up -d --remove-orphans
+            cd ~/app/infra
+            docker compose -f docker-compose.prod.yml down
+            docker pull ${{ secrets.BACKEND_IMAGE }}
+            docker pull ${{ secrets.FRONTEND_IMAGE }}
+            docker compose -f docker-compose.prod.yml up -d
+            docker exec backend printenv | grep JWT_SECRET
+            docker exec frontend printenv | grep VITE_API_BASE_URL
