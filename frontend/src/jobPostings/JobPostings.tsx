@@ -60,28 +60,32 @@ const JobPostings: React.FC = () => {
 
   // ✅ 검색 쿼리 또는 회사 필터 변경 시 selectedJobId 초기화
   useEffect(() => {
-    setSelectedJobId(null); // 검색 시 JobDetail 페이지 닫기
-    setCurrentPage(1); // 페이지를 1로 초기화
-  }, [searchQuery, companyFilter]);
-
-  const fetchFavorites = async () => {
+  const fetchJobs = async () => {
+    setIsLoading(true);
+    setError("");
     try {
-      const res = await api.get("/api/mypage/favorites/companies?page=0&size=1000");
-      const items =
-        res.data.rows || res.data.content || res.data.items || [];
-      const companyIds = new Set<number>(
-        items
-          .map((item: any) => Number(item.companyId))
-          .filter((id: number) => !isNaN(id))
-      );
-      setFavoritedCompanies(companyIds);
+      const response = await api.get("/api/jobposts");
+      const raw = response.data;
+
+      // ✅ 배열 보장 처리
+      const list = Array.isArray(raw)
+        ? raw
+        : raw?.content || raw?.rows || raw?.items || (raw ? [raw] : []);
+
+      console.log("✅ 받아온 공고 데이터:", list);
+      setJobListings(list);
     } catch (err: any) {
-      console.error("❌ 즐겨찾기 목록 로딩 실패:", err);
-      if (err.response?.status !== 401) {
-        setFavoritedCompanies(new Set());
-      }
+      console.error("❌ 공고 불러오기 실패:", err);
+      setError(
+        err.response?.data?.message || "채용공고를 불러오는데 실패했습니다."
+      );
+      setJobListings([]);
+    } finally {
+      setIsLoading(false);
     }
   };
+  fetchJobs();
+}, []);
 
   useEffect(() => {
     const fetchJobs = async () => {
