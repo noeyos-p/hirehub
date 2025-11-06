@@ -65,7 +65,17 @@ jobs:
           tags: ${{ secrets.FRONTEND_IMAGE }}
           no-cache: true
 
-      # ✅ EC2로 SSH 접속해 최신 컨테이너 실행
+      # ✅ EC2로 .env.prod 업로드 (중요!)
+      - name: 📦 Upload backend .env.prod to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: ./backend/.env.prod
+          target: /home/ubuntu/app/backend/.env.prod
+
+      # ✅ EC2에 SSH로 접속해서 최신 컨테이너 실행
       - name: 🚀 Deploy to EC2
         uses: appleboy/ssh-action@v1.1.0
         with:
