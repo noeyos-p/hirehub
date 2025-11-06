@@ -10,6 +10,12 @@ export default function Header() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+
+  useEffect(() => {
+  console.log("🧩 Header 렌더링됨, 현재 user:", user);
+  if (user) console.log("🧩 user 내부 구조:", JSON.stringify(user, null, 2));
+}, [user]);
+
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -23,16 +29,12 @@ export default function Header() {
   }, []);
 
   const handleLogout = () => {
-    // ✅ 채팅방 자동 퇴장을 위한 이벤트 발생
     window.dispatchEvent(new Event('userLogout'));
-
-    // 기존 로그아웃 로직
     logout();
     setShowDropdown(false);
     navigate('/login');
   };
 
-  // 검색 처리
   const handleSearch = () => {
     if (!searchKeyword.trim()) {
       alert('검색어를 입력해주세요.');
@@ -54,14 +56,12 @@ export default function Header() {
         <div className="flex items-center space-x-10">
           {/* 로고 */}
           <Link to="/">
-          <img
-            src="/HIREHUB_LOGO.PNG"
-            alt="HireHub Logo"
-            className="w-[117px] h-[33px] object-contain"
-          />
+            <img
+              src="/HIREHUB_LOGO.PNG"
+              alt="HireHub Logo"
+              className="w-[117px] h-[33px] object-contain"
+            />
           </Link>
-
-
 
           {/* 네비게이션 메뉴 */}
           <nav className="hidden md:flex space-x-8 text-gray-800 font-medium text-sm">
@@ -73,7 +73,9 @@ export default function Header() {
             </Link>
 
             <Link to="/board"
-              className="inline-block mr-[405px] font-bord text-[16px] text-black hover:text-[#006AFF] transition">자유게시판</Link>
+              className="inline-block mr-[405px] font-bord text-[16px] text-black hover:text-[#006AFF] transition">
+              자유게시판
+            </Link>
           </nav>
         </div>
 
@@ -96,32 +98,24 @@ export default function Header() {
           {/* 로그인/프로필 영역 */}
           <div className="flex items-center">
             {loading ? (
-              // 로딩 중
               <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
             ) : isAuthenticated && user ? (
-              // 로그인된 상태
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-3 py-2 transition"
                 >
-                  {/* 프로필 이미지 */}
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
                     <UserCircleIcon className="w-6 h-6 text-white" />
                   </div>
-
-                  {/* 닉네임 */}
                   <span className="font-medium text-[16px] text-black hover:text-[#006AFF] transition">
                     {user.nickname || user.name || user.email.split('@')[0]}
                   </span>
-
                   <ChevronDownIcon className="w-4 h-4 text-gray-500" />
                 </button>
 
-                {/* 드롭다운 메뉴 */}
                 {showDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-b-lg shadow-lg border border-gray-200 py-2 z-50 translate-y-[4px]">
-                    {/* 사용자 정보 */}
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="font-medium text-[16px] text-black translate-y-[-4px]">
                         {user.nickname || user.name}
@@ -131,48 +125,24 @@ export default function Header() {
                       </p>
                     </div>
 
-                    {/* 메뉴 아이템 */}
-                    {/* <Link
-                      to="/myPage/MyInfo"
-                      onClick={() => setShowDropdown(false)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-                    >
-                      내 정보
-                    </Link>
-                    <Link
-                      to="/myPage/Resume"
-                      onClick={() => setShowDropdown(false)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-                    >
-                      이력서 관리
-                    </Link>
-                    <Link
-                      to="/myPage/AppliedNotices"
-                      onClick={() => setShowDropdown(false)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-                    >
-                      지원 현황
-                    </Link>
-
-                    {user.role === 'ROLE_ADMIN' && (
-                      <>
-                        <hr className="my-2 border-gray-100" />
-                        <Link
-                          to="/admin"
-                          onClick={() => setShowDropdown(false)}
-                          className="block px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition"
-                        >
-                          관리자 페이지
-                        </Link>
-                      </>
-                    )} */}
-                    <Link
-                      to="/myPage/MyInfo"
-                      onClick={() => setShowDropdown(false)}
-                      className="block px-4 py-2 font-normal text-[14px] text-black hover:text-[#006AFF] transition translate-y-[5px]"
-                    >
-                      마이페이지
-                    </Link>
+                    {/* ✅ 관리자와 일반 사용자 구분 */}
+                    {user?.email === "admin@admin" ? (
+                      <Link
+                        to="/admin"
+                        onClick={() => setShowDropdown(false)}
+                        className="block px-4 py-2 font-normal text-[14px] text-black hover:text-[#006AFF] transition translate-y-[5px]"
+                      >
+                        관리자 페이지
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/myPage/MyInfo"
+                        onClick={() => setShowDropdown(false)}
+                        className="block px-4 py-2 font-normal text-[14px] text-black hover:text-[#006AFF] transition translate-y-[5px]"
+                      >
+                        마이페이지
+                      </Link>
+                    )}
 
                     <hr className="my-2 border-gray-100" />
                     <button
@@ -185,7 +155,6 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              // 로그인 안된 상태
               <div className="flex items-center space-x-2 text-sm text-gray-700">
                 <Link to="/login" className="font-light text-[16px] text-black hover:text-[#006AFF] transition">
                   로그인
