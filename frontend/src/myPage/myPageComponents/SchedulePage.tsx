@@ -51,7 +51,7 @@ const pick = (obj: any, keys: string[], fallback: any = "") => {
   return fallback;
 };
 
-const monthNames = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 
 const SchedulePage: React.FC = () => {
   const today = new Date();
@@ -82,7 +82,7 @@ const SchedulePage: React.FC = () => {
       setSelectedYear((p) => p - 1);
     } else setSelectedMonth((p) => p - 1);
   };
-  
+
   const nextMonth = () => {
     if (selectedMonth === 12) {
       setSelectedMonth(1);
@@ -148,7 +148,7 @@ const SchedulePage: React.FC = () => {
           arr.map(async (item) => {
             const jobPostId = item.jobPostId;
             const endAt = item.endAt;
-            
+
             if (!jobPostId || !endAt) return null;
 
             try {
@@ -179,7 +179,7 @@ const SchedulePage: React.FC = () => {
               }
 
               const detail = await detailRes.json();
-              
+
               return {
                 id: jobPostId,
                 title: detail.title || item.title || "",
@@ -338,9 +338,8 @@ const SchedulePage: React.FC = () => {
               {resumes.map((r) => (
                 <label
                   key={r.id}
-                  className={`block border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedResumeId === r.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
-                  }`}
+                  className={`block border rounded-lg p-4 cursor-pointer transition-all ${selectedResumeId === r.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <input
@@ -354,7 +353,11 @@ const SchedulePage: React.FC = () => {
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">{r.title}</div>
                       <div className="text-sm text-gray-500 mt-1">
-                        최종 수정: {new Date(r.updateAt || r.createAt).toLocaleString()}
+                        최종 수정: {new Date(r.updateAt || r.createAt).toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: 'numeric',
+                          day: 'numeric'
+                        }).replace(/\. /g, '. ').replace('.', '.')}
                       </div>
                     </div>
                   </div>
@@ -387,12 +390,12 @@ const SchedulePage: React.FC = () => {
   if (showJobDetail && selectedJobForDetail) {
     return (
       <div className="p-4">
-        <JobDetail 
-          jobId={selectedJobForDetail} 
+        <JobDetail
+          jobId={selectedJobForDetail}
           onBack={() => {
             setShowJobDetail(false);
             setSelectedJobForDetail(null);
-          }} 
+          }}
         />
       </div>
     );
@@ -429,7 +432,7 @@ const SchedulePage: React.FC = () => {
         <div className="grid grid-cols-7 gap-6 text-center">
           {calendarDays.map((day, idx) => {
             if (day === null) return <div key={`empty-${idx}`} />;
-            const fullDate = `${selectedYear}-${String(selectedMonth).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+            const fullDate = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             return (
               <div
                 key={day}
@@ -450,53 +453,53 @@ const SchedulePage: React.FC = () => {
       </div>
 
       {/* 우측 공고 리스트 */}
-<div className="w-1/3 space-y-4">
-  {filteredNotices.length > 0 ? (
-    filteredNotices.map((notice, idx) => (
-      <div 
-        key={idx} 
-        className="rounded-lg p-4 shadow-sm bg-white border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
-        onClick={() => notice.id && handleJobClick(notice.id)}
-      >
-        {/* 회사명 */}
-        <p className="text-sm font-semibold text-gray-900 mb-1">
-          {notice.companyName}
-        </p>
-        
-        {/* 공고 제목 */}
-        <h3 className="text-sm text-gray-800 mb-2">
-          {notice.title}
-        </h3>
-        
-        {/* 공고 정보 */}
-        <div className="space-y-1 mb-3">
-          <p className="text-sm text-gray-500">
-            {notice.position && <span>{notice.position} / </span>}
-            {notice.careerLevel} / {notice.education} / {notice.location}
-          </p>
-          <p className="text-xs text-gray-500">
-            {notice.date}
-          </p>
-        </div>
+      <div className="w-1/3 space-y-4">
+        {filteredNotices.length > 0 ? (
+          filteredNotices.map((notice, idx) => (
+            <div
+              key={idx}
+              className="rounded-lg p-4 shadow-sm bg-white border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
+              onClick={() => notice.id && handleJobClick(notice.id)}
+            >
+              {/* 회사명 */}
+              <p className="text-sm font-semibold text-gray-900 mb-1">
+                {notice.companyName}
+              </p>
 
-        {/* 지원하기 버튼 */}
-        <button
-          className="w-full mt-2 px-4 py-2 bg-gray-300 text-white rounded-md text-sm hover:bg-gray-400 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            openApplyModal(notice.id);
-          }}
-        >
-          지원하기
-        </button>
+              {/* 공고 제목 */}
+              <h3 className="text-sm text-gray-800 mb-2">
+                {notice.title}
+              </h3>
+
+              {/* 공고 정보 */}
+              <div className="space-y-1 mb-3">
+                <p className="text-sm text-gray-500">
+                  {notice.position && <span>{notice.position} / </span>}
+                  {notice.careerLevel} / {notice.education} / {notice.location}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {notice.date}
+                </p>
+              </div>
+
+              {/* 지원하기 버튼 */}
+              <button
+                className="w-full mt-2 px-4 py-2 bg-gray-300 text-white rounded-md text-sm hover:bg-gray-400 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openApplyModal(notice.id);
+                }}
+              >
+                지원하기
+              </button>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-10">
+            <p className="text-gray-400">선택한 날짜의 공고가 없습니다.</p>
+          </div>
+        )}
       </div>
-    ))
-  ) : (
-    <div className="text-center py-10">
-      <p className="text-gray-400">선택한 날짜의 공고가 없습니다.</p>
-    </div>
-  )}
-</div>
 
       {showApplyModal && <ApplyModal />}
     </div>
