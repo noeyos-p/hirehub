@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -28,12 +29,13 @@ public class S3Service {
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
-    private static final List<String> ALLOWED_IMAGE_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp");
+    private static final List<String> ALLOWED_IMAGE_EXTENSIONS =
+            Arrays.asList("jpg", "jpeg", "png", "gif", "webp");
     private static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
     /**
-     * 이력서 증명사진 업로드 (Resume idPhoto)
-     * 경로: resume/photos/{userId}/{timestamp}_{uuid}.{ext}
+     * ✅ 이력서 증명사진 업로드 (Resume idPhoto)
+     * 경로: resume/photos/{userId}/{timestamp_uuid.ext}
      */
     public String uploadResumePhoto(MultipartFile file, Long userId) {
         validateImageFile(file);
@@ -43,19 +45,19 @@ public class S3Service {
     }
 
     /**
-     * 공고 관련 이미지 업로드 (JobPosts)
-     * 경로: jobposts/images/{companyId}/{timestamp}_{uuid}.{ext}
+     * ✅ 공고 관련 이미지 업로드 (JobPosts)
+     * 경로: jobposts/images/{jobPostId}/{timestamp_uuid.ext}
      */
-    public String uploadJobPostImage(MultipartFile file, Long companyId) {
+    public String uploadJobPostImage(MultipartFile file, Long jobPostId) {
         validateImageFile(file);
         String fileName = generateFileName(file.getOriginalFilename());
-        String key = String.format("jobposts/images/%d/%s", companyId, fileName);
+        String key = String.format("jobposts/images/%d/%s", jobPostId, fileName);
         return uploadFile(file, key);
     }
 
     /**
-     * 광고 이미지 업로드 (Ads photo)
-     * 경로: ads/images/{adId}/{timestamp}_{uuid}.{ext}
+     * ✅ 광고 이미지 업로드 (Ads photo)
+     * 경로: ads/images/{adId}/{timestamp_uuid.ext}
      */
     public String uploadAdImage(MultipartFile file, Long adId) {
         validateImageFile(file);
@@ -65,8 +67,8 @@ public class S3Service {
     }
 
     /**
-     * 기업 사진 업로드 (Company photo)
-     * 경로: company/photos/{companyId}/{timestamp}_{uuid}.{ext}
+     * ✅ 기업 사진 업로드 (Company photo)
+     * 경로: company/photos/{companyId}/{timestamp_uuid.ext}
      */
     public String uploadCompanyPhoto(MultipartFile file, Long companyId) {
         validateImageFile(file);
@@ -76,13 +78,15 @@ public class S3Service {
     }
 
     /**
-     * 파일 업로드 (이미지) - ACL 제거됨
+     * ✅ 공통 업로드 처리
+     * S3에 업로드 후 접근 가능한 URL 반환
      */
     private String uploadFile(MultipartFile file, String key) {
         try {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
+                    .acl(ObjectCannedACL.PUBLIC_READ) // 🔥 퍼블릭 접근 허용
                     .contentType(file.getContentType())
                     .contentLength(file.getSize())
                     .build();
@@ -92,23 +96,27 @@ public class S3Service {
                     RequestBody.fromInputStream(file.getInputStream(), file.getSize())
             );
 
-            String fileUrl = String.format("https://%s.s3.%s.amazonaws.com/%s",
-                    bucketName, s3Client.serviceClientConfiguration().region(), key);
+            String fileUrl = String.format(
+                    "https://%s.s3.%s.amazonaws.com/%s",
+                    bucketName,
+                    s3Client.serviceClientConfiguration().region().id(),
+                    key
+            );
 
-            log.info("File uploaded successfully: {}", fileUrl);
+            log.info("✅ 파일 업로드 성공: {}", fileUrl);
             return fileUrl;
 
         } catch (IOException e) {
-            log.error("Failed to upload file: {}", key, e);
+            log.error("❌ 파일 업로드 실패 (IO): {}", key, e);
             throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
         } catch (S3Exception e) {
-            log.error("S3 error while uploading file: {}", key, e);
+            log.error("❌ 파일 업로드 실패 (S3): {}", key, e);
             throw new RuntimeException("S3 업로드 중 오류가 발생했습니다.", e);
         }
     }
 
     /**
-     * 파일 삭제
+     * ✅ 파일 삭제
      */
     public void deleteFile(String fileUrl) {
         try {
@@ -120,40 +128,33 @@ public class S3Service {
                     .build();
 
             s3Client.deleteObject(deleteObjectRequest);
-            log.info("File deleted successfully: {}", key);
+            log.info("🗑️ 파일 삭제 완료: {}", key);
 
         } catch (S3Exception e) {
-            log.error("S3 error while deleting file: {}", fileUrl, e);
+            log.error("❌ 파일 삭제 실패 (S3): {}", fileUrl, e);
+            throw new RuntimeException("파일 삭제 중 오류가 발생했습니다.", e);
+        } catch (Exception e) {
+            log.error("❌ 파일 삭제 실패 (기타): {}", fileUrl, e);
             throw new RuntimeException("파일 삭제 중 오류가 발생했습니다.", e);
         }
     }
 
     /**
-     * 여러 파일 삭제
-     */
-    public void deleteFiles(List<String> fileUrls) {
-        fileUrls.forEach(this::deleteFile);
-    }
-
-    /**
-     * URL에서 S3 Key 추출
+     * ✅ URL에서 Key 추출
+     * (CloudFront, Amazon S3 모두 지원)
      */
     private String extractKeyFromUrl(String fileUrl) {
-        if (fileUrl == null || fileUrl.isEmpty()) {
-            throw new IllegalArgumentException("파일 URL이 비어있습니다.");
+        if (fileUrl.contains(".amazonaws.com/")) {
+            return fileUrl.substring(fileUrl.indexOf(".amazonaws.com/") + 15);
+        } else if (fileUrl.contains("cloudfront.net/")) {
+            return fileUrl.substring(fileUrl.indexOf("cloudfront.net/") + 14);
+        } else {
+            throw new IllegalArgumentException("지원되지 않는 S3 URL 형식: " + fileUrl);
         }
-
-        // https://bucket.s3.region.amazonaws.com/key 형식에서 key 추출
-        String[] parts = fileUrl.split(".amazonaws.com/");
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("올바르지 않은 S3 URL 형식입니다.");
-        }
-
-        return parts[1];
     }
 
     /**
-     * 이미지 파일 검증
+     * ✅ 이미지 파일 검증
      */
     private void validateImageFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -181,7 +182,7 @@ public class S3Service {
     }
 
     /**
-     * 파일 이름 생성 (이미지용)
+     * ✅ 파일 이름 생성 (타임스탬프 + UUID)
      */
     private String generateFileName(String originalFilename) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
@@ -191,7 +192,7 @@ public class S3Service {
     }
 
     /**
-     * 파일 확장자 추출
+     * ✅ 파일 확장자 추출
      */
     private String getFileExtension(String filename) {
         int lastDotIndex = filename.lastIndexOf(".");
