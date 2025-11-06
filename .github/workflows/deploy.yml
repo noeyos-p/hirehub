@@ -73,7 +73,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: ./backend/.env.prod
-          target: /home/ubuntu/app/backend/
+          target: /home/ubuntu/app/
 
       # ✅ EC2에 SSH로 접속해서 최신 컨테이너 실행
       - name: 🚀 Deploy to EC2
