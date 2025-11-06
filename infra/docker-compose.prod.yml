@@ -1,28 +1,39 @@
-version: '3.9'
+# 🚀 HireHub Production Docker Compose (AWS EC2 배포용)
+# version 키는 Docker Compose v2 이상에서는 불필요하므로 제거함.
+
 services:
-   backend:
-    image: ${BACKEND_IMAGE}
+  backend:
+    image: ${BACKEND_IMAGE}                       # 🔹 깃시크릿에서 자동 주입 (예: noeyos/hirehub-backend:latest)
     container_name: backend
     env_file:
-      - .env.prod
+      - ../backend/.env.prod                      # 🔹 Actions에서 EC2로 자동 업로드된 환경변수 파일
     environment:
-      SPRING_PROFILES_ACTIVE: aws
-      RDS_ENDPOINT: ${RDS_ENDPOINT}
-      JWT_SECRET: ${JWT_SECRET}         # ✅ 이 줄 추가
+      SPRING_PROFILES_ACTIVE: aws                 # 🔹 Spring Boot 프로파일
+      RDS_ENDPOINT: ${RDS_ENDPOINT}               # 🔹 RDS 호스트명 (Secrets → 주입)
+      JWT_SECRET: ${JWT_SECRET}                   # 🔹 JWT 키 (Secrets → 주입)
       JAVA_OPTS: "--add-opens java.base/java.lang=ALL-UNNAMED"
-    restart: unless-stopped
     ports:
       - "8080:8080"
-  
-   frontend:
-    image: ${FRONTEND_IMAGE}
+    restart: unless-stopped
+    networks:
+      - hirehub-net
+
+  frontend:
+    image: ${FRONTEND_IMAGE}                      # 🔹 깃시크릿에서 자동 주입 (예: noeyos/hirehub-frontend:latest)
     container_name: frontend
     depends_on:
       - backend
-    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro      # 🔹 SSL 인증서 공유 볼륨
       - /etc/ssl/certs:/etc/ssl/certs:ro
+    restart: unless-stopped
+    networks:
+      - hirehub-net
+
+# 🔹 Docker Compose v2 기본 네트워크 (frontend ↔ backend 연결용)
+networks:
+  hirehub-net:
+    driver: bridge
