@@ -27,6 +27,7 @@ const RealTimeChat: React.FC = () => {
   const [connectionError, setConnectionError] = useState<string>('');
   const [userNickname, setUserNickname] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitializing = useRef(false);
@@ -70,6 +71,7 @@ const RealTimeChat: React.FC = () => {
         const nick = user.nickname || user.name || '익명';
         console.log('사용자 정보 조회 성공:', user);
         setUserNickname(nick.trim() || '익명');
+        setUserId(user.id);
         setIsAuthenticated(true);
         return true;
       } else {
@@ -324,6 +326,7 @@ const RealTimeChat: React.FC = () => {
           sessionId,
           content: inputMessage,
           nickname: userNickname || '익명',
+          userId,
         }),
       });
 
@@ -426,7 +429,7 @@ const RealTimeChat: React.FC = () => {
               </div>
             ) : (
               messages.map((msg, i) => {
-                const isMyMessage = msg.nickname === userNickname;
+                const isMyMessage = msg.userId === userId;
 
                 return (
                   <div

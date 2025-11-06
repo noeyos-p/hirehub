@@ -140,11 +140,9 @@ public class LiveChatService {
         // User 엔티티에서 nickname 조회
         String nickname = Optional.ofNullable(chat.getUser())
                 .map(u -> {
-                    // nickname이 있으면 nickname 사용
                     if (u.getNickname() != null && !u.getNickname().trim().isEmpty()) {
                         return u.getNickname();
                     }
-                    // nickname이 없으면 name 사용
                     if (u.getName() != null && !u.getName().trim().isEmpty()) {
                         return u.getName();
                     }
@@ -158,6 +156,8 @@ public class LiveChatService {
                 .createAt(chat.getCreateAt())
                 .sessionId(chat.getSession().getId())
                 .nickname(nickname)
+                .userId(chat.getUser() != null ? chat.getUser().getId() : null)  // ✅ 추가된 부분
                 .build();
     }
+
 }
