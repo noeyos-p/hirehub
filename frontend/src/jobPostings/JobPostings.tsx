@@ -453,7 +453,7 @@ const JobPostings: React.FC = () => {
   // }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-[1440px] mx-auto px-[55px] py-3">
         {error && (
           <div className="mb-4 px-4 py-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">{error}</div>
