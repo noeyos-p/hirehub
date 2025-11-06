@@ -37,13 +37,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // ✅ 1️⃣ 인증 불필요 경로 화이트리스트 처리
         if (path.startsWith("/api/auth/")
                 || path.startsWith("/api/public/")
-                || path.startsWith("/api/onboarding/")
+                // ❌ 온보딩 제거 - 인증 필요하도록 변경
+                // || path.startsWith("/api/onboarding/")
                 || path.startsWith("/swagger-ui/")
                 || path.startsWith("/v3/api-docs/")
                 || path.startsWith("/login")
                 || path.startsWith("/oauth2/")
                 || path.equals("/")
                 || path.startsWith("/ws/")
+                || path.equals("/api/ads")  // ✅ 일반 사용자 광고 조회 추가
         ) {
             log.debug("🚫 인증 불필요 경로 → JWT 검증 생략: {}", path);
             filterChain.doFilter(request, response);

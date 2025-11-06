@@ -77,6 +77,7 @@ jobs:
             GOOGLE_SECRET=${{ secrets.GOOGLE_SECRET }}
             AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
             AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
+            JWT_SECRET=${{ secrets.JWt_SECRET }}
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}

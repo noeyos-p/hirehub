@@ -15,7 +15,7 @@ const PopularPosts: React.FC = () => {
     try {
       setLoading(true);
       const data = await boardApi.getPopularBoards();
-      setPopularBoards(data.slice(0, 5));
+      setPopularBoards(data.slice(0, 6));
     } catch (err) {
       console.error('인기 게시글 조회 실패:', err);
     } finally {

@@ -93,7 +93,7 @@ public class BoardService {
     /** 인기 Top5 */
     @Transactional(readOnly = true)
     public List<BoardDto> getPopularBoards() {
-        return boardRepository.findTop5ByOrderByViewsDesc()
+        return boardRepository.findTop6ByOrderByViewsDesc()
                 .stream().map(this::toDto).collect(Collectors.toList());
     }
 

@@ -1,8 +1,8 @@
 // src/signInfo/SignInfo.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/api';
-import { AxiosError } from 'axios';   // ✅ 추가
+import api, { setAuthToken } from '../api/api'; // ✅ setAuthToken import
+import { AxiosError } from 'axios';
 
 const SignInfo: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ const SignInfo: React.FC = () => {
     location: ''
   });
 
-    const seoulDistricts = [
+  const seoulDistricts = [
     '강남구', '강동구', '강북구', '강서구', '관악구',
     '광진구', '구로구', '금천구', '노원구', '도봉구',
     '동대문구', '동작구', '마포구', '서대문구', '서초구',
@@ -32,74 +32,69 @@ const SignInfo: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (
-  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-) => {
-  const { name, value } = e.target;
-  setFormData((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
- const handleSubmit = async (event: React.FormEvent) => {
-  event.preventDefault();
-  setError('');
-  setIsLoading(true);
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setError('로그인이 필요합니다.');
-      navigate('/login');
-      return;
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('로그인이 필요합니다.');
+        navigate('/login');
+        return;
+      }
+
+      const response = await api.post('/api/onboarding/save', formData);
+
+      console.log('📦 온보딩 응답:', response.data);
+
+      // ✅ 새 토큰이 있으면 헬퍼 함수로 저장 및 헤더 설정
+      if (response.data?.accessToken) {
+        console.log('🔁 새 토큰 수신 → 저장');
+        setAuthToken(response.data.accessToken);
+      }
+
+      alert('정보가 성공적으로 저장되었습니다!');
+
+      // ✅ 메인 페이지로 이동
+      console.log('✅ 메인 페이지로 이동');
+      window.location.href = '/';
+
+    } catch (e) {
+      const err = e as AxiosError<{ message?: string }>;
+      console.error('❌ 온보딩 실패:', err);
+
+      const status = err.response?.status;
+      const backendMessage = err.response?.data?.message;
+
+      if (status === 400) {
+        setError(backendMessage || '입력하신 정보에 문제가 있습니다.');
+      } else if (status === 401) {
+        setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        setAuthToken(null); // ✅ 헬퍼 함수로 토큰 제거
+        setTimeout(() => navigate('/login'), 2000);
+      } else if (status === 500) {
+        setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } else if (err.request) {
+        setError('서버와 연결할 수 없습니다. 네트워크를 확인해주세요.');
+      } else {
+        setError('요청 중 오류가 발생했습니다.');
+      }
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    const response = await api.post('/api/onboarding/save', formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // ✅ 새 토큰 저장
-    if (response.data?.accessToken) {
-      console.log('🔁 새 토큰 수신 → 저장');
-      localStorage.setItem('token', response.data.accessToken);
-    }
-
-    alert('정보가 성공적으로 저장되었습니다!');
-
-    // ✅ 추가: 로그인 상태 즉시 반영
-    window.location.href = '/'; // 새로고침 없이 메인으로 진입 (AuthContext 갱신)
-
-  } catch (e) {
-    const err = e as AxiosError<{ message?: string }>;
-    console.error('❌ 온보딩 실패:', err);
-
-    const status = err.response?.status;
-    const backendMessage = err.response?.data?.message;
-
-    if (status === 400) {
-      setError(backendMessage || '입력하신 정보에 문제가 있습니다.');
-    } else if (status === 401) {
-      setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
-      localStorage.removeItem('token');
-      setTimeout(() => navigate('/login'), 2000);
-    } else if (status === 500) {
-      setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-    } else if (err.request) {
-      setError('서버와 연결할 수 없습니다. 네트워크를 확인해주세요.');
-    } else {
-      setError('요청 중 오류가 발생했습니다.');
-    }
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-  /**
-   * ✅ [수정] 모든 필드가 입력되었는지 확인
-   */
   const isFormComplete = Object.values(formData).every(value => 
     typeof value === 'string' ? value.trim() !== '' : value !== ''
   );
@@ -110,7 +105,6 @@ const SignInfo: React.FC = () => {
       <hr className="max-w-md w-full border-t-2 border-gray-300 mb-6" />
       <h2 className="text-xl mb-6 font-bold">정보를 입력해주세요</h2>
 
-      {/* 에러 메시지 */}
       {error && (
         <div className="w-full max-w-md mb-4 px-4 py-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
           {error}
@@ -121,7 +115,6 @@ const SignInfo: React.FC = () => {
         onSubmit={handleSubmit}
         className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
       >
-        {/* 이름 */}
         <div className="mb-4">
           <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
             이름 *
@@ -139,7 +132,6 @@ const SignInfo: React.FC = () => {
           />
         </div>
 
-        {/* 닉네임 */}
         <div className="mb-4">
           <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">
             닉네임 *
@@ -157,7 +149,6 @@ const SignInfo: React.FC = () => {
           />
         </div>
 
-        {/* 전화번호 */}
         <div className="mb-4">
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
             전화번호 *
@@ -175,7 +166,6 @@ const SignInfo: React.FC = () => {
           />
         </div>
 
-        {/* 생년월일 */}
         <div className="mb-4">
           <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
             생년월일 *
@@ -192,7 +182,6 @@ const SignInfo: React.FC = () => {
           />
         </div>
 
-        {/* 성별 */}
         <div className="mb-4">
           <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
             성별 *
@@ -213,7 +202,6 @@ const SignInfo: React.FC = () => {
           </select>
         </div>
 
-        {/* 주소 */}
         <div className="mb-4">
           <label htmlFor="address" className="block text-sm font-medium text-gray-700">
             주소 *
@@ -231,7 +219,6 @@ const SignInfo: React.FC = () => {
           />
         </div>
 
-      {/* 선호 지역 */}
         <div className="mb-4">
           <label htmlFor="location" className="block text-sm font-medium text-gray-700">
             선호 지역 *
@@ -252,7 +239,6 @@ const SignInfo: React.FC = () => {
           </select>
         </div>
 
-        {/* 직무 */}
         <div className="mb-4">
           <label htmlFor="position" className="block text-sm font-medium text-gray-700">
             직무 *
@@ -277,7 +263,6 @@ const SignInfo: React.FC = () => {
           </select>
         </div>
 
-        {/* 경력 */}
         <div className="mb-4">
           <label htmlFor="careerLevel" className="block text-sm font-medium text-gray-700">
             경력 *
@@ -301,7 +286,6 @@ const SignInfo: React.FC = () => {
           </select>
         </div>
 
-        {/* 학력 */}
         <div className="mb-4">
           <label htmlFor="education" className="block text-sm font-medium text-gray-700">
             학력 *
@@ -324,7 +308,6 @@ const SignInfo: React.FC = () => {
           </select>
         </div>
 
-        {/* 완료 버튼 */}
         <button
           type="submit"
           disabled={!isFormComplete || isLoading}

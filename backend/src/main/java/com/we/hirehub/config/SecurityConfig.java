@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -29,15 +30,17 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // ✅ 추가
                 .headers(h -> h.frameOptions(f -> f.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
                         // ✅ 인증 없이 접근 가능한 경로
                         .requestMatchers(
                                 "/ws/**",
                                 "/api/chatbot/faq", "/api/chatbot/faq/**",
+                                "/api/ads",  // ✅ 일반 사용자 광고 조회 추가
                                 "/api/auth/**",
                                 "/api/public/**",
-                                "/api/onboarding/**",
+                                // ❌ "/api/onboarding/**", 제거! 인증 필요
                                 "/api/jobposts/**",
                                 "/api/company/**",
                                 "/api/companies/**",
