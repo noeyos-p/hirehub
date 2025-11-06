@@ -51,16 +51,19 @@ const Signup: React.FC = () => {
     }
   };
 
+  // ✅ 수정: baseURL 끝 / 제거
+  const getCleanBaseURL = () => (api.defaults.baseURL || '').replace(/\/$/, '');
+
   const handleGoogleSignup = () => {
-    window.location.href = `${api.defaults.baseURL}/api/auth/google`;
+    window.location.href = `${getCleanBaseURL()}/api/auth/google`;
   };
 
   const handleKakaoSignup = () => {
-    window.location.href = `${api.defaults.baseURL}/api/auth/kakao`;
+    window.location.href = `${getCleanBaseURL()}/api/auth/kakao`;
   };
 
   const handleNaverSignup = () => {
-    window.location.href = `${api.defaults.baseURL}/api/auth/naver`;
+    window.location.href = `${getCleanBaseURL()}/api/auth/naver`;
   };
 
   return (
