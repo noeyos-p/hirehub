@@ -9,9 +9,8 @@ RUN npm ci || yarn install
 # 🔹 소스 복사
 COPY . .
 
-# ✅ 환경변수 주입 (.env.prod를 infra에서 가져옴)
-#   => 주의: 빌드 시 VITE_API_BASE_URL이 JS 내부에 삽입됨
-COPY ../infra/.env.prod .env.prod
+# ✅ 환경변수 주입 (.env.prod는 같은 폴더)
+COPY .env.prod .env.prod
 RUN export $(cat .env.prod | xargs) && npm run build || yarn build
 
 # ===== Nginx serve =====
