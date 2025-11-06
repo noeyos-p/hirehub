@@ -12,7 +12,7 @@ const JobPostings: React.FC = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
   const companyFilter = searchParams.get("company") || "";
-  
+
   const [filters, setFilters] = useState({
     position: "",
     experience: "",
@@ -57,12 +57,6 @@ const JobPostings: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // ✅ 검색 쿼리 또는 회사 필터 변경 시 selectedJobId 초기화
-  useEffect(() => {
-    setSelectedJobId(null); // 검색 시 JobDetail 페이지 닫기
-    setCurrentPage(1); // 페이지를 1로 초기화
-  }, [searchQuery, companyFilter]);
 
   const fetchFavorites = async () => {
     try {
@@ -132,6 +126,10 @@ const JobPostings: React.FC = () => {
     fetchScrappedJobs();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, companyFilter]);
+
   const clearCompanyFilter = () => {
     window.location.href = "/jobPostings";
   };
@@ -155,7 +153,7 @@ const JobPostings: React.FC = () => {
         if (res.status === 200 && res.data) {
           setFavoritedCompanies((prev) => new Set(prev).add(companyId));
           window.dispatchEvent(new CustomEvent("favorite-changed"));
-        } 
+        }
       }
     } catch (err: any) {
       let errorMsg = "즐겨찾기 처리에 실패했습니다.";
@@ -266,7 +264,7 @@ const JobPostings: React.FC = () => {
     const jobLoc = job.location?.toLowerCase() || "";
     const query = searchQuery.toLowerCase();
 
-    const matchesCompany = !companyFilter || job.companyName === companyFilter;
+    const matchesCompany = !companyFilter || String(job.companyId) === companyFilter;
 
     const matchesSearch =
       !searchQuery ||
@@ -348,8 +346,8 @@ const JobPostings: React.FC = () => {
     const value = filters[filterType as keyof typeof filters];
     if (!value) {
       return filterType === 'position' ? '직무' :
-             filterType === 'experience' ? '경력' :
-             filterType === 'education' ? '학력' : '희망지역';
+        filterType === 'experience' ? '경력' :
+          filterType === 'education' ? '학력' : '희망지역';
     }
     return value;
   };
@@ -404,9 +402,14 @@ const JobPostings: React.FC = () => {
 
   // ✅ JobDetail 화면 (고정 사이드바 포함)
   if (selectedJobId) {
+    const selectedJob = jobListings.find(j => j.id === selectedJobId);
+
     return (
       <>
         <JobDetail jobId={selectedJobId} onBack={() => setSelectedJobId(null)} />
+        {showApplyModal && <ApplyModal />}
+
+        {/* 지원하기 모달 */}
         {showApplyModal && <ApplyModal />}
       </>
     );
@@ -424,7 +427,7 @@ const JobPostings: React.FC = () => {
         {companyFilter && (
           <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm flex items-center justify-between">
             <span>
-              '<strong>{companyFilter}</strong>' 기업의 채용공고:{" "}
+              해당 기업의 채용공고:{" "}
               <strong>{filteredJobs.length}</strong>개
             </span>
             <button
@@ -470,11 +473,10 @@ const JobPostings: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => handleFilterSelect('position', option.value)}
-                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
-                      filters.position === option.value
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${filters.position === option.value
                         ? 'text-[#006AFF] font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -500,11 +502,10 @@ const JobPostings: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => handleFilterSelect('experience', option.value)}
-                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
-                      filters.experience === option.value
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${filters.experience === option.value
                         ? 'text-[#006AFF] font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -530,11 +531,10 @@ const JobPostings: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => handleFilterSelect('education', option.value)}
-                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
-                      filters.education === option.value
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${filters.education === option.value
                         ? 'text-[#006AFF] font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -560,11 +560,10 @@ const JobPostings: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => handleFilterSelect('location', option.value)}
-                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
-                      filters.location === option.value
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${filters.location === option.value
                         ? 'text-[#006AFF] font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -579,11 +578,11 @@ const JobPostings: React.FC = () => {
           <div className="text-center py-10 text-gray-600">로딩 중...</div>
         ) : filteredJobs.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
-            {companyFilter 
+            {companyFilter
               ? `${companyFilter}의 채용 공고가 없습니다.`
-              : searchQuery 
-              ? "검색 결과가 없습니다." 
-              : "채용 공고가 없습니다."}
+              : searchQuery
+                ? "검색 결과가 없습니다."
+                : "채용 공고가 없습니다."}
           </div>
         ) : (
           <>
@@ -707,11 +706,10 @@ const JobPostings: React.FC = () => {
                     <button
                       key={i}
                       onClick={() => setCurrentPage(i)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${
-                        currentPage === i
+                      className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
                           ? "bg-white text-[#006AFF] border-[#006AFF]"
                           : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
-                      }`}
+                        }`}
                     >
                       {i}
                     </button>
