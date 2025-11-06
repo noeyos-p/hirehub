@@ -33,7 +33,9 @@ const MyPosts: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchMine(); }, []);
+  useEffect(() => {
+    fetchMine();
+  }, []);
 
   const handleCheckboxChange = (id: number) => {
     setSelectedIds((prev) =>
@@ -52,7 +54,7 @@ const MyPosts: React.FC = () => {
   };
 
   const handleEdit = (id: number) => {
-    // ✅ 마이페이지 내부 라우트로 이동 (App.tsx는 /myPage/:tab/*)
+    // ✅ 마이페이지 내부 라우트로 이동
     navigate(`/myPage/MyPosts/edit/${id}`);
   };
 
@@ -87,7 +89,10 @@ const MyPosts: React.FC = () => {
 
       <div className="space-y-5">
         {posts.map((post) => (
-          <div key={post.id} className="flex justify-between border-b border-gray-200 pb-4">
+          <div
+            key={post.id}
+            className="flex justify-between border-b border-gray-200 pb-4"
+          >
             <div className="flex items-start gap-3">
               <input
                 type="checkbox"
@@ -97,7 +102,14 @@ const MyPosts: React.FC = () => {
                 disabled={loading}
               />
               <div>
-                <div className="text-gray-900 font-semibold">{post.title}</div>
+                {/* ✅ 제목 클릭 시 게시글 상세 페이지로 이동 */}
+                <div
+                  className="text-gray-900 font-semibold cursor-pointer hover:text-blue-600"
+                  onClick={() => navigate(`/board/${post.id}`)}
+                >
+                  {post.title}
+                </div>
+
                 <div className="text-sm text-gray-600 mt-1 leading-relaxed line-clamp-2 w-[600px]">
                   {post.content}
                 </div>
@@ -113,7 +125,6 @@ const MyPosts: React.FC = () => {
                 수정하기
               </button>
               <div className="flex items-center text-gray-400 text-xs space-x-4 mt-2">
-                <span>💬{/* 댓글수 있으면 여기 */}</span>
                 <span>👁‍🗨{post.views ?? 0}</span>
               </div>
             </div>
