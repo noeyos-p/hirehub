@@ -45,7 +45,7 @@ logging:
 # ★ 프론트 기준 URL (구글 로그인 성공 시 여기로 보냄)
 app:
   jwt:
-    secret: "change-this-to-at-least-32-characters-secret-key-!!"
+    secret: ${JWT_SECRET}
     access-expire-seconds: 360000
   front:
     base-url: "https://byeongarigaebaldan.store"   # ← 필요에 따라 5173으로 바꾸면 됨
