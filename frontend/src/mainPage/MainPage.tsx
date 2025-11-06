@@ -10,7 +10,7 @@ const MainPage: React.FC = () => {
         {/* 모두가 주목하는 공고 섹션 */}
         <AttentionSection />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* 인기 있는 게시물 섹션 */}
           <PopularPosts />
 

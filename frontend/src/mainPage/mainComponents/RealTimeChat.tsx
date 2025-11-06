@@ -367,7 +367,7 @@ const RealTimeChat: React.FC = () => {
     <section className="">
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-3">
-        <h2 className="text-lg font-bold text-gray-800">실시간 채팅</h2>
+        <h2 className="text-[20px] font-bold text-gray-800">실시간 채팅</h2>
         {isJoined && (
           <span className={`text-xs px-2 py-1 rounded-full ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
             {isConnected ? '● 연결됨' : '○ 연결 끊김'}
@@ -390,7 +390,7 @@ const RealTimeChat: React.FC = () => {
       </div>
     )}
 
-    <div className="h-96 bg-[#DFE7EF] border border-gray-200 rounded-xl overflow-hidden flex flex-col">
+    <div className="h-110 bg-[#DFE7EF] border border-gray-200 rounded-xl overflow-hidden flex flex-col mt-[32px]">
       {!isJoined ? (
         <div className="flex-1 flex flex-col items-center justify-center text-gray-500 p-6">
           <div className="text-center space-y-4">
