@@ -89,39 +89,11 @@ const AppliedNotices: React.FC = () => {
     navigate(`/myPage/resume/ResumeDetail?id=${row.resumeId}`);
   };
 
-  // ✅ 삭제 기능
-  const handleDelete = async () => {
-    if (selectedIds.length === 0) {
-      alert("삭제할 항목을 선택해주세요.");
-      return;
-    }
-
-    if (!window.confirm(`${selectedIds.length}개의 지원 내역을 삭제하시겠습니까?`)) return;
-
-    try {
-      setLoading(true);
-      await api.delete("/api/mypage/applies", { data: selectedIds });
-      alert("삭제가 완료되었습니다.");
-      fetchApplies(); // ✅ 목록 새로고침
-    } catch (e) {
-      console.error(e);
-      alert("삭제에 실패했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">지원 내역</h2>
-        <button
-          onClick={handleSelectAll}
-          className="text-sm text-gray-600 hover:text-gray-800"
-          disabled={loading || items.length === 0}
-        >
-          {allSelected ? "전체해제" : "전체선택"}
-        </button>
       </div>
 
       {items.length === 0 ? (
@@ -134,13 +106,6 @@ const AppliedNotices: React.FC = () => {
               className="flex items-center justify-between border-b border-gray-200 pb-4"
             >
               <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1 accent-blue-500"
-                  checked={selectedIds.includes(notice.id)}
-                  onChange={() => handleCheckboxChange(notice.id)}
-                  disabled={loading}
-                />
                 <div>
                   <div className="text-gray-900 font-semibold">{notice.companyName}</div>
                   <div className="text-gray-700 mt-1">{notice.resumeTitle}</div>
@@ -173,16 +138,6 @@ const AppliedNotices: React.FC = () => {
           ))}
         </div>
       )}
-
-      <div className="flex justify-end mt-6">
-        <button
-          className="text-red-500 hover:text-red-600 text-sm font-medium"
-          onClick={handleDelete}
-          disabled={selectedIds.length === 0 || loading}
-        >
-          삭제
-        </button>
-      </div>
     </div>
   );
 };

@@ -113,29 +113,6 @@ const Resume = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedIds.length) return;
-    const deletables = resumes.filter(
-      (r) => selectedIds.includes(r.id) && !r.locked
-    );
-    if (!deletables.length) {
-      alert("제출(잠김)된 이력서는 삭제할 수 없습니다.");
-      return;
-    }
-    if (!confirm(`선택한 이력서를 삭제할까요?`)) return;
-
-    try {
-      setLoading(true);
-      await Promise.all(
-        deletables.map((r) => api.delete(`/api/mypage/resumes/${r.id}`))
-      );
-      await fetchList();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const dateOf = (r: ResumeItem) => prettyMDW(r.updateAt || r.createAt);
 
@@ -148,12 +125,6 @@ const Resume = () => {
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">이력서 관리</h2>
-        <button
-          onClick={handleSelectAll}
-          className="text-sm text-gray-600 hover:text-gray-800"
-        >
-          {allSelected ? "전체해제" : "전체선택"}
-        </button>
       </div>
 
       <div className="space-y-5">
@@ -163,13 +134,6 @@ const Resume = () => {
             className="flex items-center justify-between border-b border-gray-200 pb-4"
           >
             <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                className="mt-1 accent-blue-500"
-                checked={selectedIds.includes(resume.id)}
-                onChange={() => handleCheckboxChange(resume.id)}
-                disabled={loading}
-              />
               <div className="text-gray-700 mt-1">
                 {resume.title}
                 {resume.locked && (
@@ -205,13 +169,6 @@ const Resume = () => {
           disabled={loading}
         >
           이력서 작성
-        </button>
-        <button
-          onClick={handleDelete}
-          className="text-red-500 hover:text-red-600 text-sm font-medium"
-          disabled={!selectedIds.length || loading}
-        >
-          삭제
         </button>
       </div>
     </div>
