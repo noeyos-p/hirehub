@@ -369,8 +369,9 @@ const JobManagement: React.FC = () => {
     )}
 
     {/* ✅ 여기 추가 */}
-    {isCreateModalOpen && renderCreateModal()}
+    {/* {isCreateModalOpen && renderCreateModal()} */}
   </div>
 );
+}
 
 export default JobManagement;
