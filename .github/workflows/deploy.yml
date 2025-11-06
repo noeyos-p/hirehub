@@ -21,7 +21,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # ✅ backend/.env.prod 생성
+      # ✅ backend용 .env.prod 자동 생성
       - name: 🧾 Create backend .env.prod
         run: |
           echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}" >> ./backend/.env.prod
@@ -32,31 +32,40 @@ jobs:
           echo "GOOGLE_SECRET=${{ secrets.GOOGLE_SECRET }}" >> ./backend/.env.prod
           echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> ./backend/.env.prod
           echo "KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}" >> ./backend/.env.prod
+          echo "KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}" >> ./backend/.env.prod
           echo "NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}" >> ./backend/.env.prod
           echo "NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}" >> ./backend/.env.prod
           echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> ./backend/.env.prod
           echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> ./backend/.env.prod
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> ./backend/.env.prod
           echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}" >> ./backend/.env.prod
           echo "APP_FRONT_REDIRECT_URL=${{ secrets.APP_FRONT_REDIRECT_URL }}" >> ./backend/.env.prod
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> ./backend/.env.prod
 
-      # ✅ frontend/.env.prod 생성
+      # ✅ frontend용 .env.prod 자동 생성
       - name: 🧾 Create frontend .env.prod
         run: |
           echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" >> ./frontend/.env.prod
 
-      # ✅ Docker Build & Push
-      - name: 🐳 Build and Push Images
+      # ✅ Docker 이미지 빌드 및 푸시
+      - name: 🐳 Build & Push Backend
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
-          tags: |
-            ${{ secrets.BACKEND_IMAGE }}
-            ${{ secrets.FRONTEND_IMAGE }}
-          file: ./infra/docker-compose.prod.yml
+          tags: ${{ secrets.BACKEND_IMAGE }}
+          no-cache: true
 
-      # ✅ Deploy to EC2
+      - name: 🐳 Build & Push Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.FRONTEND_IMAGE }}
+          no-cache: true
+
+      # ✅ EC2로 SSH 접속해 최신 컨테이너 실행
       - name: 🚀 Deploy to EC2
         uses: appleboy/ssh-action@v1.1.0
         with:
@@ -65,7 +74,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/app/infra
-            docker compose down
+            docker compose -f docker-compose.prod.yml down
             docker pull ${{ secrets.BACKEND_IMAGE }}
             docker pull ${{ secrets.FRONTEND_IMAGE }}
-            docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml up -d
+            docker exec backend printenv | grep JWT_SECRET
+            docker exec frontend printenv | grep VITE_API_BASE_URL
