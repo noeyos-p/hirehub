@@ -162,43 +162,43 @@ const AttentionSection: React.FC = () => {
           {popularJobs.map((job) => (
             <div
               key={job.id}
-              className="relative w-[253px] h-[288px] bg-white rounded-lg shadow-md overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
+              className="relative w-[253px] h-[288px] bg-white border border-gray-200 rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleJobClick(job.id)}
             >
               {/* ✅ 회사 이미지 - job.companyPhoto 직접 사용 */}
-<div className="w-full h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-4">
-  {job.companyPhoto ? (
-    <img
-      src={job.companyPhoto}
-      alt={job.companyName}
-      className="max-w-[80%] max-h-[80%] object-contain"
-      onError={(e) => {
-        console.error(`❌ 이미지 로드 실패: ${job.companyName}`, job.companyPhoto);
-        // 이미지 로드 실패 시 대체 UI 표시
-        const target = e.currentTarget as HTMLImageElement;
-        target.style.display = 'none';
-        const parent = target.parentElement;
-        if (parent && !parent.querySelector('.error-message')) {
-          const errorDiv = document.createElement('div');
-          errorDiv.className = 'error-message w-full h-full flex items-center justify-center text-gray-400 text-sm';
-          errorDiv.textContent = '이미지 없음';
-          parent.appendChild(errorDiv);
-        }
-      }}
-    />
-  ) : (
-    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
-      이미지 없음
-    </div>
-  )}
-</div>
+              <div className="w-full h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-4">
+                {job.companyPhoto ? (
+                  <img
+                    src={job.companyPhoto}
+                    alt={job.companyName}
+                    className="max-w-[80%] max-h-[80%] object-contain"
+                    onError={(e) => {
+                      console.error(`❌ 이미지 로드 실패: ${job.companyName}`, job.companyPhoto);
+                      // 이미지 로드 실패 시 대체 UI 표시
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = 'none';
+                      const parent = target.parentElement;
+                      if (parent && !parent.querySelector('.error-message')) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'error-message w-full h-full flex items-center justify-center text-gray-400 text-sm';
+                        errorDiv.textContent = '이미지 없음';
+                        parent.appendChild(errorDiv);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+                    이미지 없음
+                  </div>
+                )}
+              </div>
 
               {/* 텍스트 */}
               <div className="pt-[16px] pb-[20px] px-[24px]">
                 <p className="font-semibold text-gray-800 text-[20px] ">{job.companyName}</p>
                 <p className="text-gray-900 font-normal text-[16px] mt-[4px] truncate">
-  {job.title}
-</p>
+                  {job.title}
+                </p>
                 <p className="text-gray-500 text-[14px]">
                   {job.position} / {job.careerLevel} / {job.education} / {job.location}
                 </p>

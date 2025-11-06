@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import api from '../../api/api';
@@ -361,107 +362,174 @@ const RealTimeChat: React.FC = () => {
 
   return (
     <section className="">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-gray-800">실시간 채팅</h2>
-          {isJoined && (
-            <span className={`text-xs px-2 py-1 rounded-full ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {isConnected ? '● 연결됨' : '○ 연결 끊김'}
-            </span>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {!isJoined ? (
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-bold text-gray-800">실시간 채팅</h2>
+        {isJoined && (
+          <span className={`text-xs px-2 py-1 rounded-full ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+            {isConnected ? '● 연결됨' : '○ 연결 끊김'}
+          </span>
+        )}
+      </div>
+      {isJoined && (
+        <button
+          onClick={handleLeave}
+          className="text-red-500 hover:text-red-600 cursor-pointer text-sm font-medium transition-colors"
+        >
+          퇴장하기
+        </button>
+      )}
+    </div>
+
+    {connectionError && (
+      <div className="mb-2 p-2 bg-yellow-100 text-yellow-800 text-xs rounded">
+        {connectionError}
+      </div>
+    )}
+
+    <div className="h-96 bg-[#DFE7EF] border border-gray-200 rounded-xl overflow-hidden flex flex-col">
+      {!isJoined ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-500 p-6">
+          <div className="text-center space-y-4">
+            <div className="space-y-2">
+              <p className="text-gray-600 font-medium">
+                {isAuthenticated
+                  ? '채팅방에 참여하시겠습니까?'
+                  : '로그인 후 채팅방에 참여할 수 있습니다'}
+              </p>
+              {!isAuthenticated && (
+                <p className="text-sm text-gray-500">
+                  채팅방 참여는 로그인이 필요합니다
+                </p>
+              )}
+            </div>
             <button
               onClick={handleJoin}
               disabled={!isAuthenticated}
-              className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${isAuthenticated
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+              className={`px-6 py-2.5 rounded-lg transition-colors text-md font-medium ${
+                isAuthenticated
+                  ? 'bg-[#006AFF] text-white hover:bg-blue-600'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+              }`}
               title={!isAuthenticated ? '로그인이 필요합니다' : ''}
             >
-              참여
+              참여하기
             </button>
-          ) : (
-            <button
-              onClick={handleLeave}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-            >
-              퇴장
-            </button>
-          )}
-        </div>
-      </div>
-
-      {connectionError && (
-        <div className="mb-2 p-2 bg-yellow-100 text-yellow-800 text-xs rounded">
-          {connectionError}
-        </div>
-      )}
-
-      {!isAuthenticated && !isJoined && (
-        <div className="mb-2 p-2 bg-blue-100 text-blue-800 text-xs rounded">
-          💡 채팅방 참여는 로그인 후 가능합니다.
-        </div>
-      )}
-
-      <div className="h-96 bg-gray-100 rounded-lg overflow-hidden flex flex-col">
-        {!isJoined ? (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            {isAuthenticated
-              ? '참여 버튼을 눌러 채팅방에 입장하세요'
-              : '로그인 후 채팅방에 참여할 수 있습니다'}
           </div>
-        ) : (
-          <>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {messages.length === 0 ? (
-                <div className="text-center text-gray-500 text-sm mt-8">
-                  채팅 내역이 없습니다. 첫 메시지를 보내보세요!
-                </div>
-              ) : (
-                messages.map((msg, i) => (
-                  <div key={msg.id || i} className="bg-white rounded-lg p-3 shadow-sm">
-                    <div className="flex items-start justify-between mb-1">
-                      <span className="text-xs font-semibold text-blue-600">
-                        {msg.nickname || '익명'}
-                      </span>
-                      <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {formatKoreanTime(msg.createAt)}
-                      </span>
-                    </div>
-                    <p className="text-gray-800 text-sm break-words">{msg.content}</p>
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="border-t border-gray-300 p-3 bg-white">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="메시지를 입력하세요..."
-                  disabled={!isConnected}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || !isConnected}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-                >
-                  전송
-                </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 ? (
+              <div className="text-center text-gray-500 text-sm mt-8">
+                채팅 내역이 없습니다. 첫 메시지를 보내보세요!
               </div>
+            ) : (
+              messages.map((msg, i) => {
+                const isMyMessage = msg.nickname === userNickname;
+
+                return (
+                  <div
+                    key={msg.id || i}
+                    className={`flex items-start gap-2 ${
+                      isMyMessage ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    {/* 👤 상대방 프로필 */}
+                    {!isMyMessage && (
+                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                          className="w-5 h-5 text-gray-600"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M12 2a5 5 0 100 10 5 5 0 000-10zM4 20a8 8 0 0116 0H4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* 💬 말풍선 + 시간 묶음 */}
+                    <div
+                      className={`flex flex-col max-w-[75%] ${
+                        isMyMessage ? "items-end" : "items-start"
+                      }`}
+                    >
+                      {/* 닉네임 (상대만 표시) */}
+                      {!isMyMessage && (
+                        <span className="text-xs font-semibold text-gray-700 mb-1 ml-1">
+                          {msg.nickname || "익명"}
+                        </span>
+                      )}
+
+                      {/* 말풍선 + 시간 한 줄 정렬 */}
+                      <div
+                        className={`flex items-end ${
+                          isMyMessage ? "flex-row-reverse gap-1" : "flex-row gap-1"
+                        }`}
+                      >
+                        <div
+                          className={`px-4 py-2.5 text-[15px] rounded-2xl break-words ${
+                            isMyMessage
+                              ? "bg-blue-500 text-white rounded-tr-sm"
+                              : "bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm"
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                        <span className="text-[11px] text-gray-400 whitespace-nowrap mb-[2px]">
+                          {formatKoreanTime(msg.createAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="p-3 bg-white">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="메시지를 입력하세요..."
+                disabled={!isConnected}
+                className="flex-1 px-2 rounded-lg border-0 focus:outline-none text-[15px] disabled:bg-gray-100"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || !isConnected}
+                className="p-2 text-gray-500 hover:text-blue-500 disabled:text-gray-300 transition-colors"
+                title="메시지 전송"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-5 h-5 rotate-[5deg]"
+                >
+                  <path d="M22 2L11 13" />
+                  <path d="M22 2L15 22l-4-9-9-4 20-7z" />
+                </svg>
+              </button>
             </div>
-          </>
-        )}
-      </div>
-    </section>
+          </div>
+        </>
+      )}
+    </div>
+  </section>
   );
 };
 
