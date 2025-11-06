@@ -311,8 +311,8 @@ const ResumeDetail: React.FC = () => {
       form.append("file", file);
 
       // ✅ 토큰 명시적으로 추가 (multipart는 인터셉터가 깨지기 쉬움)
-      const res = await axios.post(
-  `${import.meta.env.VITE_API_BASE_URL}/api/mypage/resumes/${id}/photo`,
+      const res = await api.post(
+  `/api/mypage/resumes/${id}/photo`,
   form,
   {
     headers: {
