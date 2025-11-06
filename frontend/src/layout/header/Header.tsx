@@ -38,7 +38,7 @@ export default function Header() {
       alert('검색어를 입력해주세요.');
       return;
     }
-    navigate(`/jobPostings?search=${encodeURIComponent(searchKeyword)}`);
+    navigate(`/jobPostings?search=${encodeURIComponent(searchKeyword)}`, { replace: true });
     setSearchKeyword('');
   };
 
