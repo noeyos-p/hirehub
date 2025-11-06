@@ -8,7 +8,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -21,21 +21,22 @@ const Login: React.FC = () => {
 
       console.log('📦 로그인 응답:', response.data);
 
-      const { accessToken, role, email: userEmail, id: userId } = response.data;
+      // ✅ 수정: id → userId 로 변경
+      const { accessToken, role, email: userEmail, userId } = response.data;
 
       if (accessToken) {
-        // 토큰, role, 이메일 저장
+        // ✅ 수정: userId 정확히 저장
         localStorage.setItem('token', accessToken);
         localStorage.setItem('role', role || 'USER');
         localStorage.setItem('email', userEmail || email);
         localStorage.setItem('userId', String(userId));
-        
+
         console.log('🔑 로그인 성공');
         console.log('- 토큰:', accessToken.substring(0, 20) + '...');
         console.log('- Role:', role);
         console.log('- Email:', userEmail || email);
 
-        // 로그인 후 페이지 새로고침으로 이동
+        // ✅ 새로고침 대신 navigate 사용 고려 (하지만 유지 가능)
         if (role === 'ADMIN') {
           console.log('✅ 관리자 - Admin 페이지로 이동');
           window.location.href = '/admin';
@@ -53,17 +54,20 @@ const Login: React.FC = () => {
     }
   };
 
+// ✅ 수정: baseURL 마지막 / 제거하여 슬래시 두 개 방지
+  const getCleanBaseURL = () => (api.defaults.baseURL || '').replace(/\/$/, '');
+
   const handleGoogleLogin = () => {
-  window.location.href = `${api.defaults.baseURL}/api/auth/google`;
-};
+    window.location.href = `${getCleanBaseURL()}/api/auth/google`;
+  };
 
-const handleKakaoLogin = () => {
-  window.location.href = `${api.defaults.baseURL}/api/auth/kakao`;
-};
+  const handleKakaoLogin = () => {
+    window.location.href = `${getCleanBaseURL()}/api/auth/kakao`;
+  };
 
-const handleNaverLogin = () => {
-  window.location.href = `${api.defaults.baseURL}/api/auth/naver`;
-};
+  const handleNaverLogin = () => {
+    window.location.href = `${getCleanBaseURL()}/api/auth/naver`;
+  };
 
   return (
     <div className="flex min-h-[80vh] bg-background-light dark:bg-background-dark font-display text-text-primary dark:text-white items-center justify-center p-12">
