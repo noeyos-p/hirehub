@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { TrashIcon, PhotoIcon, PencilIcon, XMarkIcon, PlusIcon} from "@heroicons/react/24/outline";
 import api from "../../api/api";
+import axios from "axios";
+
 
 interface Job {
   id: number;
@@ -31,6 +33,7 @@ interface PageInfo {
   totalPages: number;
   currentPage: number;
 }
+const [uploadFile, setUploadFile] = useState<File | null>(null);
 
 // 신규 등록용: id 제외
 type NewJob = Omit<Job, "id">;
@@ -118,32 +121,40 @@ const JobManagement: React.FC = () => {
   };
 
   /** ✅ 신규 등록 */
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+const handleCreateSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  
+
   try {
+    // ✅ 1️⃣ 공고 정보 먼저 등록
     const res = await api.post("/api/admin/job-management", newJob);
-    
+
     if (res.data.success) {
       const createdJob = res.data.data;
-      
-      // 이미지 업로드
-      if (preview) {
+
+      // ✅ 2️⃣ 이미지 업로드 (선택한 파일이 있을 때만)
+      if (uploadFile) {
         const formData = new FormData();
-        const blob = await fetch(preview).then((r) => r.blob());
-        formData.append("file", new File([blob], "job-photo.png", { type: "image/png" }));
-        formData.append("jobPostId", createdJob.id.toString());
-        await api.post("/api/admin/job-management/jobpost-image", formData);
+        formData.append("file", uploadFile);
+        formData.append("jobPostId", String(createdJob.id)); // 새로 생성된 ID 사용
+
+        await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/admin/job-management/jobpost-image`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            withCredentials: true,
+          }
+        );
       }
-      
+
       alert("공고 등록 완료!");
       setIsCreateModalOpen(false);
-      
-      // ✅ 트랜잭션 커밋 대기 후 조회
-      setTimeout(() => {
-        fetchJobs(0);
-      }, 500); // 0.5초 대기
-      
+      setUploadFile(null); // ✅ 상태 초기화
+      setPreview(null);
+      setTimeout(() => fetchJobs(0), 500);
     } else {
       alert("등록 실패: " + (res.data.message || "서버 오류"));
     }
@@ -155,14 +166,17 @@ const JobManagement: React.FC = () => {
 
   /** ✅ 이미지 미리보기 */
   const handlePreviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setPreview(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setUploadFile(file); // ✅ 파일을 상태에 저장 (중요)
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    setPreview(ev.target?.result as string);
   };
+  reader.readAsDataURL(file);
+};
 
   // ✅ 신규 등록 모달
   const renderCreateModal = () => (

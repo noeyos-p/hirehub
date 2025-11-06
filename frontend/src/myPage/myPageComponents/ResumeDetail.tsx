@@ -2,6 +2,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../api/api";
+import axios from "axios";
+
 
 /** ---------------- Types ---------------- */
 
@@ -309,11 +311,17 @@ const ResumeDetail: React.FC = () => {
       form.append("file", file);
 
       // ✅ 토큰 명시적으로 추가 (multipart는 인터셉터가 깨지기 쉬움)
-      const res = await api.post(`/api/mypage/resumes/${id}/photo`, form, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      const res = await axios.post(
+  `${import.meta.env.VITE_API_BASE_URL}/api/mypage/resumes/${id}/photo`,
+  form,
+  {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+    withCredentials: true,
+  }
+);
       const url = res?.data?.url || res?.data?.idPhoto;
       if (url) setPhotoPreview(url);
     } catch (err) {
