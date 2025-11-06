@@ -187,6 +187,7 @@ const JobManagement: React.FC = () => {
 
   // ✅ 공고 목록 불러오기
   const fetchJobs = async (page: number = 0) => {
+
   try {
     const res = await api.get("/api/admin/job-management", {
       params: { page, size: pageSize, sortBy: "id", direction: "DESC" },
@@ -211,6 +212,28 @@ const JobManagement: React.FC = () => {
   }
 };
 
+=======
+    try {
+      const res = await api.get("/api/admin/job-management", {
+        params: { page, size: pageSize, sortBy: "id", direction: "DESC" },
+      });
+      if (res.data.success) {
+        setJobs(res.data.data);
+        setPageInfo({
+          totalElements: res.data.totalElements,
+          totalPages: res.data.totalPages,
+          currentPage: res.data.currentPage,
+        });
+        setCurrentPage(page);
+      } else {
+        setError("데이터를 불러올 수 없습니다.");
+      }
+    } catch (err: any) {
+      console.error("공고 목록 불러오기 오류:", err);
+      setError("서버 오류가 발생했습니다.");
+    }
+  };
+>>>>>>> b8707d4c33761856312f3774356ed30a43f3c45c
 
   useEffect(() => {
     fetchJobs(0);
