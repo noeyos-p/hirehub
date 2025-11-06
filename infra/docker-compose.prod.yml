@@ -6,7 +6,7 @@ services:
     image: ${BACKEND_IMAGE}                       # 🔹 깃시크릿에서 자동 주입 (예: noeyos/hirehub-backend:latest)
     container_name: backend
     env_file:
-      - ../backend/.env.prod                      # 🔹 Actions에서 EC2로 자동 업로드된 환경변수 파일
+      - ../backend/backend/.env.prod                      # 🔹 Actions에서 EC2로 자동 업로드된 환경변수 파일
     environment:
       SPRING_PROFILES_ACTIVE: aws                 # 🔹 Spring Boot 프로파일
       RDS_ENDPOINT: ${RDS_ENDPOINT}               # 🔹 RDS 호스트명 (Secrets → 주입)
