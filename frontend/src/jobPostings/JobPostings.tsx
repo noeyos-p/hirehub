@@ -89,7 +89,7 @@ const JobPostings: React.FC = () => {
       setError("");
       try {
         const response = await api.get("/api/jobposts");
-        setJobListings(response.data);
+        const list = response.data.content || response.data || [];
       } catch (err: any) {
         setError(
           err.response?.data?.message || "채용공고를 불러오는데 실패했습니다."
