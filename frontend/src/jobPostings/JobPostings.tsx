@@ -58,6 +58,12 @@ const JobPostings: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // ✅ 검색 쿼리 또는 회사 필터 변경 시 selectedJobId 초기화
+  useEffect(() => {
+    setSelectedJobId(null); // 검색 시 JobDetail 페이지 닫기
+    setCurrentPage(1); // 페이지를 1로 초기화
+  }, [searchQuery, companyFilter]);
+
   const fetchFavorites = async () => {
     try {
       const res = await api.get("/api/mypage/favorites/companies?page=0&size=1000");
@@ -125,10 +131,6 @@ const JobPostings: React.FC = () => {
     };
     fetchScrappedJobs();
   }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, companyFilter]);
 
   const clearCompanyFilter = () => {
     window.location.href = "/jobPostings";
@@ -357,60 +359,55 @@ const JobPostings: React.FC = () => {
     console.log("ApplyModal 렌더링됨");
     console.log("resumes:", resumes);
     return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-xl font-semibold">지원할 이력서 선택</h3>
-          <button onClick={() => { setShowApplyModal(false); setSelectedResumeId(null); }} className="text-gray-400 hover:text-gray-600">
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          {resumes.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">
-              <p>제출 가능한 이력서가 없습니다.</p>
-              <p className="text-sm mt-2">새 이력서를 작성해주세요.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {resumes.map((resume: any) => (
-                <label key={resume.id} className={`block border rounded-lg p-4 cursor-pointer transition-all ${selectedResumeId === resume.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
-                  <div className="flex items-center gap-3">
-                    <input type="radio" name="resume" value={resume.id} checked={selectedResumeId === resume.id} onChange={() => setSelectedResumeId(resume.id)} className="accent-blue-500" />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{resume.title}</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        최종 수정: {new Date(resume.updateAt || resume.createAt).toLocaleDateString()}
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+          <div className="flex items-center justify-between p-6 border-b">
+            <h3 className="text-xl font-semibold">지원할 이력서 선택</h3>
+            <button onClick={() => { setShowApplyModal(false); setSelectedResumeId(null); }} className="text-gray-400 hover:text-gray-600">
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            {resumes.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">
+                <p>제출 가능한 이력서가 없습니다.</p>
+                <p className="text-sm mt-2">새 이력서를 작성해주세요.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {resumes.map((resume: any) => (
+                  <label key={resume.id} className={`block border rounded-lg p-4 cursor-pointer transition-all ${selectedResumeId === resume.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
+                    <div className="flex items-center gap-3">
+                      <input type="radio" name="resume" value={resume.id} checked={selectedResumeId === resume.id} onChange={() => setSelectedResumeId(resume.id)} className="accent-blue-500" />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{resume.title}</div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          최종 수정: {new Date(resume.updateAt || resume.createAt).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="flex justify-end gap-3 p-6 border-t">
-          <button onClick={() => { setShowApplyModal(false); setSelectedResumeId(null); }} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md" disabled={isApplying}>취소</button>
-          <button onClick={handleSubmitApply} disabled={!selectedResumeId || isApplying} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-            {isApplying ? "지원 중..." : "지원하기"}
-          </button>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-3 p-6 border-t">
+            <button onClick={() => { setShowApplyModal(false); setSelectedResumeId(null); }} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md" disabled={isApplying}>취소</button>
+            <button onClick={handleSubmitApply} disabled={!selectedResumeId || isApplying} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              {isApplying ? "지원 중..." : "지원하기"}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
     );
   };
 
   // ✅ JobDetail 화면 (고정 사이드바 포함)
   if (selectedJobId) {
-    const selectedJob = jobListings.find(j => j.id === selectedJobId);
-    
     return (
       <>
-       <JobDetail jobId={selectedJobId} onBack={() => setSelectedJobId(null)} />
-      {showApplyModal && <ApplyModal />}
-     
-      {/* 지원하기 모달 */}
-      {showApplyModal && <ApplyModal />}
+        <JobDetail jobId={selectedJobId} onBack={() => setSelectedJobId(null)} />
+        {showApplyModal && <ApplyModal />}
       </>
     );
   }
@@ -578,171 +575,171 @@ const JobPostings: React.FC = () => {
         </div>
 
         {/* 공고 목록 */}
-{isLoading ? (
-  <div className="text-center py-10 text-gray-600">로딩 중...</div>
-) : filteredJobs.length === 0 ? (
-  <div className="text-center py-10 text-gray-500">
-    {companyFilter 
-      ? `${companyFilter}의 채용 공고가 없습니다.`
-      : searchQuery 
-      ? "검색 결과가 없습니다." 
-      : "채용 공고가 없습니다."}
-  </div>
-) : (
-  <>
-    <div className="divide-y divide-gray-200">
-      {paginatedJobs.map((job) => (
-        <div
-          key={job.id}
-          className="flex justify-between items-start hover:bg-gray-50 px-2 rounded-md transition py-[26px] px-[24px]"
-        >
-          {/* 왼쪽: 회사명 + 세로선 + 공고 정보 */}
-          <div
-            className="flex-1 flex gap-4 cursor-pointer"
-            onClick={() => handleJobClick(job.id)}
-          >
-            {/* 회사명 (너비 고정) */}
-            <div className="w-[160px] flex items-center gap-2">
-              <p className="text-[20px] font-semibold text-gray-900 truncate">
-                {job.companyName}
-              </p>
+        {isLoading ? (
+          <div className="text-center py-10 text-gray-600">로딩 중...</div>
+        ) : filteredJobs.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            {companyFilter 
+              ? `${companyFilter}의 채용 공고가 없습니다.`
+              : searchQuery 
+              ? "검색 결과가 없습니다." 
+              : "채용 공고가 없습니다."}
+          </div>
+        ) : (
+          <>
+            <div className="divide-y divide-gray-200">
+              {paginatedJobs.map((job) => (
+                <div
+                  key={job.id}
+                  className="flex justify-between items-start hover:bg-gray-50 px-2 rounded-md transition py-[26px] px-[24px]"
+                >
+                  {/* 왼쪽: 회사명 + 세로선 + 공고 정보 */}
+                  <div
+                    className="flex-1 flex gap-4 cursor-pointer"
+                    onClick={() => handleJobClick(job.id)}
+                  >
+                    {/* 회사명 (너비 고정) */}
+                    <div className="w-[160px] flex items-center gap-2">
+                      <p className="text-[20px] font-semibold text-gray-900 truncate">
+                        {job.companyName}
+                      </p>
+                      <button
+                        onClick={(e) => handleFavoriteClick(e, job.companyId)}
+                        className="transition-all hover:scale-110 flex-shrink-0"
+                        title={
+                          favoritedCompanies.has(job.companyId)
+                            ? "즐겨찾기 해제"
+                            : "즐겨찾기"
+                        }
+                      >
+                        {favoritedCompanies.has(job.companyId) ? (
+                          <StarSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                        ) : (
+                          <StarIcon className="w-5 h-5 text-gray-400 hover:text-[#006AFF]" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* 세로 구분선 */}
+                    <div className="w-px bg-gray-300"></div>
+
+                    {/* 공고 정보 */}
+                    <div className="flex-1 ml-[20px]">
+                      <p className="text-[16px] font-normal text-gray-800 mb-[9px]">
+                        {job.title}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {job.position && <span>{job.position} / </span>}
+                        {job.careerLevel} / {job.education} / {job.location}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 오른쪽: 조회수, 스크랩, 날짜 */}
+                  <div className="flex flex-col items-end gap-2 ml-4">
+                    {/* 조회수 + 스크랩 */}
+                    <div className="flex items-center gap-3 mb-[9px]">
+                      <div className="flex items-center gap-1 text-gray-500 ">
+                        <EyeIcon className="w-4 h-4" />
+                        <span className="text-sm">{job.views ?? 0}</span>
+                      </div>
+
+                      <button
+                        onClick={(e) => handleBookmarkClick(e, job.id)}
+                        className="transition-all hover:scale-110"
+                        title={
+                          scrappedJobs.has(job.id)
+                            ? "북마크 해제"
+                            : "북마크 추가"
+                        }
+                      >
+                        {scrappedJobs.has(job.id) ? (
+                          <BookmarkSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                        ) : (
+                          <BookmarkIcon className="w-5 h-5 text-gray-600 hover:text-[#006AFF]" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* 날짜 */}
+                    <span className="text-sm text-gray-600 whitespace-nowrap">
+                      {job.startAt?.replace(/-/g, '.')} - {job.endAt?.replace(/-/g, '.')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ✅ 페이지네이션 - 새로운 디자인 */}
+            <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
+              {/* 처음으로 */}
               <button
-                onClick={(e) => handleFavoriteClick(e, job.companyId)}
-                className="transition-all hover:scale-110 flex-shrink-0"
-                title={
-                  favoritedCompanies.has(job.companyId)
-                    ? "즐겨찾기 해제"
-                    : "즐겨찾기"
-                }
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {favoritedCompanies.has(job.companyId) ? (
-                  <StarSolidIcon className="w-5 h-5 text-[#006AFF]" />
-                ) : (
-                  <StarIcon className="w-5 h-5 text-gray-400 hover:text-[#006AFF]" />
-                )}
+                <ChevronDoubleLeftIcon className="w-5 h-5" />
+              </button>
+
+              {/* 이전 */}
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeftIcon className="w-5 h-5" />
+              </button>
+
+              {/* 페이지 번호 */}
+              {(() => {
+                const pages = [];
+                const maxVisible = 5;
+                let startPage = Math.max(
+                  1,
+                  currentPage - Math.floor(maxVisible / 2)
+                );
+                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                if (endPage - startPage + 1 < maxVisible) {
+                  startPage = Math.max(1, endPage - maxVisible + 1);
+                }
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${
+                        currentPage === i
+                          ? "bg-white text-[#006AFF] border-[#006AFF]"
+                          : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
+                      }`}
+                    >
+                      {i}
+                    </button>
+                  );
+                }
+                return pages;
+              })()}
+
+              {/* 다음 */}
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRightIcon className="w-5 h-5" />
+              </button>
+
+              {/* 마지막으로 */}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronDoubleRightIcon className="w-5 h-5" />
               </button>
             </div>
-
-            {/* 세로 구분선 */}
-            <div className="w-px bg-gray-300"></div>
-
-            {/* 공고 정보 */}
-            <div className="flex-1 ml-[20px]">
-              <p className="text-[16px] font-normal text-gray-800 mb-[9px]">
-                {job.title}
-              </p>
-              <p className="text-sm text-gray-500">
-                {job.position && <span>{job.position} / </span>}
-                {job.careerLevel} / {job.education} / {job.location}
-              </p>
-            </div>
-          </div>
-
-          {/* 오른쪽: 조회수, 스크랩, 날짜 */}
-          <div className="flex flex-col items-end gap-2 ml-4">
-            {/* 조회수 + 스크랩 */}
-            <div className="flex items-center gap-3 mb-[9px]">
-              <div className="flex items-center gap-1 text-gray-500 ">
-                <EyeIcon className="w-4 h-4" />
-                <span className="text-sm">{job.views ?? 0}</span>
-              </div>
-
-              <button
-                onClick={(e) => handleBookmarkClick(e, job.id)}
-                className="transition-all hover:scale-110"
-                title={
-                  scrappedJobs.has(job.id)
-                    ? "북마크 해제"
-                    : "북마크 추가"
-                }
-              >
-                {scrappedJobs.has(job.id) ? (
-                  <BookmarkSolidIcon className="w-5 h-5 text-[#006AFF]" />
-                ) : (
-                  <BookmarkIcon className="w-5 h-5 text-gray-600 hover:text-[#006AFF]" />
-                )}
-              </button>
-            </div>
-
-            {/* 날짜 */}
-            <span className="text-sm text-gray-600 whitespace-nowrap">
-              {job.startAt?.replace(/-/g, '.')} - {job.endAt?.replace(/-/g, '.')}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* ✅ 페이지네이션 - 새로운 디자인 */}
-    <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
-      {/* 처음으로 */}
-      <button
-        onClick={() => setCurrentPage(1)}
-        disabled={currentPage === 1}
-        className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronDoubleLeftIcon className="w-5 h-5" />
-      </button>
-
-      {/* 이전 */}
-      <button
-        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-        disabled={currentPage === 1}
-        className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronLeftIcon className="w-5 h-5" />
-      </button>
-
-      {/* 페이지 번호 */}
-      {(() => {
-        const pages = [];
-        const maxVisible = 5;
-        let startPage = Math.max(
-          1,
-          currentPage - Math.floor(maxVisible / 2)
-        );
-        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-        if (endPage - startPage + 1 < maxVisible) {
-          startPage = Math.max(1, endPage - maxVisible + 1);
-        }
-        for (let i = startPage; i <= endPage; i++) {
-          pages.push(
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i)}
-              className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${
-                currentPage === i
-                  ? "bg-white text-[#006AFF] border-[#006AFF]"
-                  : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
-              }`}
-            >
-              {i}
-            </button>
-          );
-        }
-        return pages;
-      })()}
-
-      {/* 다음 */}
-      <button
-        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        disabled={currentPage === totalPages}
-        className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronRightIcon className="w-5 h-5" />
-      </button>
-
-      {/* 마지막으로 */}
-      <button
-        onClick={() => setCurrentPage(totalPages)}
-        disabled={currentPage === totalPages}
-        className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronDoubleRightIcon className="w-5 h-5" />
-      </button>
-    </div>
-  </>
-)}
+          </>
+        )}
       </div>
     </div>
   );
