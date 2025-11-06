@@ -41,6 +41,7 @@ public class JobPostServiceImpl implements JobPostsService {
                 .photo(job.getPhoto())  // ✅ S3에서 반환한 완전한 URL 그대로 전달
                 .companyName(job.getCompany().getName())
                 .companyId(job.getCompany().getId())
+                .companyPhoto(job.getCompany().getPhoto())
                 .views(job.getViews())
                 .build();
 

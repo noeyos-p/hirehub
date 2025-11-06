@@ -23,6 +23,7 @@ public class JobPostsDto {
     private String salary;
     private String companyName;
     private Long companyId;  // ⭐ 이 필드 추가
+    private String companyPhoto;
     private CompanyDto company;
     private Integer views;
 
@@ -35,5 +36,6 @@ public class JobPostsDto {
     public static class CompanyDto {
         private Long id;
         private String name;
+        private String photo;
     }
 }
