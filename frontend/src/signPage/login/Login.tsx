@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../../api/api';
+import api, { setAuthToken } from '../../api/api'; // ✅ setAuthToken import
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -24,13 +24,15 @@ const Login: React.FC = () => {
       const { accessToken, role, email: userEmail, id: userId } = response.data;
 
       if (accessToken) {
-        // 토큰, role, 이메일 저장
-        localStorage.setItem('token', accessToken);
+        // ✅ 헬퍼 함수로 토큰 저장 및 헤더 설정
+        setAuthToken(accessToken);
+        
+        // role, email, userId 저장
         localStorage.setItem('role', role || 'USER');
         localStorage.setItem('email', userEmail || email);
         localStorage.setItem('userId', String(userId));
         
-        console.log('🔑 로그인 성공');
+        console.log('🔐 로그인 성공');
         console.log('- 토큰:', accessToken.substring(0, 20) + '...');
         console.log('- Role:', role);
         console.log('- Email:', userEmail || email);
@@ -54,16 +56,16 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-  window.location.href = `${api.defaults.baseURL}/api/auth/google`;
-};
+    window.location.href = `${api.defaults.baseURL}/api/auth/google`;
+  };
 
-const handleKakaoLogin = () => {
-  window.location.href = `${api.defaults.baseURL}/api/auth/kakao`;
-};
+  const handleKakaoLogin = () => {
+    window.location.href = `${api.defaults.baseURL}/api/auth/kakao`;
+  };
 
-const handleNaverLogin = () => {
-  window.location.href = `${api.defaults.baseURL}/api/auth/naver`;
-};
+  const handleNaverLogin = () => {
+    window.location.href = `${api.defaults.baseURL}/api/auth/naver`;
+  };
 
   return (
     <div className="flex min-h-[80vh] bg-background-light dark:bg-background-dark font-display text-text-primary dark:text-white items-center justify-center p-12">

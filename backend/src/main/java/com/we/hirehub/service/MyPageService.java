@@ -34,7 +34,7 @@ public class MyPageService {
 
     // ===== Repositories =====
     private final ResumeRepository resumeRepository;
-    private final UserRepository userRepository;
+    private final UsersRepository userRepository;
     private final ApplyRepository applyRepository;
     private final FavoriteCompanyRepository favoriteCompanyRepository;
     private final JobPostsRepository jobPostsRepository;

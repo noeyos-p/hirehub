@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../../api/api';
+import api, { setAuthToken } from '../../api/api'; // ✅ setAuthToken import
+import { useAuth } from '../../hooks/useAuth';
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,7 +10,7 @@ const Signup: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
+  const { login } = useAuth();
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -32,13 +33,17 @@ const Signup: React.FC = () => {
 
       const { accessToken } = response.data || {};
 
-      if (accessToken) {
-        // 토큰 저장
-        localStorage.setItem('token', accessToken);
-        console.log('🔑 회원가입 성공, 토큰 저장:', accessToken);
-      }
+ if (accessToken) {
+        // ✅ accessToken 그대로 저장 및 axios 헤더 설정
+        setAuthToken(accessToken); // localStorage + axios.defaults.headers.common['Authorization'] 세팅
+        console.log('🔐 회원가입 성공, 토큰 저장 완료');
 
-      // 회원가입 후에는 무조건 온보딩으로 이동
+  // useAuth에 인증 상태 업데이트
+  await login(accessToken); 
+  console.log('🔐 회원가입 성공, 토큰 저장 및 인증 상태 업데이트 완료');
+}
+
+      // 온보딩 페이지로 이동
       console.log('📝 온보딩 페이지로 이동');
       navigate('/signInfo');
 

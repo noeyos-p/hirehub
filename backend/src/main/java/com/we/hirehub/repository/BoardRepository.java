@@ -28,8 +28,8 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
            """)
     Page<Board> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    /** 인기 게시글 TOP5 (조회수 순) */
-    List<Board> findTop5ByOrderByViewsDesc();
+    /** 인기 게시글 TOP6 (조회수 순) */
+    List<Board> findTop6ByOrderByViewsDesc();
 
     /** 전체 최신순 목록 */
     List<Board> findAllByOrderByCreateAtDesc();
