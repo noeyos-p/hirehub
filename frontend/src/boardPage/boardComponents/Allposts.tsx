@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import {
-  BookmarkIcon,
-  StarIcon,
-  EyeIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from 'react-router-dom';
 import { boardApi, type BoardListResponse } from '../../api/boardApi';
@@ -22,11 +17,9 @@ const AllPosts: React.FC = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 10;
 
-  // 게시글 목록 조회
   useEffect(() => {
     fetchBoards();
   }, []);
@@ -46,7 +39,6 @@ const AllPosts: React.FC = () => {
     }
   };
 
-  // 검색 처리
   const handleSearch = async () => {
     if (!searchKeyword.trim()) {
       fetchBoards();
@@ -68,32 +60,27 @@ const AllPosts: React.FC = () => {
     }
   };
 
-  // 검색 초기화
   const handleResetSearch = () => {
     setSearchKeyword('');
     fetchBoards();
   };
 
-  // Enter 키 처리
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
-  // ✅ 페이지네이션 함수
   const goToFirstPage = () => setCurrentPage(1);
   const goToLastPage = () => setCurrentPage(totalPages);
   const goToPrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const goToNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
-  // 페이지네이션 계산
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
   const currentPosts = boards.slice(indexOfFirstPost, indexOfLastPost);
   const totalPages = Math.ceil(boards.length / postsPerPage);
 
-  // 날짜 포맷팅
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date
@@ -105,7 +92,6 @@ const AllPosts: React.FC = () => {
       .replace(/\. /g, '.');
   };
 
-  // 게시글 클릭 핸들러
   const handlePostClick = (id: number) => {
     navigate(`/board/${id}`);
   };
@@ -132,24 +118,9 @@ const AllPosts: React.FC = () => {
 
   return (
     <section className="mb-8">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-xl font-bold text-gray-800">전체 게시물</h2>
-          {isSearching && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">
-                검색 결과: {boards.length}개
-              </span>
-              <button
-                onClick={handleResetSearch}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
-              >
-                전체 보기
-              </button>
-            </div>
-          )}
-        </div>
-        {/* 검색 입력창 */}
+      {/* 상단 영역 */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-800">전체 게시물</h2>
         <div className="relative ml-[150px]">
           <input
             type="text"
@@ -166,13 +137,27 @@ const AllPosts: React.FC = () => {
         <div className="flex justify-end mr-[6px]">
           <button
             onClick={() => navigate('/board/write')}
-            className="bg-[#006AFF] hover:bg-blue-600 text-white text-[15px] font-medium px-4 py-1.5 rounded-md cursor-pointer
-"
+            className="bg-[#006AFF] hover:bg-blue-600 text-white text-[15px] font-medium px-4 py-1.5 rounded-md cursor-pointer"
           >
             작성하기
           </button>
         </div>
       </div>
+
+      {/* 🔽 검색 결과/전체 보기 → 제목 아래로 이동 */}
+      {isSearching && (
+        <div className="flex items-center space-x-2 mb-6 ml-[4px]">
+          <span className="text-sm text-gray-600">
+            검색 결과: {boards.length}개
+          </span>
+          <button
+            onClick={handleResetSearch}
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            전체 보기
+          </button>
+        </div>
+      )}
 
       <div>
         {currentPosts.length === 0 ? (
@@ -238,7 +223,6 @@ const AllPosts: React.FC = () => {
 
         {/* ✅ 페이지네이션 */}
         <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
-          {/* 처음으로 */}
           <button
             onClick={goToFirstPage}
             disabled={currentPage === 1}
@@ -246,7 +230,6 @@ const AllPosts: React.FC = () => {
           >
             <ChevronDoubleLeftIcon className="w-5 h-5" />
           </button>
-          {/* 이전 */}
           <button
             onClick={goToPrevPage}
             disabled={currentPage === 1}
@@ -254,7 +237,6 @@ const AllPosts: React.FC = () => {
           >
             <ChevronLeftIcon className="w-5 h-5" />
           </button>
-          {/* 페이지 번호 */}
           {(() => {
             const pages = [];
             const maxVisible = 5;
@@ -280,7 +262,6 @@ const AllPosts: React.FC = () => {
             }
             return pages;
           })()}
-          {/* 다음 */}
           <button
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
@@ -288,7 +269,6 @@ const AllPosts: React.FC = () => {
           >
             <ChevronRightIcon className="w-5 h-5" />
           </button>
-          {/* 마지막으로 */}
           <button
             onClick={goToLastPage}
             disabled={currentPage === totalPages}
