@@ -1,3 +1,4 @@
+// src/pages/board/AllPosts.tsx
 import React, { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import {
@@ -71,6 +72,17 @@ const AllPosts: React.FC = () => {
     }
   };
 
+  // ✅ 로그인 여부 확인 후 글쓰기 페이지 이동
+  const handleWriteClick = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인 후 이용 가능합니다.');
+      navigate('/login');
+      return;
+    }
+    navigate('/board/write');
+  };
+
   const goToFirstPage = () => setCurrentPage(1);
   const goToLastPage = () => setCurrentPage(totalPages);
   const goToPrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -136,7 +148,7 @@ const AllPosts: React.FC = () => {
         </div>
         <div className="flex justify-end mr-[6px]">
           <button
-            onClick={() => navigate('/board/write')}
+            onClick={handleWriteClick}
             className="bg-[#006AFF] hover:bg-blue-600 text-white text-[15px] font-medium px-4 py-1.5 rounded-md cursor-pointer"
           >
             작성하기
@@ -144,7 +156,7 @@ const AllPosts: React.FC = () => {
         </div>
       </div>
 
-      {/* 🔽 검색 결과/전체 보기 → 제목 아래로 이동 */}
+      {/* 🔽 검색 결과/전체 보기 표시 */}
       {isSearching && (
         <div className="flex items-center space-x-2 mb-6 ml-[4px]">
           <span className="text-sm text-gray-600">
