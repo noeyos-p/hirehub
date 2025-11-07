@@ -230,7 +230,7 @@ public class MyPageRestController {
     }
 
 
-/**
+    /**
      * ✅ 내가 지원한 공고 내역 조회
      */
     @GetMapping("/applies")
