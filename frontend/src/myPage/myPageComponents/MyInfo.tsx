@@ -148,20 +148,28 @@ const MyInfo: React.FC = () => {
     setDraft({ [key]: init ?? me?.[key] ?? "" });
   };
   const cancel = () => { setEditing(null); setDraft({}); };
-  const commit = async (key: UpdatableKeys) => {
-    try {
-      const payload: any = { [key]: draft[key] };
-      const updated = await updateMe(payload);
-      setMe(updated);
-      cancel();
-    } catch (e) {
- if (e.response?.data?.message) {
-      alert(e.response.data.message); // "이미 사용 중인 닉네임입니다."
+const commit = async (key: UpdatableKeys) => {
+  try {
+    const payload: any = { [key]: draft[key] };
+    const updated = await updateMe(payload);
+    setMe(updated);
+    
+    // ✅ 닉네임 변경 시 Header에 알림
+    if (key === "nickname") {
+      window.dispatchEvent(new CustomEvent('userProfileUpdated', { 
+        detail: { nickname: updated.nickname } 
+      }));
+    }
+    
+    cancel();
+  } catch (e) {
+    if (e.response?.data?.message) {
+      alert(e.response.data.message);
     } else {
       alert("저장 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   }
-  };
+};
 
   const handleWithdraw = async () => {
     if (!window.confirm("정말 탈퇴하시겠습니까? 모든 데이터가 완전히 삭제됩니다.")) return;

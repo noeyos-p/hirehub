@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // ✅ useCallback 추가
 import api from '../api/api';
 
 export interface AuthUser {
@@ -85,6 +85,17 @@ export const useAuth = () => {
     setIsAuthenticated(false);
   };
 
+  // ✅ useCallback으로 메모이제이션 (의존성 배열에 안전하게 사용 가능)
+  const refreshUser = useCallback(async () => {
+    try {
+      const response = await fetchMe();
+      setUser(response.data);
+      console.log('🔄 사용자 정보 갱신 완료:', response.data);
+    } catch (error) {
+      console.error('❌ 사용자 정보 갱신 실패:', error);
+    }
+  }, []); // 빈 배열: 컴포넌트 생명주기 동안 함수가 변하지 않음
+
   return {
     user,
     loading,
@@ -92,5 +103,6 @@ export const useAuth = () => {
     login,
     logout,
     checkAuth,
+        refreshUser, // ✅ 추가
   };
 };
