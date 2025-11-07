@@ -21,6 +21,16 @@ export const useAuth = () => {
     checkAuth();
   }, []);
 
+  
+    // ✅ axios 헤더에 토큰 자동 세팅
+  const setTokenHeader = (token: string | null) => {
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete api.defaults.headers.common['Authorization'];
+    }
+  };
+
   // ✅ 유연한 사용자 정보 조회
   const fetchMe = async () => {
     try {
