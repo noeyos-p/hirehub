@@ -57,12 +57,22 @@ public class S3Service {
 
     /**
      * ✅ 광고 이미지 업로드 (Ads photo)
-     * 경로: ads/images/{adId}/{timestamp_uuid.ext}
+     * 경로: ads/images/{timestamp_uuid.ext} (adId 없이 업로드, 나중에 DB에 저장)
      */
     public String uploadAdImage(MultipartFile file, Long adId) {
         validateImageFile(file);
         String fileName = generateFileName(file.getOriginalFilename());
-        String key = String.format("ads/images/%d/%s", adId, fileName);
+
+        // adId가 0 또는 null이면 임시 폴더에 업로드
+        String key;
+        if (adId == null || adId == 0) {
+            key = String.format("ads/images/temp/%s", fileName);
+            log.info("📤 광고 이미지 임시 업로드: {}", key);
+        } else {
+            key = String.format("ads/images/%d/%s", adId, fileName);
+            log.info("📤 광고 이미지 업로드 (adId={}): {}", adId, key);
+        }
+
         return uploadFile(file, key);
     }
 
@@ -83,10 +93,13 @@ public class S3Service {
      */
     private String uploadFile(MultipartFile file, String key) {
         try {
+            log.info("🔄 S3 업로드 시작 - bucket: {}, key: {}, size: {} bytes",
+                    bucketName, key, file.getSize());
+
+            // ACL 없이 업로드 (버킷 정책으로 퍼블릭 접근 제어)
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
-                    .acl(ObjectCannedACL.PUBLIC_READ) // 🔥 퍼블릭 접근 허용
                     .contentType(file.getContentType())
                     .contentLength(file.getSize())
                     .build();
@@ -107,11 +120,15 @@ public class S3Service {
             return fileUrl;
 
         } catch (IOException e) {
-            log.error("❌ 파일 업로드 실패 (IO): {}", key, e);
-            throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
+            log.error("❌ 파일 업로드 실패 (IO) - key: {}", key, e);
+            throw new RuntimeException("파일 읽기 중 오류가 발생했습니다: " + e.getMessage(), e);
         } catch (S3Exception e) {
-            log.error("❌ 파일 업로드 실패 (S3): {}", key, e);
-            throw new RuntimeException("S3 업로드 중 오류가 발생했습니다.", e);
+            log.error("❌ S3 업로드 실패 - bucket: {}, key: {}, error: {}",
+                    bucketName, key, e.awsErrorDetails().errorMessage(), e);
+            throw new RuntimeException("S3 업로드 중 오류가 발생했습니다: " + e.awsErrorDetails().errorMessage(), e);
+        } catch (Exception e) {
+            log.error("❌ 예상치 못한 업로드 실패 - key: {}", key, e);
+            throw new RuntimeException("파일 업로드 중 예상치 못한 오류가 발생했습니다: " + e.getMessage(), e);
         }
     }
 
@@ -121,6 +138,7 @@ public class S3Service {
     public void deleteFile(String fileUrl) {
         try {
             String key = extractKeyFromUrl(fileUrl);
+            log.info("🗑️ S3 삭제 시작 - bucket: {}, key: {}", bucketName, key);
 
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                     .bucket(bucketName)
@@ -128,14 +146,15 @@ public class S3Service {
                     .build();
 
             s3Client.deleteObject(deleteObjectRequest);
-            log.info("🗑️ 파일 삭제 완료: {}", key);
+            log.info("✅ 파일 삭제 완료: {}", key);
 
         } catch (S3Exception e) {
-            log.error("❌ 파일 삭제 실패 (S3): {}", fileUrl, e);
-            throw new RuntimeException("파일 삭제 중 오류가 발생했습니다.", e);
+            log.error("❌ S3 파일 삭제 실패 - url: {}, error: {}",
+                    fileUrl, e.awsErrorDetails().errorMessage(), e);
+            throw new RuntimeException("파일 삭제 중 오류가 발생했습니다: " + e.awsErrorDetails().errorMessage(), e);
         } catch (Exception e) {
-            log.error("❌ 파일 삭제 실패 (기타): {}", fileUrl, e);
-            throw new RuntimeException("파일 삭제 중 오류가 발생했습니다.", e);
+            log.error("❌ 파일 삭제 실패 - url: {}", fileUrl, e);
+            throw new RuntimeException("파일 삭제 중 오류가 발생했습니다: " + e.getMessage(), e);
         }
     }
 
