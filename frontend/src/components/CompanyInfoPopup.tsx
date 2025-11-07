@@ -68,9 +68,9 @@ const CompanyInfoPopup: React.FC<Props> = ({ onClose }) => {
             <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-gray-700">
               <li><strong>단장</strong> — 박소연 <span className="text-gray-500">(Fullstack / PM)</span></li>
               <li><strong>김효남</strong> — Backend / Java / API</li>
-              <li><strong>김민서</strong> — Frontend / UI·UX</li>
-              <li><strong>이강현</strong> — Web / DevOps</li>
-              <li><strong>임지윤</strong> — Frontend / QA</li>
+              <li><strong>김민서</strong> — Backend / QA</li>
+              <li><strong>이강현</strong> — Frontend / UI·UX</li>
+              <li><strong>임지윤</strong> — DATA / OA</li>
             </ul>
           </div>
 
