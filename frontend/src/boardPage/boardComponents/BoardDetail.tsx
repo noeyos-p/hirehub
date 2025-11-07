@@ -35,14 +35,23 @@ const BoardDetail: React.FC = () => {
     }
   };
 
-  const fetchComments = async (boardId: number) => {
-    try {
-      const data = await commentApi.getCommentsByBoardId(boardId);
-      setComments(data);
-    } catch (err) {
-      console.error('댓글 조회 실패:', err);
+const fetchComments = async (boardId: number) => {
+  try {
+    const data = await commentApi.getCommentsByBoardId(boardId);
+    setComments(data);
+  } catch (err: any) {
+    console.error('댓글 조회 실패:', err);
+    
+    // 401/404 에러는 조용히 처리 (빈 댓글 목록 유지)
+    if (err.response?.status === 401 || err.response?.status === 404) {
+      setComments([]); // 빈 배열로 설정
+      console.log('인증 필요 또는 댓글 없음 - 빈 목록 표시');
+    } else {
+      // 다른 에러는 사용자에게 알림
+      alert('댓글을 불러오는데 실패했습니다.');
     }
-  };
+  }
+};
 
   const handleCommentSubmit = async (content: string) => {
     if (!id) return;
