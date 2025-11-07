@@ -2,6 +2,7 @@ package com.we.hirehub.controller.admin;
 
 import com.we.hirehub.dto.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
+import com.we.hirehub.repository.JobPostsRepository; // ✅ [추가]
 import com.we.hirehub.service.S3Service;
 import com.we.hirehub.service.admin.JobPostsAdminService;
 import lombok.RequiredArgsConstructor;
@@ -31,34 +32,38 @@ import java.util.Map;
 public class JobPostsAdminController {
 
     private final JobPostsAdminService jobPostsService;
+    private final JobPostsRepository jobPostRepository; // ✅ [추가]
     private final S3Service s3Service;
 
     // ============ 조회 ============
 
     /**
-     * 모든 공고 조회 (페이징)
-     * GET /api/admin/job-management?page=0&size=10
+     * 모든 공고 조회 (페이징 + 검색)
+     * ✅ [수정] keyword 파라미터 추가됨
+     * GET /api/admin/job-management?page=0&size=10&keyword=프론트엔드
      */
     @GetMapping
     public ResponseEntity<?> getAllJobPosts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "DESC") Sort.Direction direction) {
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction,
+            @RequestParam(required = false) String keyword // ✅ [추가]
+    ) {
 
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-            Page<JobPostsDto> jobPosts = jobPostsService.getAllJobPosts(pageable);
+            Page<JobPostsDto> jobPosts = jobPostsService.getAllJobPosts(pageable, keyword); // ✅ [수정]
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "공고 조회 성공");
+            response.put("message", (keyword == null || keyword.isBlank()) ? "공고 조회 성공" : "검색 결과");
             response.put("data", jobPosts.getContent());
             response.put("totalElements", jobPosts.getTotalElements());
             response.put("totalPages", jobPosts.getTotalPages());
             response.put("currentPage", page);
 
-            log.info("공고 조회 성공 - 총 {} 개", jobPosts.getTotalElements());
+            log.info("공고 조회 성공 (검색어: {}) - 총 {} 개", keyword, jobPosts.getTotalElements());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -74,36 +79,6 @@ public class JobPostsAdminController {
      * 공고 등록
      * POST /api/admin/job-management
      */
-    /*@PostMapping
-    public ResponseEntity<?> createJobPost(@RequestBody JobPosts jobPost) {
-
-        try {
-            if (jobPost.getTitle() == null || jobPost.getTitle().trim().isEmpty()) {
-                return ResponseEntity.badRequest()
-                        .body(createErrorResponse("공고 제목이 필요합니다"));
-            }
-
-            JobPostsDto createdJobPost = jobPostsService.createJobPost(jobPost);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "공고 등록 성공");
-            response.put("data", createdJobPost);
-
-            log.info("공고 등록 완료 - {}", createdJobPost.getTitle());
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
-        } catch (IllegalArgumentException e) {
-            log.warn("공고 등록 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(createErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.error("공고 등록 실패", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse(e.getMessage()));
-        }
-    }*/
     @PostMapping
     public ResponseEntity<?> createJobPost(@RequestBody JobPosts jobPost) {
 
@@ -155,51 +130,49 @@ public class JobPostsAdminController {
 
     /**
      * 공고 이미지 업로드
+     * ✅ [수정] ApiResponse 제거 → ResponseEntity로 일원화
      * POST /api/admin/job-management/jobpost-image
      */
     @PostMapping("/jobpost-image")
-    public ResponseEntity<Map<String, Object>> uploadJobPostImage(
-            @RequestParam("jobPostId") Long jobPostId,
-            @RequestParam("file") MultipartFile file) {
-
-        Map<String, Object> response = new HashMap<>();
+    public ResponseEntity<?> uploadJobPostImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("jobPostId") Long jobPostId
+    ) {
+        log.info("📸 공고 이미지 업로드 요청: jobPostId={}", jobPostId);
         try {
-            log.info("=== 🟡 [UPLOAD START] 공고 이미지 업로드 요청 ===");
-            log.info("📌 jobPostId: {}", jobPostId);
-            log.info("📄 fileName: {}", file.getOriginalFilename());
-            log.info("📏 fileSize: {} bytes", file.getSize());
-            log.info("📎 contentType: {}", file.getContentType());
+            JobPosts jobPost = jobPostRepository.findById(jobPostId)
+                    .orElseThrow(() -> new IllegalArgumentException("공고를 찾을 수 없습니다."));
 
-            if (file.isEmpty()) {
-                log.warn("⚠️ 업로드된 파일이 비어 있습니다!");
-                response.put("success", false);
-                response.put("message", "업로드된 파일이 없습니다.");
-                return ResponseEntity.badRequest().body(response);
+            // ✅ 커밋 딜레이 보호 (최대 1초 재시도)
+            int retry = 0;
+            while (retry < 3 && !jobPostRepository.existsById(jobPostId)) {
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException e) { }
+                retry++;
             }
 
-            // 1️⃣ S3 업로드
-            String fileUrl = s3Service.uploadJobPostImage(file, jobPostId);
-            log.info("✅ S3 업로드 성공: {}", fileUrl);
+            String fileUrl = s3Service.uploadFile(file, "jobposts/");
+            jobPost.setPhoto(fileUrl);
+            jobPostRepository.save(jobPost);
 
-            // 2️⃣ DB 업데이트
-            jobPostsService.updateJobPhoto(jobPostId, fileUrl);
-            log.info("✅ DB photo 필드 업데이트 완료");
-
-            // 3️⃣ 응답
+            Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "공고 이미지 업로드 성공");
+            response.put("message", "이미지 업로드 완료");
             response.put("fileUrl", fileUrl);
-            response.put("jobPostId", jobPostId);
-            log.info("=== 🟢 [UPLOAD COMPLETE] ===");
-
             return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("이미지 업로드 실패: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(createErrorResponse(e.getMessage()));
         } catch (Exception e) {
-            log.error("❌ 이미지 업로드 중 오류 발생: {}", e.getMessage(), e);
-            response.put("success", false);
-            response.put("message", "업로드 실패: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            log.error("이미지 업로드 중 오류", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("이미지 업로드 중 오류: " + e.getMessage()));
         }
     }
+
     // ============ 수정 ============
 
     /**
@@ -252,10 +225,8 @@ public class JobPostsAdminController {
                         .body(createErrorResponse("유효한 공고 ID가 필요합니다"));
             }
 
-            // 1️⃣ DB에서 공고 조회
             JobPostsDto jobPost = jobPostsService.getJobPostById(jobPostId);
 
-            // 2️⃣ S3에 업로드된 공고 사진이 있으면 삭제
             if (jobPost.getPhoto() != null && !jobPost.getPhoto().isEmpty()) {
                 try {
                     s3Service.deleteFile(jobPost.getPhoto());
@@ -265,7 +236,6 @@ public class JobPostsAdminController {
                 }
             }
 
-            // 3️⃣ DB에서 공고 삭제
             jobPostsService.deleteJobPost(jobPostId);
 
             Map<String, Object> response = new HashMap<>();
@@ -301,11 +271,9 @@ public class JobPostsAdminController {
                         .body(createErrorResponse("삭제할 이미지가 없습니다."));
             }
 
-            // 1️⃣ S3 파일 삭제
             s3Service.deleteFile(jobPost.getPhoto());
             log.info("S3 이미지 삭제 완료: {}", jobPost.getPhoto());
 
-            // 2️⃣ DB에서 photo 필드 제거
             jobPostsService.updateJobPhoto(jobPostId, null);
 
             Map<String, Object> response = new HashMap<>();
@@ -324,9 +292,7 @@ public class JobPostsAdminController {
         }
     }
 
-    /**
-     * 에러 응답 생성
-     */
+    /** 에러 응답 생성 */
     private Map<String, Object> createErrorResponse(String message) {
         Map<String, Object> response = new HashMap<>();
         response.put("success", false);
