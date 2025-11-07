@@ -38,9 +38,12 @@ public class ApplyService {
         JobPosts post = jobPostsRepository.findById(jobPostsId)
                 .orElseThrow(() -> new ResourceNotFoundException("공고를 찾을 수 없습니다. id=" + jobPostsId));
 
-        // 3) 중복 체크
-        var existed = applyRepository.findByResume_IdAndJobPosts_Id(resume.getId(), post.getId());
-        if (existed.isPresent()) return toDto(existed.get());
+        // 3) 중복 체크 (같은 유저가 이미 이 공고에 지원했는지 확인)
+        var existed = applyRepository.findByJobPosts_IdAndResume_Users_Id(post.getId(), userId);
+        if (existed.isPresent()) {
+            throw new IllegalStateException("이미 해당 공고에 지원하셨습니다.");
+        }
+
 
         // 4) 저장
         Apply apply = Apply.builder()
