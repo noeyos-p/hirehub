@@ -177,15 +177,27 @@ const MyInfo: React.FC = () => {
   const genderLabel = (code?: string) => (code && GENDER_LABEL[code]) || "-";
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto pt-[40px] pl-[52px]">
       <h1 className="text-2xl font-bold mb-8">계정정보 설정</h1>
 
       <div className="grid grid-cols-12 gap-8">
         {/* 왼쪽 프로필 */}
-        <aside className="col-span-12 md:col-span-3">
+        <aside className="col-span-12 md:col-span-3 ml-[25px]">
           <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="w-20 h-20 rounded-full bg-zinc-200 flex items-center justify-center text-3xl">👤</div>
-
+            <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                className="w-10 h-10 text-gray-600"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M12 2a5 5 0 100 10 5 5 0 000-10zM4 20a8 8 0 0116 0H4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
             {/* 닉네임 (인라인) */}
             {editing === "nickname" ? (
               <div className="flex items-center gap-2 w-full">
@@ -207,30 +219,11 @@ const MyInfo: React.FC = () => {
               </div>
             )}
           </div>
-          {/* ✅ 회원탈퇴 버튼 - 반응형 대응 */}
-          <div className="
-              flex justify-center md:justify-end
-               mt-8 md:mt-0
-                px-4 md:px-0
-                      ">
-            <button
-              onClick={handleWithdraw}
-              className="
-                bg-red-500 text-white font-semibold rounded-lg
-                px-1 py-1 md:px-1 md:py-1
-                hover:bg-red-500 transition
-                w-full md:w-auto
-              shadow-md
-               "
-            >
-              회원 탈퇴
-            </button>
-          </div>
         </aside>
 
         {/* 오른쪽 상세 */}
-        <section className="col-span-12 md:col-span-9">
-          <div className="bg-white rounded-xl border border-zinc-200">
+        <section className="col-span-12 md:col-span-9 relative -top-[20px]">
+          <div>
             <div className="px-5">
               {/* 이메일 */}
               <FieldRow label="이메일" value={me?.email || emailFallback || "-"} />
@@ -353,6 +346,23 @@ const MyInfo: React.FC = () => {
             </div>
           </div>
         </section>
+        {/* ✅ 회원탈퇴 버튼 - 반응형 대응 */}
+          <div className="
+              col-span-12 flex justify-start w-full mt-8 ml-[40px] mt-[-145px]
+                      ">
+            <button
+              onClick={handleWithdraw}
+              className="
+                text-red-500 font-semibold rounded-lg
+    px-1 py-1 md:px-1 md:py-1
+    hover:text-red-600 transition
+    w-full md:w-auto
+    shadow-none
+               "
+            >
+              탈퇴하기
+            </button>
+          </div>
       </div>
     </div>
   );

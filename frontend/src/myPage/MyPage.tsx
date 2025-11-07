@@ -27,35 +27,41 @@ const MyPage: React.FC = () => {
   const activeComponent = tabs.find((t) => t.key === activeTab)?.component || <MyInfo />;
 
   return (
-    <div className="flex min-h-screen">
-      {/* 좌측 탭 */}
-      <aside className="w-64 border-r border-gray-200 p-6 bg-white">
-        <ul className="space-y-6">
-          {tabs.map((t) => (
-            <li
-              key={t.key}
-              onClick={() => navigate(`/myPage/${t.key}`)}
-              className={`cursor-pointer text-gray-700 hover:text-black ${
-                activeTab === t.key ? "font-semibold" : ""
-              }`}
-            >
-              {t.label}
-            </li>
-          ))}
-        </ul>
-      </aside>
+    <div className="max-w-[1440px] mx-auto px-[55px]">
+      {/* ✅ 패딩 55px 추가 */}
+      <div className="flex min-h-screen bg-white shadow-sm rounded-lg">
+        {/* ✅ 내부 컨테이너로 flex 및 bg 분리 */}
 
-      {/* 본문 */}
-      <main className="flex-1 bg-gray-50 p-6">
-        <Routes>
-          {/* ✅ 인덱스 라우트로 현재 탭 본문 렌더 */}
-          <Route index element={activeComponent} />
-          {/* 이력서 상세 */}
-          <Route path="ResumeDetail" element={<ResumeDetail />} />
-          {/* ✅ 마이페이지 내부 게시글 수정 라우트 — tab 밑에 바로 매칭되도록 */}
-          <Route path="edit/:id" element={<EditMyPost />} />
-        </Routes>
-      </main>
+        {/* 좌측 탭 */}
+        <aside className="w-[250px] border-r border-gray-200 pt-[44px] pb-[44px] pl-[44px] bg-white">
+          <ul className="space-y-6">
+            {tabs.map((t) => (
+              <li
+                key={t.key}
+                onClick={() => navigate(`/myPage/${t.key}`)}
+                className={`text-[16px] cursor-pointer mb-[32px] hover:text-[#006AFF]
+    ${activeTab === t.key ? "font-semibold text-black" : "text-gray-500"}
+  `}
+              >
+                {t.label}
+              </li>
+
+            ))}
+          </ul>
+        </aside>
+
+        {/* 본문 */}
+        <main className="flex-1 bg-gray-50 p-6">
+          <Routes>
+            {/* ✅ 인덱스 라우트로 현재 탭 본문 렌더 */}
+            <Route index element={activeComponent} />
+            {/* 이력서 상세 */}
+            <Route path="ResumeDetail" element={<ResumeDetail />} />
+            {/* ✅ 마이페이지 내부 게시글 수정 라우트 */}
+            <Route path="edit/:id" element={<EditMyPost />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 };

@@ -263,15 +263,15 @@ const FavoriteCompanies: React.FC = () => {
             return (
               <div key={r.companyId} className="border-b border-gray-200 pb-4">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-3">
                     <input
                       type="checkbox"
-                      className="mt-1 accent-blue-500"
+                      className="mt-[-2px] accent-blue-500"
                       checked={selectedIds.includes(r.companyId)}
                       onChange={() => handleCheckboxChange(r.companyId)}
                       disabled={loading}
                     />
-                    <div className="text-gray-900 font-semibold">{r.companyName}</div>
+                    <div className="text-gray-900 font-semibold text-[16px] py-[20px]">{r.companyName}</div>
                   </div>
 
                   <button
