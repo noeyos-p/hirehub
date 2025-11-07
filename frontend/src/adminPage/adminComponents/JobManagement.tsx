@@ -73,6 +73,8 @@ const JobManagement: React.FC = () => {
   });
 
   const [preview, setPreview] = useState<string | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState("");
+
 
   const pageSize = 6; // 페이지당 6개
 
@@ -81,14 +83,11 @@ const JobManagement: React.FC = () => {
   // 이유: handleCreateSubmit에서 호출하므로 선언이 위에 있어야 TS/빌드 에러 없음.
   // -------------------
   // ✅ 공고 목록 불러오기 (페이지네이션)
-  const fetchJobs = async (page: number = 0) => {
-    console.log("=== fetchJobs 시작 ===", "page:", page);
+  const fetchJobs = async (page: number = 0, keyword: string = "") => {
+    console.log("=== fetchJobs 시작 ===", "page:", page, "keyword:", keyword);
 
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    console.log("저장된 토큰:", token ? token.substring(0, 20) + "..." : "없음");
-    console.log("저장된 Role:", role);
-
     if (!token) {
       setError("로그인이 필요합니다.");
       return;
@@ -103,14 +102,13 @@ const JobManagement: React.FC = () => {
     setError(null);
 
     try {
-      console.log("API 호출 시작:", "/api/admin/job-management");
-
       const res = await api.get("/api/admin/job-management", {
         params: {
           page,
           size: pageSize,
           sortBy: "id",
           direction: "DESC",
+          keyword, // ✅ 검색 키워드 추가됨
         },
       });
 
@@ -220,9 +218,13 @@ const JobManagement: React.FC = () => {
       alert("회사를 선택해주세요.");
       return;
     }
-
+    console.log("📤 [신규 공고 등록 요청 시작]");
+    console.log("📦 요청 데이터:", newJob);
     try {
       const res = await api.post("/api/admin/job-management", newJob);
+
+      console.log("📥 [서버 응답 도착]");
+      console.log("응답 전체:", res);
 
       if (res.data.success) {
         const createdJob = res.data.data;
@@ -235,7 +237,9 @@ const JobManagement: React.FC = () => {
             formData.append("file", new File([blob], "job-photo.png", { type: "image/png" }));
             formData.append("jobPostId", createdJob.id.toString());
             // MODIFIED: 헤더는 axios/FormData 자동설정에 맡김 (Content-Type multipart 자동)
-            await api.post("/api/admin/job-management/jobpost-image", formData);
+            await api.post("/api/admin/job-management/jobpost-image", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
           } catch (imgErr) {
             console.error("이미지 업로드 중 오류:", imgErr);
             // 이미지 업로드 실패해도 공고 자체는 성공했으므로 계속 진행
@@ -255,6 +259,8 @@ const JobManagement: React.FC = () => {
       }
     } catch (err) {
       console.error("등록 실패:", err);
+      console.error("❌ 등록 중 오류 발생:", err);
+      console.error("📄 에러 응답:", err.response?.data);
       alert("등록 중 오류가 발생했습니다.");
     }
   };
@@ -467,11 +473,10 @@ const JobManagement: React.FC = () => {
             <button
               key={pageNum}
               onClick={() => handlePageChange(pageNum)}
-              className={`px-4 py-2 rounded-lg border transition-colors ${
-                currentPage === pageNum
+              className={`px-4 py-2 rounded-lg border transition-colors ${currentPage === pageNum
                   ? "bg-blue-600 text-white border-blue-600"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
+                }`}
             >
               {pageNum + 1}
             </button>
@@ -503,6 +508,38 @@ const JobManagement: React.FC = () => {
       {/* 타이틀 */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">공고 관리</h2>
+        {/* ✅ 검색 폼 추가 */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            fetchJobs(0, searchKeyword);
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="검색 (제목 / 회사 / 직무)"
+            className="border rounded px-3 py-2 text-sm w-64"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
+          >
+            검색
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchKeyword("");
+              fetchJobs(0);
+            }}
+            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200"
+          >
+            초기화
+          </button>
+        </form>
         <button
           onClick={openCreateModal}
           className="bg-blue-100 text-blue-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-200 flex items-center gap-1"
@@ -580,9 +617,8 @@ const JobManagement: React.FC = () => {
                   <button
                     onClick={(e) => handleImageDelete(e, job)}
                     disabled={!job.photo}
-                    className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded ${
-                      job.photo ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100" : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded ${job.photo ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100" : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
                   >
                     <PhotoIcon className="w-4 h-4" />
                     <span className="text-sm">이미지 삭제</span>
@@ -848,9 +884,8 @@ const JobManagement: React.FC = () => {
                     <div
                       key={company.id}
                       onClick={() => setNewJob({ ...newJob, company: { id: company.id, name: company.name } })}
-                      className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                        newJob.company?.id === company.id ? "bg-blue-100 border-blue-500" : "bg-white hover:bg-gray-100"
-                      }`}
+                      className={`p-3 border rounded-lg cursor-pointer transition-all ${newJob.company?.id === company.id ? "bg-blue-100 border-blue-500" : "bg-white hover:bg-gray-100"
+                        }`}
                     >
                       <p className="font-medium">{company.name}</p>
                     </div>

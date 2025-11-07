@@ -91,7 +91,7 @@ public class S3Service {
      * ✅ 공통 업로드 처리
      * S3에 업로드 후 접근 가능한 URL 반환
      */
-    private String uploadFile(MultipartFile file, String key) {
+    public String uploadFile(MultipartFile file, String key) {
         try {
             log.info("🔄 S3 업로드 시작 - bucket: {}, key: {}, size: {} bytes",
                     bucketName, key, file.getSize());
