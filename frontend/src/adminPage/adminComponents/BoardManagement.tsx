@@ -7,7 +7,7 @@ interface Post {
   title: string;
   content: string;
   usersId: number;
-  nickname: string; 
+  nickname: string;
   authorEmail?: string;
   views: number;
   comments: number;
@@ -23,12 +23,12 @@ interface PostDetailModalProps {
   onDelete: (postId: number) => void;
 }
 
-const PostDetailModal: React.FC<PostDetailModalProps> = ({ 
-  post, 
-  isOpen, 
-  onClose, 
+const PostDetailModal: React.FC<PostDetailModalProps> = ({
+  post,
+  isOpen,
+  onClose,
   onUpdate,
-  onDelete 
+  onDelete
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
@@ -53,7 +53,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
       });
 
       console.log('✅ 게시글 수정 성공:', response.data);
-      
+
       if (response.data.success) {
         onUpdate(response.data.data);
         setIsEditing(false);
@@ -76,9 +76,9 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     setIsLoading(true);
     try {
       const response = await api.delete(`/api/admin/board-management/${post.id}`);
-      
+
       console.log('✅ 게시글 삭제 성공:', response.data);
-      
+
       if (response.data.success) {
         onDelete(post.id);
         onClose();
@@ -102,7 +102,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
           <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
             게시글 상세
           </h3>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
@@ -132,11 +132,11 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
           </div>
 
           {/* 작성자 정보 */}
-<div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-  <span>작성자: {post.nickname}</span>
-  <span>조회수: {post.views}</span>
-  <span>댓글: {post.comments}</span>
-</div>
+          <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+            <span>작성자: {post.nickname}</span>
+            <span>조회수: {post.views}</span>
+            <span>댓글: {post.comments}</span>
+          </div>
 
           {/* 날짜 정보 */}
           <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -221,6 +221,41 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
 const BoardManagement: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
+  // ✅ 선택 관련 상태
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const allSelected = posts.length > 0 && selectedIds.length === posts.length;
+
+  // ✅ 개별 선택 토글
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  // ✅ 전체 선택 / 해제
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(posts.map((p) => p.id));
+  };
+
+  // ✅ 선택 삭제
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length}개의 게시글을 삭제하시겠습니까?`)) return;
+
+    try {
+      for (const id of selectedIds) {
+        await api.delete(`/api/admin/board-management/${id}`);
+      }
+      alert("선택된 게시글이 삭제되었습니다.");
+      setSelectedIds([]);
+      fetchPosts(currentPage, searchQuery);
+    } catch (err: any) {
+      console.error("❌ 선택삭제 실패:", err.response?.data || err.message);
+      alert("선택삭제 중 오류가 발생했습니다.");
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -248,7 +283,7 @@ const BoardManagement: React.FC = () => {
   //     };
 
   //     let response;
-      
+
   //     if (keyword.trim()) {
   //       // 검색이 있을 때
   //       response = await api.get('/api/admin/board-management/search', {
@@ -258,15 +293,15 @@ const BoardManagement: React.FC = () => {
   //       // 전체 목록 조회
   //       response = await api.get('/api/admin/board-management', { params });
   //     }
-      
+
   //     console.log('📦 게시글 목록:', response.data);
-      
+
   //     // 백엔드 응답 구조 처리
   //     if (response.data.success) {
   //       const postsData = response.data.data || [];
   //       const total = response.data.totalElements || 0;
   //       const pages = response.data.totalPages || 0;
-        
+
   //       setPosts(postsData);
   //       setTotalElements(total);
   //       setTotalPages(pages);
@@ -274,7 +309,7 @@ const BoardManagement: React.FC = () => {
   //     } else {
   //       throw new Error(response.data.message || '게시글을 불러올 수 없습니다.');
   //     }
-      
+
   //   } catch (err: any) {
   //     console.error('❌ 게시글 목록 조회 에러:', err.response?.data);
   //     console.error('❌ 에러 상세:', err);
@@ -286,55 +321,55 @@ const BoardManagement: React.FC = () => {
   // };
 
   const fetchPosts = async (page: number = 0, keyword: string = '') => {
-  setIsLoading(true);
-  try {
-    const params = {
-      page: page,
-      size: pageSize,
-      sortBy: 'createAt',
-      direction: 'DESC'
-    };
+    setIsLoading(true);
+    try {
+      const params = {
+        page: page,
+        size: pageSize,
+        sortBy: 'createAt',
+        direction: 'DESC'
+      };
 
-    let response;
-    
-    if (keyword.trim()) {
-      // 검색이 있을 때
-      response = await api.get('/api/admin/board-management/search', {
-        params: { ...params, keyword: keyword }
-      });
-    } else {
-      // 전체 목록 조회
-      response = await api.get('/api/admin/board-management', { params });
+      let response;
+
+      if (keyword.trim()) {
+        // 검색이 있을 때
+        response = await api.get('/api/admin/board-management/search', {
+          params: { ...params, keyword: keyword }
+        });
+      } else {
+        // 전체 목록 조회
+        response = await api.get('/api/admin/board-management', { params });
+      }
+
+      console.log('📦 전체 응답 데이터:', response.data);
+      console.log('📦 게시글 배열:', response.data.data);
+      console.log('📦 첫 번째 게시글:', response.data.data?.[0]);
+      console.log('📦 첫 번째 게시글의 모든 키:', response.data.data?.[0] ? Object.keys(response.data.data[0]) : '데이터 없음');
+
+      // 백엔드 응답 구조 처리
+      if (response.data.success) {
+        const postsData = response.data.data || [];
+        const total = response.data.totalElements || 0;
+        const pages = response.data.totalPages || 0;
+
+        setPosts(postsData);
+        setTotalElements(total);
+        setTotalPages(pages);
+        setCurrentPage(response.data.currentPage || page);
+      } else {
+        throw new Error(response.data.message || '게시글을 불러올 수 없습니다.');
+      }
+
+    } catch (err: any) {
+      console.error('❌ 게시글 목록 조회 에러:', err.response?.data);
+      console.error('❌ 에러 상세:', err);
+      alert(err.response?.data?.message || err.message || '게시글 목록을 불러오는데 실패했습니다.');
+      setPosts([]);
+    } finally {
+      setIsLoading(false);
     }
-    
-    console.log('📦 전체 응답 데이터:', response.data);
-    console.log('📦 게시글 배열:', response.data.data);
-    console.log('📦 첫 번째 게시글:', response.data.data?.[0]);
-    console.log('📦 첫 번째 게시글의 모든 키:', response.data.data?.[0] ? Object.keys(response.data.data[0]) : '데이터 없음');
-    
-    // 백엔드 응답 구조 처리
-    if (response.data.success) {
-      const postsData = response.data.data || [];
-      const total = response.data.totalElements || 0;
-      const pages = response.data.totalPages || 0;
-      
-      setPosts(postsData);
-      setTotalElements(total);
-      setTotalPages(pages);
-      setCurrentPage(response.data.currentPage || page);
-    } else {
-      throw new Error(response.data.message || '게시글을 불러올 수 없습니다.');
-    }
-    
-  } catch (err: any) {
-    console.error('❌ 게시글 목록 조회 에러:', err.response?.data);
-    console.error('❌ 에러 상세:', err);
-    alert(err.response?.data?.message || err.message || '게시글 목록을 불러오는데 실패했습니다.');
-    setPosts([]);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   // 검색 실행
   const handleSearch = () => {
@@ -385,7 +420,7 @@ const BoardManagement: React.FC = () => {
     setCurrentPage(newPage);
   };
 
-   // ✅ 게시글 생성 함수 (신규 모달용)
+  // ✅ 게시글 생성 함수 (신규 모달용)
   const handleCreatePost = async (title: string, content: string, closeModal: () => void) => {
     if (!title.trim() || !content.trim()) {
       alert('제목과 내용을 입력해주세요.');
@@ -503,6 +538,30 @@ const BoardManagement: React.FC = () => {
     <div className="p-8">
       {/* 상단 타이틀 + 새로고침 버튼 */}
       <div className="flex justify-between items-center mb-6">
+        {/* ✅ 전체선택 / 선택삭제 영역 */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 accent-blue-600"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              전체 선택
+            </span>
+          </div>
+
+          {selectedIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 text-sm"
+            >
+              선택삭제 ({selectedIds.length})
+            </button>
+          )}
+        </div>
+
         <div>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
             게시판 관리
@@ -512,11 +571,11 @@ const BoardManagement: React.FC = () => {
           </p>
         </div>
         <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-100 text-blue-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-200"
-          >
-            신규
-          </button>
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-blue-100 text-blue-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-200"
+        >
+          신규
+        </button>
       </div>
 
       {/* 검색창 */}
@@ -570,8 +629,20 @@ const BoardManagement: React.FC = () => {
               <div
                 key={post.id}
                 onClick={() => handlePostClick(post.id)}
-                className="flex justify-between items-center border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
+                className="relative flex justify-between items-center border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
               >
+                {/* ✅ 개별 선택 체크박스 */}
+                <div
+                  className="absolute top-2 left-2 bg-white bg-opacity-80 backdrop-blur-sm rounded shadow-sm p-0.5 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(post.id)}
+                    onChange={() => toggleSelect(post.id)}
+                    className="w-4 h-4 accent-blue-600"
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold text-gray-800 dark:text-white truncate">
                     {post.title}
@@ -604,7 +675,7 @@ const BoardManagement: React.FC = () => {
           >
             이전
           </button>
-          
+
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum;
             if (totalPages <= 5) {
@@ -616,22 +687,21 @@ const BoardManagement: React.FC = () => {
             } else {
               pageNum = currentPage - 2 + i;
             }
-            
+
             return (
               <button
                 key={pageNum}
                 onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 rounded-lg ${
-                  currentPage === pageNum
+                className={`px-3 py-1 rounded-lg ${currentPage === pageNum
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                  }`}
               >
                 {pageNum + 1}
               </button>
             );
           })}
-          
+
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages - 1}
@@ -654,7 +724,7 @@ const BoardManagement: React.FC = () => {
         onDelete={handleDeletePost}
       />
       {/* ✅ 신규 등록 모달 */}
-      <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />      
+      <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
     </div>
   );
 };

@@ -33,6 +33,22 @@ const CompanyManagement: React.FC = () => {
     currentPage: 0,
   });
   const [currentPage, setCurrentPage] = useState(0);
+  // ✅ 선택 상태 추가
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const allSelected = companies.length > 0 && selectedIds.length === companies.length;
+
+  // ✅ 선택 토글 함수
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  // ✅ 전체 선택 / 해제
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(companies.map((c) => c.id));
+  };
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -53,6 +69,21 @@ const CompanyManagement: React.FC = () => {
   const [preview, setPreview] = useState<string | null>(null);
 
   const pageSize = 6;
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`${selectedIds.length}개의 기업을 삭제하시겠습니까?`)) return;
+
+    try {
+      for (const id of selectedIds) {
+        await api.delete(`/api/admin/company-management/${id}`);
+      }
+      alert("선택된 기업이 삭제되었습니다.");
+      setSelectedIds([]);
+      fetchCompanies(currentPage);
+    } catch (err) {
+      console.error("선택삭제 실패:", err);
+      alert("선택삭제 중 오류가 발생했습니다.");
+    }
+  };
 
   /** ✅ 회사 목록 불러오기 */
   const fetchCompanies = async (page: number = 0) => {
@@ -103,7 +134,7 @@ const CompanyManagement: React.FC = () => {
   };
 
 
- /** ✅ 신규 등록 */
+  /** ✅ 신규 등록 */
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -132,7 +163,7 @@ const CompanyManagement: React.FC = () => {
     }
   };
 
-   /** ✅ 이미지 미리보기 */
+  /** ✅ 이미지 미리보기 */
   const handlePreviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -170,7 +201,7 @@ const CompanyManagement: React.FC = () => {
           </label>
 
           {/* ✅ 폼 입력 */}
-          {[ 
+          {[
             { label: "회사명", key: "name" },
             { label: "대표자명", key: "ceo" },
             { label: "주소", key: "address" },
@@ -446,6 +477,25 @@ const CompanyManagement: React.FC = () => {
           <PlusIcon className="w-4 h-4" /> 신규
         </button>
       </div>
+      {/* ✅ 전체선택 + 선택삭제 영역 */}
+      <div className="flex items-center gap-2 mb-4">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          onChange={toggleSelectAll}
+          className="w-4 h-4 accent-blue-600"
+        />
+        <span className="text-sm text-gray-700">전체 선택</span>
+
+        {selectedIds.length > 0 && (
+          <button
+            onClick={handleBulkDelete}
+            className="ml-3 bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 text-sm"
+          >
+            선택 삭제
+          </button>
+        )}
+      </div>
 
       {/* 로딩 / 에러 */}
       {loading && <p className="text-center text-gray-500">불러오는 중...</p>}
@@ -461,6 +511,20 @@ const CompanyManagement: React.FC = () => {
                 className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer"
                 onClick={() => setSelectedCompany(company)}
               >
+                {/* ✅ 개별 체크박스 추가 */}
+                <div className="flex justify-between items-center mb-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(company.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleSelect(company.id);
+                    }}
+                    className="w-4 h-4 accent-blue-600"
+                  />
+                  <span className="text-xs text-gray-500">ID: {company.id}</span>
+
+                </div>
                 {company.photo ? (
                   <img src={company.photo} alt={company.name} className="w-full h-48 object-cover rounded-md mb-3" />
                 ) : (
@@ -510,7 +574,7 @@ const CompanyManagement: React.FC = () => {
         </>
       )}
 
-      
+
 
       {/* 상세보기 모달 */}
       {selectedCompany && !isEditModalOpen && (
@@ -663,6 +727,7 @@ const CompanyManagement: React.FC = () => {
         </div>
       )}
       {isCreateModalOpen && renderCreateModal()}
+
     </div>
   );
 };
