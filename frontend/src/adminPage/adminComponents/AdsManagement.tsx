@@ -19,6 +19,36 @@ const AdsManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  // ✅ 선택 관련 상태 및 함수 추가
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const allSelected = ads.length > 0 && selectedIds.length === ads.length;
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(ads.map((a) => a.id));
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length}개의 광고를 삭제하시겠습니까?`)) return;
+
+    try {
+      for (const id of selectedIds) {
+        await handleDelete(id);
+      }
+      alert("선택된 광고가 삭제되었습니다.");
+      setSelectedIds([]);
+    } catch (err) {
+      console.error("선택삭제 실패:", err);
+      alert("선택삭제 중 오류가 발생했습니다.");
+    }
+  };
 
   const itemsPerPage = 4;
   const totalPages = Math.ceil(ads.length / itemsPerPage);
@@ -129,6 +159,27 @@ const AdsManagement: React.FC = () => {
   return (
     <div className="p-8 h-full">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">광고 관리</h2>
+      {/* ✅ 전체선택 + 선택삭제 */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+            className="w-4 h-4 accent-blue-600"
+          />
+          <span className="text-sm text-gray-700">전체 선택</span>
+        </div>
+
+        {selectedIds.length > 0 && (
+          <button
+            onClick={handleBulkDelete}
+            className="bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 text-sm"
+          >
+            선택 삭제 ({selectedIds.length})
+          </button>
+        )}
+      </div>
 
       <div className="flex gap-6 h-[calc(100vh-200px)]">
         {/* 좌측: 업로드/미리보기 */}
@@ -142,9 +193,8 @@ const AdsManagement: React.FC = () => {
                 readOnly
               />
               <label
-                className={`${
-                  isUploading ? "bg-gray-200" : "bg-blue-100 hover:bg-blue-200"
-                } text-blue-600 text-sm font-medium px-4 py-2 rounded-lg cursor-pointer whitespace-nowrap`}
+                className={`${isUploading ? "bg-gray-200" : "bg-blue-100 hover:bg-blue-200"
+                  } text-blue-600 text-sm font-medium px-4 py-2 rounded-lg cursor-pointer whitespace-nowrap`}
               >
                 {isUploading ? "업로드 중..." : "등록"}
                 <input
@@ -188,12 +238,24 @@ const AdsManagement: React.FC = () => {
                   <div
                     key={ad.id}
                     onClick={() => handleAdClick(ad)}
-                    className={`relative bg-gray-50 rounded-lg border-2 transition cursor-pointer overflow-hidden ${
-                      selectedAd?.id === ad.id
+                    className={`relative bg-gray-50 rounded-lg border-2 transition cursor-pointer overflow-hidden ${selectedAd?.id === ad.id
                         ? "border-blue-500 shadow-lg"
                         : "border-gray-200 hover:border-gray-300 hover:shadow-md"
-                    }`}
+                      }`}
                   >
+                    {/* ✅ 개별 선택 체크박스 — 카드 상단 좌측에 절대 위치 */}
+                    <div
+                      className="absolute top-2 left-2 bg-white bg-opacity-80 backdrop-blur-sm rounded shadow-sm p-0.5 z-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(ad.id)}
+                        onChange={() => toggleSelect(ad.id)}
+                        className="w-4 h-4 accent-blue-600"
+                      />
+                    </div>
+
                     <div className="h-48 flex items-center justify-center bg-gray-100">
                       {ad.imageUrl ? (
                         <img
@@ -205,6 +267,7 @@ const AdsManagement: React.FC = () => {
                         <PhotoIcon className="w-12 h-12 text-gray-300" />
                       )}
                     </div>
+
                     <div className="p-3 flex items-center justify-between bg-white">
                       <span className="text-sm text-gray-700 font-medium truncate">
                         {ad.title}
@@ -218,6 +281,7 @@ const AdsManagement: React.FC = () => {
                       />
                     </div>
                   </div>
+
                 ))}
               </div>
             )}
@@ -238,11 +302,10 @@ const AdsManagement: React.FC = () => {
                 <button
                   key={i + 1}
                   onClick={() => handlePageChange(i + 1)}
-                  className={`px-3 py-1 rounded-md text-sm transition ${
-                    currentPage === i + 1
+                  className={`px-3 py-1 rounded-md text-sm transition ${currentPage === i + 1
                       ? "bg-blue-500 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   {i + 1}
                 </button>

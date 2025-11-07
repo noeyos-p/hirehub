@@ -37,7 +37,37 @@ type NewJob = Omit<Job, "id">;
 
 const JobManagement: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
+  // ✅ 선택 관련 상태 및 함수 추가
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const allSelected = jobs.length > 0 && selectedIds.length === jobs.length;
 
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(jobs.map((j) => j.id));
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length}개의 공고를 삭제하시겠습니까?`)) return;
+
+    try {
+      for (const id of selectedIds) {
+        await api.delete(`/api/admin/job-management/${id}`);
+      }
+      alert("선택된 공고가 삭제되었습니다.");
+      setSelectedIds([]);
+      fetchJobs(currentPage);
+    } catch (err) {
+      console.error("선택삭제 오류:", err);
+      alert("선택삭제 중 오류가 발생했습니다.");
+    }
+  };
   const [pageInfo, setPageInfo] = useState<PageInfo>({
     totalElements: 0,
     totalPages: 0,
@@ -507,6 +537,27 @@ const JobManagement: React.FC = () => {
       {/* 타이틀 */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">공고 관리</h2>
+        {/* ✅ 전체선택 + 선택삭제 영역 */}
+        <div className="flex items-center justify-between mb-4 mt-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 accent-blue-600"
+            />
+            <span className="text-sm text-gray-700">전체 선택</span>
+          </div>
+
+          {selectedIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 text-sm"
+            >
+              선택삭제 ({selectedIds.length})
+            </button>
+          )}
+        </div>
         {/* ✅ 검색 폼 추가 */}
         <form
           onSubmit={(e) => {
@@ -576,9 +627,21 @@ const JobManagement: React.FC = () => {
             {jobs.map((job) => (
               <div
                 key={job.id}
-                className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer"
+                className="relative bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => handleJobClick(job)}
               >
+                {/* ✅ 개별 선택 체크박스 */}
+                <div
+                  className="absolute top-2 left-2 bg-white bg-opacity-80 backdrop-blur-sm rounded shadow-sm p-0.5 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(job.id)}
+                    onChange={() => toggleSelect(job.id)}
+                    className="w-4 h-4 accent-blue-600"
+                  />
+                </div>
                 {/* 공고 사진 */}
                 {job.photo ? (
                   <img src={job.photo} alt={job.title} className="w-full h-48 object-cover rounded-md mb-3" />
