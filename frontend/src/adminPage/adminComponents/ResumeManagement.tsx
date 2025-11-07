@@ -267,7 +267,7 @@ const ResumeDetailModal: React.FC<ResumeDetailModalProps> = ({ resume, isOpen, o
                   : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
               }`}
             >
-              {resume.locked ? "지원안됨" : "지원됨"}
+              {resume.locked ? "지원됨" : "지원안됨"}
             </span>
           </div>
 
@@ -501,7 +501,7 @@ const ResumeManagement: React.FC = () => {
                           : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
                       }`}
                     >
-                      {resume.locked ? "지원안됨" : "지원됨"}
+                      {resume.locked ? "지원됨" : "지원안됨"}
                     </span>
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">작성자: {resume.users.nickname}</div>
