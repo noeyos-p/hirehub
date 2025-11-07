@@ -337,10 +337,9 @@ const JobManagement: React.FC = () => {
       });
       if (res.data.success) {
         alert("이미지 업로드 성공!");
-        setSelectedJob({ ...selectedJob, photo: res.data.fileUrl });
-        setJobs(
-          jobs.map((j) => (j.id === selectedJob.id ? { ...j, photo: res.data.fileUrl } : j))
-        );
+        const newUrl = `${res.data.fileUrl}?t=${Date.now()}`;
+        setSelectedJob({ ...selectedJob, photo: newUrl });
+        setJobs(jobs.map((j) => (j.id === selectedJob.id ? { ...j, photo: newUrl } : j)));
       } else {
         alert("이미지 업로드 실패: " + (res.data.message || "서버 오류"));
       }
@@ -474,8 +473,8 @@ const JobManagement: React.FC = () => {
               key={pageNum}
               onClick={() => handlePageChange(pageNum)}
               className={`px-4 py-2 rounded-lg border transition-colors ${currentPage === pageNum
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
             >
               {pageNum + 1}
