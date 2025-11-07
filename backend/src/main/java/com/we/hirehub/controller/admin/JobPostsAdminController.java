@@ -81,46 +81,28 @@ public class JobPostsAdminController {
      */
     @PostMapping
     public ResponseEntity<?> createJobPost(@RequestBody JobPosts jobPost) {
-
         log.info("=== 🚀 공고 등록 요청 받음 ===");
-        log.info("1️⃣ 제목: {}", jobPost.getTitle());
-        log.info("2️⃣ 내용: {}", jobPost.getContent());
-        log.info("3️⃣ 회사 정보: {}", jobPost.getCompany());
-        log.info("4️⃣ 회사 ID: {}", jobPost.getCompany() != null ? jobPost.getCompany().getId() : "NULL");
-        log.info("5️⃣ 위치: {}", jobPost.getLocation());
-        log.info("6️⃣ 시작일: {}, 마감일: {}", jobPost.getStartAt(), jobPost.getEndAt());
 
         try {
             if (jobPost.getTitle() == null || jobPost.getTitle().trim().isEmpty()) {
-                log.warn("❌ 제목이 비어있음");
-                return ResponseEntity.badRequest()
-                        .body(createErrorResponse("공고 제목이 필요합니다"));
+                return ResponseEntity.badRequest().body(createErrorResponse("공고 제목이 필요합니다"));
             }
 
-            log.info("7️⃣ Service 호출 시작...");
-            JobPostsDto createdJobPost = jobPostsService.createJobPost(jobPost);
+            // ✅ photo 값이 비어 있으면 null 처리 (덮어쓰기 방지)
+            if (jobPost.getPhoto() != null && jobPost.getPhoto().trim().isEmpty()) {
+                jobPost.setPhoto(null);
+            }
 
-            log.info("8️⃣ Service 호출 완료!");
-            log.info("9️⃣ 생성된 공고 ID: {}", createdJobPost.getId());
-            log.info("🔟 생성된 공고 제목: {}", createdJobPost.getTitle());
+            JobPostsDto createdJobPost = jobPostsService.createJobPost(jobPost);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "공고 등록 성공");
             response.put("data", createdJobPost);
 
-            log.info("✅ 공고 등록 완료 - {}", createdJobPost.getTitle());
-            log.info("=== 응답 전송 ===");
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-        } catch (IllegalArgumentException e) {
-            log.error("❌ IllegalArgumentException 발생: {}", e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest()
-                    .body(createErrorResponse(e.getMessage()));
         } catch (Exception e) {
-            log.error("❌ Exception 발생: {}", e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(createErrorResponse(e.getMessage()));
         }
@@ -143,16 +125,10 @@ public class JobPostsAdminController {
             JobPosts jobPost = jobPostRepository.findById(jobPostId)
                     .orElseThrow(() -> new IllegalArgumentException("공고를 찾을 수 없습니다."));
 
-            // ✅ 커밋 딜레이 보호 (최대 1초 재시도)
-            int retry = 0;
-            while (retry < 3 && !jobPostRepository.existsById(jobPostId)) {
-                try {
-                    Thread.sleep(300);
-                } catch (InterruptedException e) { }
-                retry++;
-            }
+            // ✅ 경로 고유화: 공고 ID별 폴더 생성
+            String fileUrl = s3Service.uploadJobPostImage(file, jobPostId);
 
-            String fileUrl = s3Service.uploadFile(file, "jobposts/");
+            // ✅ DB에 해당 공고의 photo 필드만 업데이트
             jobPost.setPhoto(fileUrl);
             jobPostRepository.save(jobPost);
 

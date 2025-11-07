@@ -62,9 +62,15 @@ public class JobPostsAdminService {
     // ✅ 공고 등록
     @Transactional
     public JobPostsDto createJobPost(JobPosts jobPost) {
-        log.info("공고 생성: {}", jobPost.getTitle());
-        validateJobPost(jobPost);
+        // 1️⃣ 먼저 공고 저장 (photo는 아직 없음)
         JobPosts saved = jobPostsRepository.save(jobPost);
+
+        // 2️⃣ 로그 확인
+        log.info("✅ 신규 공고 저장 완료 - id: {}, title: {}", saved.getId(), saved.getTitle());
+
+        // 3️⃣ 다른 공고 photo 절대 건드리지 않음 (중요)
+        //    기존 코드에서 jobPostsRepository.findAll() or updateAll() 같은 루프 절대 넣지 말기!
+
         return convertToDto(saved);
     }
 

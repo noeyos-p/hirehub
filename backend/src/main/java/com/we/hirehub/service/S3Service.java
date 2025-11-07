@@ -50,9 +50,21 @@ public class S3Service {
      */
     public String uploadJobPostImage(MultipartFile file, Long jobPostId) {
         validateImageFile(file);
-        String fileName = generateFileName(file.getOriginalFilename());
-        String key = String.format("jobposts/images/%d/%s", jobPostId, fileName);
-        return uploadFile(file, key);
+
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String folderName = (jobPostId != null && jobPostId > 0)
+                ? "jobposts/images/" + jobPostId
+                : "jobposts/temp/" + UUID.randomUUID();
+
+        String uniqueFileName = String.format("%s/%s_%s%s",
+                folderName,
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")),
+                UUID.randomUUID().toString().substring(0, 8),
+                extension
+        );
+
+        return uploadFile(file, uniqueFileName);
     }
 
     /**
