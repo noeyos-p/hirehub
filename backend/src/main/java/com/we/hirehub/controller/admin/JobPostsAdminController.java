@@ -162,33 +162,44 @@ public class JobPostsAdminController {
             @RequestParam("jobPostId") Long jobPostId,
             @RequestParam("file") MultipartFile file) {
 
+        Map<String, Object> response = new HashMap<>();
         try {
-            log.info("Uploading job post image - jobPostId: {}, fileName: {}",
-                    jobPostId, file.getOriginalFilename());
+            log.info("=== 🟡 [UPLOAD START] 공고 이미지 업로드 요청 ===");
+            log.info("📌 jobPostId: {}", jobPostId);
+            log.info("📄 fileName: {}", file.getOriginalFilename());
+            log.info("📏 fileSize: {} bytes", file.getSize());
+            log.info("📎 contentType: {}", file.getContentType());
+
+            if (file.isEmpty()) {
+                log.warn("⚠️ 업로드된 파일이 비어 있습니다!");
+                response.put("success", false);
+                response.put("message", "업로드된 파일이 없습니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
 
             // 1️⃣ S3 업로드
             String fileUrl = s3Service.uploadJobPostImage(file, jobPostId);
+            log.info("✅ S3 업로드 성공: {}", fileUrl);
 
             // 2️⃣ DB 업데이트
             jobPostsService.updateJobPhoto(jobPostId, fileUrl);
+            log.info("✅ DB photo 필드 업데이트 완료");
 
-            // 3️⃣ 응답 반환
-            Map<String, Object> response = new HashMap<>();
+            // 3️⃣ 응답
             response.put("success", true);
             response.put("message", "공고 이미지 업로드 성공");
             response.put("fileUrl", fileUrl);
             response.put("jobPostId", jobPostId);
+            log.info("=== 🟢 [UPLOAD COMPLETE] ===");
 
-            log.info("Job post image uploaded successfully: {}", fileUrl);
             return ResponseEntity.ok(response);
-
         } catch (Exception e) {
-            log.error("Upload failed", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("업로드 실패: " + e.getMessage()));
+            log.error("❌ 이미지 업로드 중 오류 발생: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "업로드 실패: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
     // ============ 수정 ============
 
     /**
