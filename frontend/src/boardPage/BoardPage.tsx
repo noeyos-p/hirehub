@@ -10,7 +10,7 @@ const BoardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-[1440px] mx-auto px-[55px]">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-20">
 
           {/* 좌측: 게시물 목록 / 상세페이지 / 작성페이지 */}
@@ -28,7 +28,7 @@ const BoardPage: React.FC = () => {
             <div className="col-span-2">
               <PopularPosts />
             </div>
-            <div className="col-span-2 relative top-[-5px]">
+            <div className="col-span-2 relative top-[-50px]">
               <Ads />
             </div>
           </div>

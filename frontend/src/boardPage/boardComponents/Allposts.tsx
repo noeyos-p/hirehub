@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  BookmarkIcon,
+  StarIcon,
+  EyeIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { useNavigate } from 'react-router-dom';
 import { boardApi, type BoardListResponse } from '../../api/boardApi';
 
@@ -37,21 +48,15 @@ const AllPosts: React.FC = () => {
 
   // 검색 처리
   const handleSearch = async () => {
-    // 검색어가 비어있으면 전체 목록 조회
     if (!searchKeyword.trim()) {
       fetchBoards();
       return;
     }
-    
     try {
       setLoading(true);
       setError(null);
       setIsSearching(true);
-      console.log('🔍 검색 키워드:', searchKeyword);
-      
       const data = await boardApi.searchBoards(searchKeyword);
-      console.log('✅ 검색 결과:', data);
-      
       setBoards(data);
       setCurrentPage(1);
     } catch (err) {
@@ -76,6 +81,12 @@ const AllPosts: React.FC = () => {
     }
   };
 
+  // ✅ 페이지네이션 함수
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToLastPage = () => setCurrentPage(totalPages);
+  const goToPrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const goToNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
   // 페이지네이션 계산
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
@@ -85,11 +96,13 @@ const AllPosts: React.FC = () => {
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/\. /g, '.');
+    return date
+      .toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      })
+      .replace(/\. /g, '.');
   };
 
   // 게시글 클릭 핸들러
@@ -136,10 +149,25 @@ const AllPosts: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="flex justify-end">
+        {/* 검색 입력창 */}
+        <div className="relative ml-[150px]">
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="검색어를 입력하세요"
+            className="border border-gray-300 rounded-lg px-4 py-1.5 pr-9 text-[14px] focus:outline-none focus:border-blue-500 w-100"
+          />
+          <button onClick={handleSearch} className="absolute right-3 top-2.5">
+            <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 cursor-pointer hover:text-gray-700" />
+          </button>
+        </div>
+        <div className="flex justify-end mr-[6px]">
           <button
             onClick={() => navigate('/board/write')}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-500 text-sm font-medium px-4 py-1.5 rounded-md"
+            className="bg-[#006AFF] hover:bg-blue-600 text-white text-[15px] font-medium px-4 py-1.5 rounded-md cursor-pointer
+"
           >
             작성하기
           </button>
@@ -208,64 +236,67 @@ const AllPosts: React.FC = () => {
           </div>
         )}
 
-        {/* 페이지네이션 및 검색 */}
-        {boards.length > 0 && (
-          <div className="flex items-center justify-between mt-8">
-            {/* 페이지네이션 버튼 */}
-            <div className="flex justify-center flex-1 space-x-0 mr-[-140px]">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 text-sm text-gray-500 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                이전
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = currentPage <= 3 
-                  ? i + 1 
-                  : currentPage + i - 2;
-                
-                if (pageNum > totalPages) return null;
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`px-3 py-1 text-sm border border-gray-300 rounded ${
-                      currentPage === pageNum
-                        ? 'bg-gray-300 text-white hover:bg-gray-400'
-                        : 'text-gray-500 hover:bg-gray-100'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm text-gray-500 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                다음
-              </button>
-            </div>
-
-            {/* 검색 입력창 */}
-            <div className="relative">
-              <input
-                type="text"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="검색어를 입력하세요"
-                className="border border-gray-300 rounded-full px-4 py-1.5 pr-9 text-sm focus:outline-none focus:border-blue-500 w-48"
-              />
-              <button onClick={handleSearch} className="absolute right-3 top-2.5">
-                <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 cursor-pointer hover:text-gray-700" />
-              </button>
-            </div>
-          </div>
-        )}
+        {/* ✅ 페이지네이션 */}
+        <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
+          {/* 처음으로 */}
+          <button
+            onClick={goToFirstPage}
+            disabled={currentPage === 1}
+            className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronDoubleLeftIcon className="w-5 h-5" />
+          </button>
+          {/* 이전 */}
+          <button
+            onClick={goToPrevPage}
+            disabled={currentPage === 1}
+            className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeftIcon className="w-5 h-5" />
+          </button>
+          {/* 페이지 번호 */}
+          {(() => {
+            const pages = [];
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage + 1 < maxVisible) {
+              startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+            for (let i = startPage; i <= endPage; i++) {
+              pages.push(
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${
+                    currentPage === i
+                      ? 'bg-white text-[#006AFF] border-[#006AFF]'
+                      : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
+                  }`}
+                >
+                  {i}
+                </button>
+              );
+            }
+            return pages;
+          })()}
+          {/* 다음 */}
+          <button
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages}
+            className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRightIcon className="w-5 h-5" />
+          </button>
+          {/* 마지막으로 */}
+          <button
+            onClick={goToLastPage}
+            disabled={currentPage === totalPages}
+            className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronDoubleRightIcon className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </section>
   );

@@ -49,7 +49,7 @@ const Ads: React.FC = () => {
   }
 
   return (
-    <div className="rounded-lg p-4 text-center text-sm text-gray-600 mt-0 h-[360px] flex items-center justify-center">
+    <div className="rounded-lg p-4 text-center text-sm text-gray-600 mt-0 h-[425px] flex items-center justify-center">
       <img
         src={ads[currentAdIndex]}
         alt={`광고 배너 ${currentAdIndex + 1}`}
