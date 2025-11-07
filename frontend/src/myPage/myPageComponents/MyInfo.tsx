@@ -155,9 +155,12 @@ const MyInfo: React.FC = () => {
       setMe(updated);
       cancel();
     } catch (e) {
-      console.error(e);
+ if (e.response?.data?.message) {
+      alert(e.response.data.message); // "이미 사용 중인 닉네임입니다."
+    } else {
       alert("저장 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
+  }
   };
 
   const handleWithdraw = async () => {
@@ -206,6 +209,9 @@ const MyInfo: React.FC = () => {
                   value={draft.nickname ?? ""}
                   onChange={(e) => setDraft((d) => ({ ...d, nickname: e.target.value }))}
                   placeholder="닉네임"
+                        onKeyDown={(e) => {
+        if (e.key === "Enter") commit("nickname");
+      }}
                 />
                 <button className="p-2" onClick={() => commit("nickname")} title="저장"><Check /></button>
                 <button className="p-2" onClick={cancel} title="취소"><X /></button>

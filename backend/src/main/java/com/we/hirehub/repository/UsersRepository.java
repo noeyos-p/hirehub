@@ -20,5 +20,6 @@ public interface UsersRepository extends JpaRepository<Users, Long> {
     boolean existsByPhoneAndEmailNot(String phone, String email);
     @Query("SELECT u FROM Users u WHERE u.email = :email AND u.nickname <> '(탈퇴한 회원)'")
     Optional<Users> findActiveByEmail(@Param("email") String email);
+    boolean existsByNickname(String nickname);
 
 }
