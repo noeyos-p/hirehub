@@ -30,4 +30,13 @@ public class RestExceptionHandler {
                 "timestamp", Instant.now(), "error", "BAD_REQUEST", "message", e.getBindingResult().toString()
         ));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArg(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "timestamp", Instant.now(),
+                "error", "BAD_REQUEST",
+                "message", e.getMessage()
+        ));
+    }
 }

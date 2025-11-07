@@ -3,7 +3,6 @@ package com.we.hirehub.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.we.hirehub.config.S3Config;
 import com.we.hirehub.dto.*;
 import com.we.hirehub.entity.*;
 import com.we.hirehub.exception.ForbiddenEditException;
@@ -16,9 +15,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -480,7 +477,14 @@ public class MyPageService {
     public MyProfileDto updateProfile(Long userId, MyProfileUpdateRequest req) {
         Users u = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
-        if (req.getNickname() != null) u.setNickname(req.getNickname());
+        // 닉네임 중복 체크
+        if (req.getNickname() != null && !req.getNickname().equals(u.getNickname())) {
+            boolean exists = userRepository.existsByNickname(req.getNickname());
+            if (exists) {
+                throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+            }
+            u.setNickname(req.getNickname());
+        }
         if (req.getName() != null) u.setName(req.getName());
         if (req.getPhone() != null) u.setPhone(req.getPhone());
         if (req.getGender() != null) u.setGender(req.getGender());
