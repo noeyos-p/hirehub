@@ -1,47 +1,41 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import SockJS from "sockjs-client";
 import { CompatClient, Stomp } from "@stomp/stompjs";
 
-/**
- * 어드민(상담사) 화면
- */
+interface QueueItem {
+  roomId: string;
+  userName: string;
+  userNickname?: string;
+}
+
+const MESSAGE_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5분
+
 const LiveSupport: React.FC = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
   
-  const [queue, setQueue] = useState<Array<{ roomId: string; userName: string; userNickname?: string }>>([]);
-
-  // ✅ 활성 방 정보를 localStorage에 저장하여 브라우저 종료 후에도 유지
-  const [activeRoom, setActiveRoom] = useState<string | null>(() => {
-    return localStorage.getItem('agent-activeRoom');
-  });
-
-  // ✅ 로그도 localStorage에 저장
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [activeRoom, setActiveRoom] = useState<string | null>(() => 
+    localStorage.getItem('agent-activeRoom')
+  );
   const [logs, setLogs] = useState<string[]>(() => {
     const stored = localStorage.getItem('agent-logs');
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {
-        return [];
-      }
+    try {
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
     }
-    return [];
   });
-
   const [input, setInput] = useState("");
-
-  // ✅ 유저 연결 상태도 localStorage에 저장
-  const [isUserConnected, setIsUserConnected] = useState(() => {
-    const stored = localStorage.getItem('agent-isUserConnected');
-    return stored === 'true';
-  });
+  const [isUserConnected, setIsUserConnected] = useState(() => 
+    localStorage.getItem('agent-isUserConnected') === 'true'
+  );
 
   const stompRef = useRef<CompatClient | null>(null);
   const roomSubRef = useRef<{ unsubscribe: () => void } | null>(null);
-  const processedMessagesRef = useRef<Set<string>>(new Set());
-  const isInitialMount = useRef(true);
+  const processedMessagesRef = useRef<Map<string, number>>(new Map());
+  const cleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ 상태 변경 시 localStorage에 저장
+  // localStorage 동기화
   useEffect(() => {
     if (activeRoom) {
       localStorage.setItem('agent-activeRoom', activeRoom);
@@ -58,25 +52,125 @@ const LiveSupport: React.FC = () => {
     localStorage.setItem('agent-isUserConnected', String(isUserConnected));
   }, [isUserConnected]);
 
+  // 메시지 중복 체크
+  const isMessageProcessed = useCallback((messageId: string): boolean => {
+    const now = Date.now();
+    const lastProcessed = processedMessagesRef.current.get(messageId);
+    
+    if (lastProcessed && now - lastProcessed < 5000) {
+      return true;
+    }
+    
+    processedMessagesRef.current.set(messageId, now);
+    return false;
+  }, []);
+
+  // 오래된 메시지 ID 정리
+  useEffect(() => {
+    cleanupIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      processedMessagesRef.current.forEach((timestamp, key) => {
+        if (now - timestamp > MESSAGE_CLEANUP_INTERVAL) {
+          processedMessagesRef.current.delete(key);
+        }
+      });
+    }, MESSAGE_CLEANUP_INTERVAL);
+
+    return () => {
+      if (cleanupIntervalRef.current) {
+        clearInterval(cleanupIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // 방 구독
+  const subscribeRoom = useCallback((roomId: string) => {
+    if (!stompRef.current?.connected) {
+      console.error("STOMP 클라이언트가 없습니다");
+      return;
+    }
+
+    // 기존 구독 해제
+    if (roomSubRef.current) {
+      try {
+        roomSubRef.current.unsubscribe();
+      } catch (e) {
+        console.error("구독 해제 오류:", e);
+      }
+      roomSubRef.current = null;
+    }
+
+    roomSubRef.current = stompRef.current.subscribe(`/topic/rooms/${roomId}`, (frame) => {
+      try {
+        const body = JSON.parse(frame.body);
+        const messageId = `agent-${body.type}-${body.role}-${body.text}`;
+
+        if (isMessageProcessed(messageId)) return;
+
+        handleRoomMessage(body);
+      } catch (e) {
+        console.error("방 메시지 파싱 오류:", e);
+        if (frame.body) setLogs(prev => [...prev, `[RAW] ${frame.body}`]);
+      }
+    });
+  }, [isMessageProcessed]);
+
+  // 방 메시지 핸들러
+  const handleRoomMessage = useCallback((body: any) => {
+    switch (body.type) {
+      case "HANDOFF_ACCEPTED":
+        const userName = body.userName || "user";
+        const userNickname = body.userNickname || "user";
+        setLogs(prev => [...prev, `[SYS] [${userName} (${userNickname})] 상담 연결됨`]);
+        setIsUserConnected(true);
+        break;
+
+      case "USER_DISCONNECTED":
+        setIsUserConnected(false);
+        setLogs(prev => [...prev, `[SYS] 유저가 연결을 해제했습니다.`]);
+        break;
+
+      case "AGENT_DISCONNECTED":
+        setIsUserConnected(false);
+        break;
+
+      default:
+        if (body.text) {
+          const role = body.role ?? "UNKNOWN";
+          const prefix = role === "AGENT" ? "[나]" : `[${role}]`;
+          setLogs(prev => [...prev, `${prefix} ${body.text}`]);
+        }
+    }
+  }, []);
+
+  // 큐 메시지 핸들러
+  const handleQueueMessage = useCallback((body: any) => {
+    if (body.event === "HANDOFF_REQUESTED" && body.roomId) {
+      setQueue(prev => {
+        if (prev.some(q => q.roomId === body.roomId)) {
+          return prev;
+        }
+        return [...prev, {
+          roomId: body.roomId,
+          userName: body.userName || "user",
+          userNickname: body.userNickname || "user"
+        }];
+      });
+    } else if (body.event === "USER_DISCONNECTED" && body.roomId) {
+      setQueue(prev => prev.filter(q => q.roomId !== body.roomId));
+    }
+  }, []);
+
   // STOMP 연결
   useEffect(() => {
-    console.log("🔌 상담사 WebSocket 연결 시작...");
-    console.log("📍 API_BASE_URL:", API_BASE_URL);
-    
     const wsUrl = API_BASE_URL ? `${API_BASE_URL}/ws` : "/ws";
-    console.log("📍 WebSocket URL:", wsUrl);
-    
     const sock = new SockJS(wsUrl);
     const client = Stomp.over(sock);
-    
-    // 디버그 활성화 (개발 중)
-    client.debug = (str) => {
-      console.log("🔧 STOMP:", str);
-    };
+    client.debug = () => {};
 
-    // ✅ 토큰 가져오기 (adminAccessToken 또는 accessToken)
-    const token = localStorage.getItem("adminAccessToken") || localStorage.getItem("accessToken") || localStorage.getItem("token");
-    console.log("🔑 사용할 토큰:", token ? "있음" : "없음");
+    const token = localStorage.getItem("adminAccessToken") || 
+                  localStorage.getItem("accessToken") || 
+                  localStorage.getItem("token");
     
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -85,197 +179,72 @@ const LiveSupport: React.FC = () => {
       headers,
       () => {
         stompRef.current = client;
-        console.log("✅ 상담사 WebSocket 연결 성공!");
 
-        // 상담사 대기 큐 구독
-        console.log("📡 /topic/support.queue 구독 중...");
+        // 큐 구독
         client.subscribe("/topic/support.queue", (frame) => {
           try {
             const body = JSON.parse(frame.body);
-            const messageId = `queue-${body.event}-${body.roomId}-${Date.now()}`;
-
-            console.log("📩 큐 메시지 받음:", body);
-
-            if (processedMessagesRef.current.has(messageId)) {
-              console.log("🚫 큐 중복 메시지 무시:", messageId);
-              return;
-            }
-            processedMessagesRef.current.add(messageId);
-
-            if (body.event === "HANDOFF_REQUESTED" && body.roomId) {
-              console.log("✅ 핸드오프 요청 수신:", {
-                roomId: body.roomId,
-                userName: body.userName,
-                userNickname: body.userNickname
-              });
-              
-              setQueue(prev => {
-                // 중복 방지
-                const exists = prev.some(q => q.roomId === body.roomId);
-                if (exists) {
-                  console.log("⚠️ 이미 큐에 있는 roomId:", body.roomId);
-                  return prev;
-                }
-                
-                console.log("➕ 큐에 추가:", body.roomId);
-                return [...prev, {
-                  roomId: body.roomId,
-                  userName: body.userName || "user",
-                  userNickname: body.userNickname || "user"
-                }];
-              });
-            } else if (body.event === "USER_DISCONNECTED" && body.roomId) {
-              console.log("📌 유저 연결 해제 - 큐에서 제거:", body.roomId);
-              setQueue(prev => prev.filter(q => q.roomId !== body.roomId));
-            }
+            const messageId = `queue-${body.event}-${body.roomId}`;
+            
+            if (isMessageProcessed(messageId)) return;
+            
+            handleQueueMessage(body);
           } catch (e) {
-            console.error("❌ 큐 메시지 파싱 오류:", e);
+            console.error("큐 메시지 파싱 오류:", e);
           }
         });
 
-        // ✅ 새로고침 후 재연결 시 활성 방이 있으면 다시 구독
+        // 활성 방 재구독
         if (activeRoom) {
-          console.log("🔄 새로고침 후 방 재구독:", activeRoom);
           subscribeRoom(activeRoom);
-
-          if (!isInitialMount.current) {
-            setLogs((prev) => [...prev, `[SYS] 연결이 복원되었습니다.`]);
-          }
+          setLogs(prev => [...prev, `[SYS] 연결이 복원되었습니다.`]);
         }
-
-        isInitialMount.current = false;
-        
-        console.log("✅ 상담사 WebSocket 초기화 완료");
       },
       (err) => {
-        console.error("❌ STOMP 연결 오류:", err);
+        console.error("STOMP 연결 오류:", err);
         setLogs(prev => [...prev, `[ERROR] WebSocket 연결 실패: ${err}`]);
       }
     );
 
     return () => {
-      console.log("🔌 상담사 WebSocket 연결 종료");
       try {
-        client.disconnect(() => {
-          console.log("✅ STOMP 연결 해제 완료");
-        });
+        client.disconnect(() => {});
       } catch (e) {
-        console.error("❌ 연결 해제 오류:", e);
+        console.error("연결 해제 오류:", e);
       }
     };
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, activeRoom, subscribeRoom, isMessageProcessed, handleQueueMessage]);
 
-  // 특정 room 구독
-  const subscribeRoom = (roomId: string) => {
-    if (!stompRef.current) {
-      console.error("❌ STOMP 클라이언트가 없습니다!");
-      return;
-    }
-
-    console.log("📡 방 구독 시작:", roomId);
-
-    if (roomSubRef.current) {
-      try {
-        console.log("🔄 기존 구독 해제 중...");
-        roomSubRef.current.unsubscribe();
-      } catch (e) {
-        console.error("❌ 구독 해제 오류:", e);
-      }
-      roomSubRef.current = null;
-    }
-
-    roomSubRef.current = stompRef.current.subscribe(`/topic/rooms/${roomId}`, (frame) => {
-      try {
-        const body = JSON.parse(frame.body);
-        const messageId = `agent-room-${body.type}-${body.role}-${body.text}-${Date.now()}`;
-
-        console.log("📩 방 메시지 받음:", body);
-
-        if (processedMessagesRef.current.has(messageId)) {
-          console.log("🚫 방 중복 메시지 무시:", messageId);
-          return;
-        }
-        processedMessagesRef.current.add(messageId);
-
-        if (body.type === "HANDOFF_ACCEPTED") {
-          const userName = body.userName || "user";
-          const userNickname = body.userNickname || "user";
-          console.log("✅ 핸드오프 수락 완료:", { userName, userNickname });
-          setLogs((prev) => [...prev, `[SYS] [${userName} (${userNickname})] 상담 연결됨`]);
-          setIsUserConnected(true);
-        } else if (body.type === "USER_DISCONNECTED") {
-          console.log("📩 유저 연결 해제");
-          setIsUserConnected(false);
-          setLogs((prev) => [...prev, `[SYS] 유저가 연결을 해제했습니다.`]);
-        } else if (body.type === "AGENT_DISCONNECTED") {
-          console.log("📩 상담사 연결 해제");
-          setIsUserConnected(false);
-        } else if (body.text) {
-          const role = body.role ?? "UNKNOWN";
-          if (role === "AGENT") {
-            setLogs((prev) => [...prev, `[나] ${body.text}`]);
-          } else {
-            setLogs((prev) => [...prev, `[${role}] ${body.text}`]);
-          }
-        }
-      } catch (e) {
-        console.error("❌ 방 메시지 파싱 오류:", e);
-        if (frame.body) setLogs((prev) => [...prev, `[RAW] ${frame.body}`]);
-      }
-    });
-
-    console.log("✅ 방 구독 완료:", roomId);
-  };
-
-  const accept = (roomId: string) => {
+  // 수락 핸들러
+  const accept = useCallback((roomId: string) => {
     const request = queue.find(q => q.roomId === roomId);
-    if (!request || !stompRef.current) {
-      console.error("❌ 수락 실패: 요청을 찾을 수 없거나 STOMP 미연결");
+    if (!request || !stompRef.current?.connected) {
+      console.error("수락 실패: 요청을 찾을 수 없거나 STOMP 미연결");
       return;
     }
 
-    console.log("✅ 수락 버튼 클릭:", { 
-      roomId, 
-      userName: request.userName, 
-      userNickname: request.userNickname 
-    });
-
-    // 서버에 accept 전송
-    console.log("📤 핸드오프 수락 전송 중...");
     stompRef.current.send(
       `/app/support.handoff.accept`,
       {},
       JSON.stringify({ roomId })
     );
 
-    // 즉시 UI 업데이트
     setActiveRoom(roomId);
     setLogs(prev => [...prev, 
       `[SYS] [${request.userName} (${request.userNickname})] 상담 연결 중...`
     ]);
     setIsUserConnected(true);
-    
-    // ✅ 큐에서 제거
     setQueue(prev => prev.filter(q => q.roomId !== roomId));
     
     subscribeRoom(roomId);
-    
-    console.log("✅ 수락 처리 완료");
-  };
+  }, [queue, subscribeRoom]);
 
-  const sendToRoom = () => {
-    if (!stompRef.current || !activeRoom || !input.trim() || !isUserConnected) {
-      console.warn("⚠️ 메시지 전송 불가:", {
-        hasClient: !!stompRef.current,
-        hasRoom: !!activeRoom,
-        hasInput: !!input.trim(),
-        isConnected: isUserConnected
-      });
+  // 메시지 전송
+  const sendToRoom = useCallback(() => {
+    if (!stompRef.current?.connected || !activeRoom || !input.trim() || !isUserConnected) {
       return;
     }
 
-    console.log("📤 메시지 전송:", input);
-    
     stompRef.current.send(
       `/app/support.send/${activeRoom}`,
       {},
@@ -283,33 +252,28 @@ const LiveSupport: React.FC = () => {
     );
 
     setInput("");
-  };
+  }, [activeRoom, input, isUserConnected]);
 
-  const disconnectFromUser = () => {
-    if (!stompRef.current || !activeRoom) {
-      console.warn("⚠️ 연결 해제 불가");
-      return;
-    }
-
-    console.log("🔌 상담사 연결 해제:", activeRoom);
+  // 연결 해제
+  const disconnectFromUser = useCallback(() => {
+    if (!stompRef.current?.connected || !activeRoom) return;
 
     setIsUserConnected(false);
-    setLogs((prev) => [...prev, `[SYS] 연결을 해제했습니다.`]);
+    setLogs(prev => [...prev, `[SYS] 연결을 해제했습니다.`]);
 
     stompRef.current.send(
       "/app/support.agent.disconnect",
       {},
       JSON.stringify({ roomId: activeRoom })
     );
-  };
+  }, [activeRoom]);
 
-  // ✅ 대화 내용 삭제 (본인 화면에서만)
-  const clearLogs = () => {
+  // 대화 내용 삭제
+  const clearLogs = useCallback(() => {
     if (window.confirm('대화 내용을 삭제하시겠습니까?\n(유저 화면에는 영향이 없습니다)')) {
       setLogs([]);
-      console.log("🗑️ 대화 내용 삭제됨");
     }
-  };
+  }, []);
 
   return (
     <div className="p-6">
@@ -325,7 +289,7 @@ const LiveSupport: React.FC = () => {
 
       {/* 디버그 정보 */}
       <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
-        <div>WebSocket 상태: {stompRef.current ? '✅ 연결됨' : '❌ 미연결'}</div>
+        <div>WebSocket 상태: {stompRef.current?.connected ? '✅ 연결됨' : '❌ 미연결'}</div>
         <div>대기 큐: {queue.length}건</div>
         <div>활성 방: {activeRoom || '없음'}</div>
       </div>
@@ -373,10 +337,11 @@ const LiveSupport: React.FC = () => {
           </div>
 
           {activeRoom && (
-            <div className={`mb-2 px-3 py-2 rounded text-sm ${isUserConnected
+            <div className={`mb-2 px-3 py-2 rounded text-sm ${
+              isUserConnected
                 ? 'bg-green-100 text-green-800 border border-green-300'
                 : 'bg-red-100 text-red-800 border border-red-300'
-              }`}>
+            }`}>
               {isUserConnected ? '✅ 유저 연결됨' : '❌ 유저 연결 해제됨'}
             </div>
           )}
@@ -408,10 +373,11 @@ const LiveSupport: React.FC = () => {
               <button
                 onClick={sendToRoom}
                 disabled={!activeRoom || !input.trim() || !isUserConnected}
-                className={`px-4 py-2 rounded text-sm ${activeRoom && input.trim() && isUserConnected
+                className={`px-4 py-2 rounded text-sm ${
+                  activeRoom && input.trim() && isUserConnected
                     ? "bg-black text-white hover:bg-gray-800"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  }`}
+                }`}
               >
                 보내기
               </button>
