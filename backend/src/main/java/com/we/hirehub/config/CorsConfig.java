@@ -15,8 +15,8 @@ public class CorsConfig {
         c.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
-                "https://byeongarigaebaldan.store",
-                "http://byeongarigaebaldan.store"
+                "https://noeyos.store",
+                "http://noeyos.store"
         ));
         c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         c.setAllowedHeaders(List.of("*"));

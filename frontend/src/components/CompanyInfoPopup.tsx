@@ -102,7 +102,7 @@ const CompanyInfoPopup: React.FC<Props> = ({ onClose }) => {
               <p><span className="font-medium text-gray-800">Tel:</span> +82 2-1234-5678</p>
               <p><span className="font-medium text-gray-800">Fax:</span> +82 2-9876-5432</p>
               <p><span className="font-medium text-gray-800">Email:</span> <a href="mailto:hello@byeongaridev.com" className="text-blue-600 hover:underline">hello@byeongaridev.com</a></p>
-              <p><span className="font-medium text-gray-800">Website:</span> <a href="https://byeongarigaebaldan.store" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">byeongarigaebaldan.store</a></p>
+              <p><span className="font-medium text-gray-800">Website:</span> <a href="https://noeyos.store" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">noeyos.store</a></p>
             </div>
           </div>
         </div>

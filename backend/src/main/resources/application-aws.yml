@@ -84,21 +84,21 @@ server:
 kakao:
   oauth:
     redirect-uri: ${KAKAO_REDIRECT_URI:https://api.your-domain.com/kakao/callback}
-    front-redirect-url: "https://byeongarigaebaldan.store/auth/callback"
+    front-redirect-url: "https://noeyos.store/auth/callback"
 
 naver:
   oauth:
     client-id: ${NAVER_CLIENT_ID}
     client-secret: ${NAVER_CLIENT_SECRET}
     redirect-uri: ${NAVER_REDIRECT_URI:https://api.your-domain.com/naver/callback}
-    front-redirect-url: "https://byeongarigaebaldan.store/auth/callback"
+    front-redirect-url: "https://noeyos.store/auth/callback"
 
 app:
   front:
-    base-url: "https://byeongarigaebaldan.store"
+    base-url: "https://noeyos.store"
 
   cors:
-    allowed-origins: "https://byeongarigaebaldan.store"
+    allowed-origins: "https://noeyos.store"
 
 aws:
   s3:
