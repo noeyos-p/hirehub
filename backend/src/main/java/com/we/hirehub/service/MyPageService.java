@@ -502,16 +502,10 @@ public class MyPageService {
      *                [3] 지원/즐겨찾기
      * ========================================================== */
 
-    public List<ApplyResponse> getMyApplyList(Long userId) {
+    public List<ApplyDto> getMyApplyList(Long userId) {
         List<Apply> applies = applyRepository.findByResume_Users_Id(userId);
         return applies.stream()
-                .map(a -> new ApplyResponse(
-                        a.getId(),
-                        a.getResume() != null ? a.getResume().getId() : null,
-                        a.getJobPosts().getCompany().getName(),
-                        a.getResume().getTitle(),
-                        a.getApplyAt()
-                ))
+                .map (ApplyDto::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -560,7 +554,7 @@ public class MyPageService {
     }
 
     @Transactional
-    public ApplyResponse applyToJob(Long userId, Long jobPostId, Long resumeId) {
+    public ApplyDto applyToJob(Long userId, Long jobPostId, Long resumeId) {
         Resume resume = resumeRepository.findByIdAndUsers_Id(resumeId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("이력서를 찾을 수 없습니다."));
         JobPosts jobPost = jobPostsRepository.findById(jobPostId)
@@ -576,12 +570,7 @@ public class MyPageService {
                 .build();
 
         Apply saved = applyRepository.save(apply);
-        return new ApplyResponse(
-                saved.getId(),
-                jobPost.getCompany().getName(),
-                resume.getTitle(),
-                saved.getApplyAt()
-        );
+        return ApplyDto.toDto(saved);
     }
 
     /** ✅ 소프트 삭제(논리 탈퇴): 실제 삭제 대신 식별자 변경 */

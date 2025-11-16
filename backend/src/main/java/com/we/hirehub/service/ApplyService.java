@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.ApplyResponse;
+import com.we.hirehub.dto.ApplyDto;
 import com.we.hirehub.entity.Apply;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.entity.Resume;
@@ -25,9 +25,11 @@ public class ApplyService {
     private final JobPostsRepository jobPostsRepository;
     private final ResumeRepository resumeRepository;
 
-    /** 공고 지원 (resumeId 없으면 최신 이력서 자동 선택). 중복이면 기존 반환(멱등) */
+    /**
+     * 공고 지원 (resumeId 없으면 최신 이력서 자동 선택). 중복이면 기존 반환(멱등)
+     */
     @Transactional
-    public ApplyResponse apply(Long userId, Long jobPostsId, Long resumeIdOrNull) {
+    public ApplyDto apply(Long userId, Long jobPostsId, Long resumeIdOrNull) {
         // 1) 이력서 선택
         Resume resume = (resumeIdOrNull != null)
                 ? resumeRepository.findByIdAndUsers_Id(resumeIdOrNull, userId)
@@ -53,7 +55,7 @@ public class ApplyService {
                 .build();
 
         Apply saved = applyRepository.save(apply);
-        return toDto(saved);
+        return ApplyDto.toDto(saved);
     }
 
     private Resume pickLatestResume(Long userId) {
@@ -64,16 +66,7 @@ public class ApplyService {
         }
         return page.getContent().get(0);
     }
-
-    private ApplyResponse toDto(Apply a) {
-        String companyName = (a.getJobPosts() != null && a.getJobPosts().getCompany() != null)
-                ? a.getJobPosts().getCompany().getName() : null;
-        String resumeTitle = (a.getResume() != null) ? a.getResume().getTitle() : null;
-        return new ApplyResponse(
-                a.getId(),
-                companyName,
-                resumeTitle,
-                a.getApplyAt()
-        );
-    }
 }
+
+/** toDto 삭제 -> ApplyDto로 옮김
+ * ApplyResponse 사용하던 곳들 코드 정리함 **/

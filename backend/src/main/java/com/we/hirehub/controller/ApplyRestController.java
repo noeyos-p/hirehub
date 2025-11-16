@@ -1,6 +1,6 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.ApplyResponse;
+import com.we.hirehub.dto.ApplyDto;
 import com.we.hirehub.service.ApplyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +17,9 @@ public class ApplyRestController {
     private final ApplyService applyService;
 
     @PostMapping("/{jobPostId}/apply")
-    public ResponseEntity<ApplyResponse> apply(Authentication auth,
-                                               @PathVariable Long jobPostId,
-                                               @RequestBody(required = false) ApplyRequest body) {
+    public ResponseEntity<ApplyDto> apply(Authentication auth,
+                                          @PathVariable Long jobPostId,
+                                          @RequestBody(required = false) ApplyRequest body) {
         Long userId = userId(auth);                  // MyPageRestController와 동일 패턴
         Long resumeId = (body != null) ? body.resumeId : null;
         return ResponseEntity.ok(applyService.apply(userId, jobPostId, resumeId));

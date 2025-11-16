@@ -1,7 +1,6 @@
 package com.we.hirehub.controller;// MyPageRestController.java의 userId() 메서드만 교체
 
 import com.we.hirehub.dto.*;
-import com.we.hirehub.entity.Resume;
 import com.we.hirehub.service.JobPostScrapService;
 import com.we.hirehub.service.MyPageService;
 import jakarta.validation.Valid;
@@ -15,11 +14,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -234,7 +230,7 @@ public class MyPageRestController {
      * ✅ 내가 지원한 공고 내역 조회
      */
     @GetMapping("/applies")
-    public ResponseEntity<List<ApplyResponse>> getMyApplies(Authentication auth) {
+    public ResponseEntity<List<ApplyDto>> getMyApplies(Authentication auth) {
         return ResponseEntity.ok(myPageService.getMyApplyList(userId(auth)));
     }
 
@@ -242,11 +238,11 @@ public class MyPageRestController {
      * ✅ 특정 공고에 지원 (이력서 선택)
      */
     @PostMapping("/applies")
-    public ResponseEntity<ApplyResponse> applyToJob(
+    public ResponseEntity<ApplyDto> applyToJob(
             Authentication auth,
             @RequestBody ApplyRequest request
     ) {
-        ApplyResponse response = myPageService.applyToJob(
+        ApplyDto response = myPageService.applyToJob(
                 userId(auth),
                 request.jobPostId(),
                 request.resumeId()
