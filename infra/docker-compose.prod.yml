@@ -19,6 +19,7 @@ services:
     container_name: frontend
     depends_on:
       - backend
+      - n8n
     restart: unless-stopped
     ports:
       - "80:80"
@@ -26,3 +27,15 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /etc/ssl/certs:/etc/ssl/certs:ro
+    
+   n8n:
+    image: docker.n8n.io/n8nio/n8n:1.113.3
+    container_name: n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_HOST=n8n.noeyos.store
+      - N8N_PORT=5678
+      - WEBHOOK_URL=https://n8n.noeyos.store/
+    ports:
+      - "8081:5678"   # 필요 없으면 삭제해도 됨 (nginx로만 접근 시)
+    restart: unless-stopped
