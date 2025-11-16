@@ -2,9 +2,7 @@ package com.we.hirehub.controller;
 
 import com.we.hirehub.config.JwtUserPrincipal;
 import com.we.hirehub.dto.BoardDto;
-import com.we.hirehub.dto.BoardRequestDto;
 import com.we.hirehub.entity.Board;
-import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.BoardService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +20,6 @@ import java.util.List;
 public class BoardRestController {
 
     private final BoardService boardService;
-    private final UsersRepository usersRepository;
 
     /** 전체 게시물 */
     @GetMapping
@@ -47,7 +44,7 @@ public class BoardRestController {
 
     /** ✅ 게시물 작성 */
     @PostMapping
-    public ResponseEntity<?> createBoard(@RequestBody BoardRequestDto req,
+    public ResponseEntity<?> createBoard(@RequestBody BoardDto dto,  // BoardRequestDto → BoardDto
                                          @AuthenticationPrincipal JwtUserPrincipal userPrincipal) {
         if (userPrincipal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
@@ -55,10 +52,9 @@ public class BoardRestController {
 
         try {
             Long userId = userPrincipal.getUserId();
-            Users user = usersRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
-            Board board = boardService.createBoard(req.getTitle(), req.getContent(), user);
-            return ResponseEntity.ok(board);
+            BoardDto created = boardService.createBoard(userId, dto);
+            return ResponseEntity.ok(created);
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -81,7 +77,7 @@ public class BoardRestController {
     /** ✅ 게시글 수정 (작성자 본인만) */
     @PutMapping("/{id}")
     public ResponseEntity<?> updateBoard(@PathVariable Long id,
-                                         @RequestBody BoardRequestDto req,
+                                         @RequestBody BoardDto dto,  // BoardRequestDto → BoardDto
                                          @AuthenticationPrincipal JwtUserPrincipal userPrincipal) {
         if (userPrincipal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
@@ -92,7 +88,9 @@ public class BoardRestController {
         if (entity.getUsers() == null || !entity.getUsers().getId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("본인 게시글만 수정할 수 있습니다.");
         }
-        return ResponseEntity.ok(boardService.updateBoard(id, req));
+
+        BoardDto updated = boardService.updateBoard(id, dto);
+        return ResponseEntity.ok(updated);
     }
 
     /** 게시글 삭제 (작성자 본인만) */
