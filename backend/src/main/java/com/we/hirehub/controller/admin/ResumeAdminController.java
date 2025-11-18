@@ -1,6 +1,6 @@
 package com.we.hirehub.controller.admin;
 
-import com.we.hirehub.dto.ResumeDto;
+import com.we.hirehub.dto.resume.ResumeDto;
 import com.we.hirehub.entity.Resume;
 import com.we.hirehub.service.S3Service;
 import com.we.hirehub.service.admin.ResumeAdminService;

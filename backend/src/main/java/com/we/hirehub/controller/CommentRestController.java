@@ -1,7 +1,7 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.config.JwtUserPrincipal;
-import com.we.hirehub.dto.CommentDto;
+import com.we.hirehub.dto.support.CommentDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.CommentRepository;
 import com.we.hirehub.repository.UsersRepository;

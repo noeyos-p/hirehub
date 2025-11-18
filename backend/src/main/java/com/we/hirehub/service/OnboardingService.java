@@ -1,7 +1,7 @@
 // src/main/java/com/we/hirehub/service/OnboardingService.java
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.OnboardingForm;
+import com.we.hirehub.dto.user.OnboardingForm;
 import com.we.hirehub.entity.Role;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;

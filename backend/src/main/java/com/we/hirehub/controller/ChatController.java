@@ -1,31 +1,19 @@
 // com.we.hirehub.controller.ChatController
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.ChatMessageRequest;
-import com.we.hirehub.dto.LiveChatDto;
-import com.we.hirehub.entity.LiveChat;
-import com.we.hirehub.entity.Session;
+import com.we.hirehub.dto.chat.ChatMessageRequest;
+import com.we.hirehub.dto.chat.LiveChatDto;
 import com.we.hirehub.entity.Users;
-import com.we.hirehub.repository.LiveChatRepository;
-import com.we.hirehub.repository.SessionRepository;
 import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.LiveChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RestController

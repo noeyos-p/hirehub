@@ -1,7 +1,7 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.config.JwtUserPrincipal;
-import com.we.hirehub.dto.ReviewDto;
+import com.we.hirehub.dto.support.ReviewDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.entity.Review;
 import com.we.hirehub.entity.Users;
@@ -14,7 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/reviews")

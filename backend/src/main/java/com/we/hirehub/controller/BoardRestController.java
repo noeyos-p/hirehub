@@ -1,9 +1,8 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.config.JwtUserPrincipal;
-import com.we.hirehub.dto.BoardDto;
+import com.we.hirehub.dto.support.BoardDto;
 import com.we.hirehub.entity.Board;
-import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

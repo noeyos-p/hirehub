@@ -1,9 +1,8 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.FavoriteJobPostSummaryDto;
-import com.we.hirehub.dto.PagedResponse;
+import com.we.hirehub.dto.job.FavoriteJobPostSummaryDto;
+import com.we.hirehub.dto.common.PagedResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;

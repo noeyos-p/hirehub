@@ -1,11 +1,8 @@
 package com.we.hirehub.mapper;
 
-import com.we.hirehub.dto.SessionDto;
+import com.we.hirehub.dto.login.SessionDto;
 import com.we.hirehub.entity.ChatBot;
 import com.we.hirehub.entity.Session;
-import com.we.hirehub.entity.Users;
-
-import java.util.List;
 
 public class SessionMapper {
 

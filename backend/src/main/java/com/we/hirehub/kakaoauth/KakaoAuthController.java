@@ -1,7 +1,7 @@
 // src/main/java/com/we/hirehub/kakaoauth/KakaoAuthController.java
 package com.we.hirehub.kakaoauth;
 
-import com.we.hirehub.dto.KakaoAuthResult;
+import com.we.hirehub.dto.login.KakaoAuthResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Controller

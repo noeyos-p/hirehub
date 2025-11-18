@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.ApplyDto;
+import com.we.hirehub.dto.job.ApplyDto;
 import com.we.hirehub.entity.Apply;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.entity.Resume;

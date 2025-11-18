@@ -1,8 +1,8 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.CompanyDto;
-import com.we.hirehub.dto.FavoriteCompanySummaryDto;
-import com.we.hirehub.dto.PagedResponse;
+import com.we.hirehub.dto.company.CompanyDto;
+import com.we.hirehub.dto.company.FavoriteCompanySummaryDto;
+import com.we.hirehub.dto.common.PagedResponse;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.repository.CompanyRepository;
 import com.we.hirehub.service.CompanyService;

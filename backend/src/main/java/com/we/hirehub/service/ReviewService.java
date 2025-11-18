@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.ReviewDto;
+import com.we.hirehub.dto.support.ReviewDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.entity.Review;
 import com.we.hirehub.entity.Users;

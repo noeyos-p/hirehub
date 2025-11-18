@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.UsersDto;
+import com.we.hirehub.dto.user.UsersDto;
 import org.springframework.stereotype.Service;
 
 @Service
