@@ -92,15 +92,16 @@ public class MyPageService {
      */
     @Transactional
     public ResumeDto create(Long userId, ResumeUpsertRequest req) {
+
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
 
         Resume resume = Resume.builder()
-                .title(req.title())
-                .idPhoto(req.idPhoto())
-                .essayTittle(req.essayTitle())
-                .essayContent(req.essayContent())
-                .htmlContent(req.htmlContent())  // 원본 JSON 보관
+                .title(req.getTitle())
+                .idPhoto(req.getIdPhoto())
+                .essayTittle(req.getEssayTitle())
+                .essayContent(req.getEssayContent())
+                .htmlContent(req.getHtmlContent())
                 .createAt(LocalDate.now())
                 .updateAt(LocalDate.now())
                 .locked(false)
@@ -109,7 +110,7 @@ public class MyPageService {
 
         Resume saved = resumeRepository.save(resume);
 
-        // 섹션 저장 (htmlContent만 있어도 파싱해서 저장)
+        // JSON → 섹션 저장
         upsertSections(saved, req);
 
         return toDto(saved);
@@ -120,26 +121,28 @@ public class MyPageService {
      */
     @Transactional
     public ResumeDto update(Long userId, Long resumeId, ResumeUpsertRequest req) {
+
         Resume resume = resumeRepository.findByIdAndUsers_Id(resumeId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("이력서를 찾을 수 없습니다."));
 
-        if (resume.isLocked() || resumeRepository.existsByIdAndUsers_IdAndLockedTrue(resumeId, userId)) {
+        if (resume.isLocked()) {
             throw new ForbiddenEditException("이미 제출된 이력서는 수정할 수 없습니다.");
         }
 
-        resume.setTitle(req.title());
-        resume.setIdPhoto(req.idPhoto());
-        resume.setEssayTittle(req.essayTitle());
-        resume.setEssayContent(req.essayContent());
-        resume.setHtmlContent(req.htmlContent());
+        resume.setTitle(req.getTitle());
+        resume.setIdPhoto(req.getIdPhoto());
+        resume.setEssayTittle(req.getEssayTitle());
+        resume.setEssayContent(req.getEssayContent());
+        resume.setHtmlContent(req.getHtmlContent());
         resume.setUpdateAt(LocalDate.now());
+
         resumeRepository.save(resume);
 
-        // 섹션 전부 갈아끼우기
         upsertSections(resume, req);
 
         return toDto(resume);
     }
+
 
     /**
      * 삭제
@@ -265,23 +268,24 @@ public class MyPageService {
 
     @Transactional
     protected void upsertSections(Resume resume, ResumeUpsertRequest req) {
-        final Long rid = resume.getId();
 
-        // 1) 전부 삭제(덮어쓰기 전략)
+        Long rid = resume.getId();
+
+        // 기존 데이터 삭제
         educationRepo.deleteByResumeId(rid);
         careerRepo.deleteByResumeId(rid);
         certRepo.deleteByResumeId(rid);
         skillRepo.deleteByResumeId(rid);
         languageRepo.deleteByResumeId(rid);
 
-        // 2) 입력 소스 만들기 (우선순위: *_Json → htmlContent)
-        List<Map<String, Object>> educations = parseList(req.educationJson());
-        List<Map<String, Object>> careers = parseList(req.careerJson());
-        List<Map<String, Object>> certs = parseList(req.certJson());
-        List<Map<String, Object>> skills = parseList(req.skillJson());
-        List<Map<String, Object>> languages = parseList(req.langJson());
+        // JSON 읽기
+        List<Map<String, Object>> educations = parseList(req.getEducationJson());
+        List<Map<String, Object>> careers = parseList(req.getCareerJson());
+        List<Map<String, Object>> certs = parseList(req.getCertJson());
+        List<Map<String, Object>> skills = parseList(req.getSkillJson());
+        List<Map<String, Object>> languages = parseList(req.getLangJson());
 
-// ★ 폴백 복구: *_Json이 전부 비어 있고, htmlContent가 JSON이면 거기서 추출
+        // htmlContent fallback
         if (allEmpty(educations, careers, certs, skills, languages) && looksJson(resume.getHtmlContent())) {
             try {
                 JsonNode root = om.readTree(resume.getHtmlContent());
@@ -290,85 +294,80 @@ public class MyPageService {
                 certs = extractList(root, "certificate");
                 skills = extractList(root, "skill");
                 languages = extractList(root, "language");
-            } catch (Exception e) {
-                log.warn("htmlContent 파싱 실패: {}", e.getMessage());
-            }
+            } catch (Exception ignore) {}
         }
 
-
-        log.debug("섹션 파싱 결과 - edu:{} career:{} cert:{} skill:{} lang:{}",
-                sizeOf(educations), sizeOf(careers), sizeOf(certs), sizeOf(skills), sizeOf(languages));
-
-        // 3) 저장: Education
+        // Education 저장
         if (!educations.isEmpty()) {
-            List<Education> toSave = new ArrayList<>();
+            List<Education> list = new ArrayList<>();
             for (Map<String, Object> m : educations) {
                 Education e = new Education();
-                e.setName(asString(m.get("name")));     // 학교명
+                e.setName(asString(m.get("name")));
                 e.setMajor(asString(m.get("major")));
                 e.setStatus(asString(m.get("status")));
                 e.setType(asString(m.get("type")));
                 e.setStartAt(parseLocalDate(m.get("startAt")));
                 e.setEndAt(parseLocalDate(m.get("endAt")));
                 e.setResume(resume);
-                toSave.add(e);
+                list.add(e);
             }
-            educationRepo.saveAll(toSave);
+            educationRepo.saveAll(list);
         }
 
-        // 4) 저장: CareerLevel
+        // Career 저장
         if (!careers.isEmpty()) {
-            List<CareerLevel> toSave = new ArrayList<>();
+            List<CareerLevel> list = new ArrayList<>();
             for (Map<String, Object> m : careers) {
                 CareerLevel c = new CareerLevel();
-                c.setCompanyName(asString(m.get("companyName"))); // 키 주의
+                c.setCompanyName(asString(m.get("companyName")));
                 c.setType(asString(m.get("type")));
                 c.setPosition(asString(m.get("position")));
                 c.setStartAt(parseLocalDate(m.get("startAt")));
                 c.setEndAt(parseLocalDate(m.get("endAt")));
                 c.setContent(asString(m.get("content")));
                 c.setResume(resume);
-                toSave.add(c);
+                list.add(c);
             }
-            careerRepo.saveAll(toSave);
+            careerRepo.saveAll(list);
         }
 
-        // 5) 저장: Certificate
+        // Certificate
         if (!certs.isEmpty()) {
-            List<Certificate> toSave = new ArrayList<>();
+            List<Certificate> list = new ArrayList<>();
             for (Map<String, Object> m : certs) {
                 Certificate c = new Certificate();
                 c.setName(asString(m.get("name")));
                 c.setResume(resume);
-                toSave.add(c);
+                list.add(c);
             }
-            certRepo.saveAll(toSave);
+            certRepo.saveAll(list);
         }
 
-        // 6) 저장: Skill
+        // Skill
         if (!skills.isEmpty()) {
-            List<Skill> toSave = new ArrayList<>();
+            List<Skill> list = new ArrayList<>();
             for (Map<String, Object> m : skills) {
                 Skill s = new Skill();
                 s.setName(asString(m.get("name")));
                 s.setResume(resume);
-                toSave.add(s);
+                list.add(s);
             }
-            skillRepo.saveAll(toSave);
+            skillRepo.saveAll(list);
         }
 
-        // 7) 저장: Language
+        // Language
         if (!languages.isEmpty()) {
-            List<Language> toSave = new ArrayList<>();
+            List<Language> list = new ArrayList<>();
             for (Map<String, Object> m : languages) {
                 Language l = new Language();
                 l.setName(asString(m.get("name")));
                 l.setResume(resume);
-                toSave.add(l);
+                list.add(l);
             }
-            languageRepo.saveAll(toSave);
+            languageRepo.saveAll(list);
         }
     }
+
 
     /* ------- 유틸: JSON 파싱 & 변환 ------- */
 

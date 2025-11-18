@@ -43,11 +43,12 @@ public class KakaoAuthController {
         KakaoAuthResult result = kakaoAuthService.handleCallback(code, props);
 
         String redirect = props.getFrontRedirectUrl()
-                + "?token=" + java.net.URLEncoder.encode(result.jwt(), java.nio.charset.StandardCharsets.UTF_8)
+                + "?token=" + java.net.URLEncoder.encode(result.getJwt(), java.nio.charset.StandardCharsets.UTF_8)
                 + "&isNewUser=" + result.isNewUser();
 
         return "redirect:" + redirect;
     }
+
 
     @GetMapping("/kakao")
     public RedirectView kakao() {
