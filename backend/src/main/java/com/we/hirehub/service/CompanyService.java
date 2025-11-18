@@ -19,14 +19,14 @@ public class CompanyService {
 
     public List<CompanyDto> getAllCompanies() {
         return companyRepository.findAll().stream()
-                .map(this::convertToDto)
+                .map(CompanyDto::toDto)
                 .collect(Collectors.toList());
     }
 
     public CompanyDto createCompany(CompanyDto companyDto) {
-        Company company = convertToEntity(companyDto);
+        Company company = CompanyDto.toEntity(companyDto);
         company = companyRepository.save(company);
-        return convertToDto(company);
+        return CompanyDto.toDto(company);
     }
 
     public void deleteCompany(Long id) {
@@ -37,36 +37,5 @@ public class CompanyService {
     public Company getCompanyById(Long id) {
         return companyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("해당 회사를 찾을 수 없습니다: " + id));
-    }
-
-
-    public CompanyDto convertToDto(Company company) {
-        return CompanyDto.builder()
-                .id(company.getId())
-                .name(company.getName())
-                .content(company.getContent())
-                .address(company.getAddress())
-                .since(company.getSince())
-                .benefits(company.getBenefits())
-                .website(company.getWebsite())
-                .industry(company.getIndustry())
-                .ceo(company.getCeo())
-                .photo(company.getPhoto())
-                .build();
-    }
-
-    private Company convertToEntity(CompanyDto dto) {
-        return Company.builder()
-                .id(dto.getId())
-                .name(dto.getName())
-                .content(dto.getContent())
-                .address(dto.getAddress())
-                .since(dto.getSince())
-                .benefits(dto.getBenefits())
-                .website(dto.getWebsite())
-                .industry(dto.getIndustry())
-                .ceo(dto.getCeo())
-                .photo(dto.getPhoto())
-                .build();
     }
 }

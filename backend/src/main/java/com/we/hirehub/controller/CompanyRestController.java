@@ -1,7 +1,6 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.dto.CompanyDto;
-import com.we.hirehub.dto.CompanySummaryDto;
 import com.we.hirehub.dto.FavoriteCompanySummaryDto;
 import com.we.hirehub.dto.PagedResponse;
 import com.we.hirehub.entity.Company;
@@ -69,14 +68,14 @@ public class CompanyRestController {
     }
 
     @GetMapping
-    public ResponseEntity<PagedResponse<CompanySummaryDto>> listCompanies(
+    public ResponseEntity<PagedResponse<CompanyDto.Mini>> listCompanies(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Page<Company> p = companyRepository.findAll(pageable);  // ✅ 인스턴스 호출
-        List<CompanySummaryDto> items = p.getContent().stream()
-                .map(c -> new CompanySummaryDto(
+        List<CompanyDto.Mini> items = p.getContent().stream()
+                .map(c -> new CompanyDto.Mini(
                         c.getId(),
                         c.getName(),
                         c.getIndustry(),
@@ -95,26 +94,10 @@ public class CompanyRestController {
     public ResponseEntity<CompanyDto> getCompanyById(@PathVariable Long companyId) {
         try {
             Company company = companyService.getCompanyById(companyId); // 리스트 첫 번째 반환
-            CompanyDto dto = companyService.convertToDto(company); // DTO 변환
+            CompanyDto dto = CompanyDto.toDto(company); // DTO 변환
             return ResponseEntity.ok(dto);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build(); // 없으면 404
         }
-    }
-
-    // 엔티티 → DTO 변환 메서드
-    private CompanyDto convertToDto(Company company) {
-        return CompanyDto.builder()
-                .id(company.getId())
-                .name(company.getName())
-                .content(company.getContent())
-                .address(company.getAddress())
-                .since(company.getSince())
-                .benefits(company.getBenefits())
-                .website(company.getWebsite())
-                .industry(company.getIndustry())
-                .ceo(company.getCeo())
-                .photo(company.getPhoto())
-                .build();
     }
 }

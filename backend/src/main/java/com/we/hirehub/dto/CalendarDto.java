@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Data @AllArgsConstructor
-public class CalendarDayDto {
+public class CalendarDto {
     private LocalDate date;
-    private List<JobPostMiniDto> items;   // 해당 날짜 마감 공고들
+    private List<JobPostsDto.Mini> items;   // 해당 날짜 마감 공고들
 }

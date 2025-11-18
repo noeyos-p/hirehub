@@ -158,7 +158,7 @@ public class JobPostsAdminController {
     @PutMapping("/{jobPostId}")
     public ResponseEntity<?> updateJobPost(
             @PathVariable Long jobPostId,
-            @RequestBody JobPosts updateData) {
+            @RequestBody JobPostsDto updateData) {
 
         try {
             if (jobPostId == null || jobPostId <= 0) {
