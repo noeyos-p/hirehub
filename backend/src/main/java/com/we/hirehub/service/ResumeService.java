@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-
 @Service
 @RequiredArgsConstructor
 public class ResumeService {
@@ -31,11 +30,11 @@ public class ResumeService {
     @Transactional
     public ResumeDto create(ResumeDto req, Users writer) {
         Resume r = new Resume();
-        r.setTitle(req.title());
-        r.setIdPhoto(req.idPhoto());
-        r.setEssayTittle(req.essayTitle());
-        r.setEssayContent(req.essayContent());
-        r.setHtmlContent(req.htmlContent());
+        r.setTitle(req.getTitle());
+        r.setIdPhoto(req.getIdPhoto());
+        r.setEssayTittle(req.getEssayTitle());
+        r.setEssayContent(req.getEssayContent());
+        r.setHtmlContent(req.getHtmlContent());
         r.setLocked(false);
         r.setUsers(writer);
         r.setCreateAt(LocalDate.now());
@@ -56,14 +55,14 @@ public class ResumeService {
                 .orElseThrow(() -> new IllegalArgumentException("이력서를 찾을 수 없습니다."));
         if (r.isLocked()) throw new IllegalStateException("제출(잠김)된 이력서는 수정할 수 없습니다.");
 
-        r.setTitle(req.title());
-        r.setIdPhoto(req.idPhoto());
-        r.setEssayTittle(req.essayTitle());
-        r.setEssayContent(req.essayContent());
-        r.setHtmlContent(req.htmlContent());
+        r.setTitle(req.getTitle());
+        r.setIdPhoto(req.getIdPhoto());
+        r.setEssayTittle(req.getEssayTitle());
+        r.setEssayContent(req.getEssayContent());
+        r.setHtmlContent(req.getHtmlContent());
         r.setUpdateAt(LocalDate.now());
 
-        // ★ JSON → 하위 엔티티 재동기화(기존 것 삭제 후 재삽입)
+        // ★ JSON → 하위 엔티티 재동기화
         syncChildrenFromJson(r);
 
         return toDtoForAdmin(resumeId);
@@ -83,24 +82,20 @@ public class ResumeService {
             root = Map.of();
         }
 
-        // 안전 추출 헬퍼
         List<Map<String, Object>> educations = listOfMap(root.get("educations"));
         List<Map<String, Object>> careers    = listOfMap(root.get("careers"));
         List<String> certs                   = listOfString(root.get("certs"));
         List<String> skills                  = listOfString(root.get("skills"));
-        // 언어는 별도 엔티티 없으니(현재 스키마 기준) 필요 시 그대로 JSON 유지
 
-        // 모두 갈아끼우기
         Long rid = resume.getId();
         educationRepository.deleteByResumeId(rid);
         careerLevelRepository.deleteByResumeId(rid);
         certificateRepository.deleteByResumeId(rid);
         skillRepository.deleteByResumeId(rid);
 
-        // 학력 매핑: period "2000.01 - 2003.01" → start/end 파싱
         List<Education> eduEntities = educations.stream().map(m -> {
             String school = str(m.get("school"));
-            String period = str(m.get("period")); // "YYYY.MM - YYYY.MM" or "YYYY-MM ~ YYYY-MM"
+            String period = str(m.get("period"));
             String status = str(m.get("status"));
             String major  = str(m.get("major"));
             LocalDate[] se = parsePeriodToDates(period);
@@ -108,14 +103,13 @@ public class ResumeService {
             e.setName(school);
             e.setMajor(major);
             e.setStatus(status != null && !status.isBlank()? status : "재학/졸업");
-            e.setType("학력"); // 스키마상 필수라 기본값
+            e.setType("학력");
             e.setStartAt(se[0]);
             e.setEndAt(se[1]);
             e.setResume(resume);
             return e;
         }).toList();
 
-        // 경력 매핑: role→position, job/desc→content 병합, type 기본값
         List<CareerLevel> careerEntities = careers.stream().map(m -> {
             String company = str(m.get("company"));
             String period  = str(m.get("period"));
@@ -125,9 +119,13 @@ public class ResumeService {
             LocalDate[] se = parsePeriodToDates(period);
             CareerLevel c = new CareerLevel();
             c.setCompanyName(company);
-            c.setType("경력"); // 기본
+            c.setType("경력");
             c.setPosition(role);
-            String content = List.of(job, desc).stream().filter(s -> s != null && !s.isBlank()).reduce("", (a,b)-> a.isBlank()? b : a + "\n" + b);
+
+            String content = List.of(job, desc).stream()
+                    .filter(s -> s != null && !s.isBlank())
+                    .reduce("", (a,b)-> a.isBlank()? b : a + "\n" + b);
+
             c.setContent(content.isBlank()? "상세 없음" : content);
             c.setStartAt(se[0]);
             c.setEndAt(se[1]);
@@ -135,19 +133,23 @@ public class ResumeService {
             return c;
         }).toList();
 
-        List<Certificate> certEntities = certs.stream().filter(s->!s.isBlank()).map(name -> {
-            Certificate c = new Certificate();
-            c.setName(name);
-            c.setResume(resume);
-            return c;
-        }).toList();
+        List<Certificate> certEntities = certs.stream()
+                .filter(s->!s.isBlank())
+                .map(name -> {
+                    Certificate c = new Certificate();
+                    c.setName(name);
+                    c.setResume(resume);
+                    return c;
+                }).toList();
 
-        List<Skill> skillEntities = skills.stream().filter(s->!s.isBlank()).map(name -> {
-            Skill s = new Skill();
-            s.setName(name);
-            s.setResume(resume);
-            return s;
-        }).toList();
+        List<Skill> skillEntities = skills.stream()
+                .filter(s->!s.isBlank())
+                .map(name -> {
+                    Skill s = new Skill();
+                    s.setName(name);
+                    s.setResume(resume);
+                    return s;
+                }).toList();
 
         educationRepository.saveAll(eduEntities);
         careerLevelRepository.saveAll(careerEntities);
@@ -161,15 +163,16 @@ public class ResumeService {
         }
         return List.of();
     }
+
     private static List<String> listOfString(Object o) {
         if (o instanceof List<?> l) {
             return l.stream().map(String::valueOf).toList();
         }
         return List.of();
     }
+
     private static String str(Object o){ return o==null? null : String.valueOf(o); }
 
-    /** "YYYY.MM - YYYY.MM" 등 문자열 → LocalDate[ start, end ] */
     private static LocalDate[] parsePeriodToDates(String period) {
         LocalDate start = null, end = null;
         if (period != null) {
@@ -178,12 +181,14 @@ public class ResumeService {
             if (se.length >= 1) start = parseYearMonth(se[0].trim());
             if (se.length >= 2) end   = parseYearMonth(se[1].trim());
         }
-        return new LocalDate[]{ start != null ? start : LocalDate.of(1900,1,1),
-                end   != null ? end   : null };
+        return new LocalDate[]{
+                start != null ? start : LocalDate.of(1900,1,1),
+                end   != null ? end   : null
+        };
     }
+
     private static LocalDate parseYearMonth(String ym) {
-        // 허용: "2000.01", "2000-01", "2000/01", "2000.01.01"
-        String t = ym.replace("/", ".").replace("-", "."); // 2000.01 or 2000.01.01
+        String t = ym.replace("/", ".").replace("-", ".");
         String[] parts = t.split("\\.");
         try {
             int y = Integer.parseInt(parts[0]);
@@ -195,39 +200,39 @@ public class ResumeService {
         }
     }
 
-    /** 어드민 상세 DTO 구성: 하위 엔티티를 채워서 반환 */
+    /** 어드민 상세 DTO 구성 */
     @Transactional(readOnly = true)
     public ResumeDto toDtoForAdmin(Long resumeId) {
         Resume r = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new IllegalArgumentException("이력서를 찾을 수 없습니다."));
 
-        // educations
-        List<Map<String,Object>> eduList = educationRepository.findByResumeId(resumeId).stream().map(e ->
-                Map.<String,Object>of(
+        List<Map<String,Object>> eduList = educationRepository.findByResumeId(resumeId)
+                .stream()
+                .map(e -> Map.<String,Object>of(
                         "school", e.getName(),
                         "period", fmtPeriod(e.getStartAt(), e.getEndAt()),
                         "status", e.getStatus(),
                         "major",  e.getMajor()
-                )
-        ).toList();
+                ))
+                .toList();
 
-// careers
-        List<Map<String,Object>> careerList = careerLevelRepository.findByResumeId(resumeId).stream().map(c ->
-                Map.<String,Object>of(
+        List<Map<String,Object>> careerList = careerLevelRepository.findByResumeId(resumeId)
+                .stream()
+                .map(c -> Map.<String,Object>of(
                         "company", c.getCompanyName(),
                         "period",  fmtPeriod(c.getStartAt(), c.getEndAt()),
                         "role",    c.getPosition(),
                         "job",     c.getContent()
-                )
-        ).toList();
+                ))
+                .toList();
 
-// certificates
-        List<Map<String,Object>> certList = certificateRepository.findByResumeId(resumeId).stream()
+        List<Map<String,Object>> certList = certificateRepository.findByResumeId(resumeId)
+                .stream()
                 .map(c -> Map.<String,Object>of("name", c.getName()))
                 .toList();
 
-// skills
-        List<Map<String,Object>> skillList = skillRepository.findByResumeId(resumeId).stream()
+        List<Map<String,Object>> skillList = skillRepository.findByResumeId(resumeId)
+                .stream()
                 .map(s -> Map.<String,Object>of("name", s.getName()))
                 .toList();
 
@@ -247,13 +252,13 @@ public class ResumeService {
                 r.isLocked(),
                 r.getCreateAt(),
                 r.getUpdateAt(),
-                null, // profile은 별도 서비스에서 합쳐 쓰는 경우 사용
+                null,
                 users,
                 eduList,
                 careerList,
                 certList,
                 skillList,
-                List.of() // 언어: 현재 별도 엔티티 없으니 빈 리스트
+                List.of()
         );
     }
 
