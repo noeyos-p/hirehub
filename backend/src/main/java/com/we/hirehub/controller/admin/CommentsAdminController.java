@@ -1,6 +1,6 @@
 package com.we.hirehub.controller.admin;
 
-import com.we.hirehub.dto.CommentDto;
+import com.we.hirehub.dto.support.CommentDto;
 import com.we.hirehub.entity.Comments;
 import com.we.hirehub.service.admin.CommentsAdminService;
 import lombok.RequiredArgsConstructor;

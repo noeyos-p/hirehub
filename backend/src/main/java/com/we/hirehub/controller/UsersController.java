@@ -1,6 +1,6 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.UsersDto;
+import com.we.hirehub.dto.user.UsersDto;
 import com.we.hirehub.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

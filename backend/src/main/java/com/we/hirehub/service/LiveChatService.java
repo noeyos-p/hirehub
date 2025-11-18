@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.LiveChatDto;
+import com.we.hirehub.dto.chat.LiveChatDto;
 import com.we.hirehub.entity.LiveChat;
 import com.we.hirehub.entity.Session;
 import com.we.hirehub.entity.Users;
@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 

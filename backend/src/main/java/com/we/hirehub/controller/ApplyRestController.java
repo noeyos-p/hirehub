@@ -1,6 +1,6 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.ApplyDto;
+import com.we.hirehub.dto.job.ApplyDto;
 import com.we.hirehub.service.ApplyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

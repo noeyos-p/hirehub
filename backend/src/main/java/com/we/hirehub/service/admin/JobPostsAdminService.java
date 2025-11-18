@@ -1,6 +1,6 @@
 package com.we.hirehub.service.admin;
 
-import com.we.hirehub.dto.JobPostsDto;
+import com.we.hirehub.dto.job.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.repository.JobPostsRepository; // ✅ [수정] JobPostRepository → JobPostsRepository 로 변경
 import lombok.RequiredArgsConstructor;

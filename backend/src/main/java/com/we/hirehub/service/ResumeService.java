@@ -2,14 +2,10 @@ package com.we.hirehub.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.we.hirehub.dto.ResumeDto;
+import com.we.hirehub.dto.resume.ResumeDto;
 import com.we.hirehub.entity.*;
-import com.we.hirehub.exception.ForbiddenEditException;
-import com.we.hirehub.exception.ResourceNotFoundException;
 import com.we.hirehub.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

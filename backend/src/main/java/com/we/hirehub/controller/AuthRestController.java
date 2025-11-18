@@ -1,12 +1,11 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.config.JwtTokenProvider;
-import com.we.hirehub.dto.LoginRequest;
-import com.we.hirehub.dto.SignupEmailRequest;
+import com.we.hirehub.dto.login.LoginRequest;
+import com.we.hirehub.dto.login.SignupEmailRequest;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.AuthService;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * 인증 관련 REST API 컨트롤러

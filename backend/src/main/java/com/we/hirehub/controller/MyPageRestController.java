@@ -1,6 +1,13 @@
 package com.we.hirehub.controller;// MyPageRestController.java의 userId() 메서드만 교체
 
-import com.we.hirehub.dto.*;
+import com.we.hirehub.dto.common.PagedResponse;
+import com.we.hirehub.dto.company.FavoriteCompanySummaryDto;
+import com.we.hirehub.dto.job.ApplyDto;
+import com.we.hirehub.dto.job.FavoriteJobPostSummaryDto;
+import com.we.hirehub.dto.resume.ResumeDto;
+import com.we.hirehub.dto.resume.ResumeUpsertRequest;
+import com.we.hirehub.dto.user.MyProfileDto;
+import com.we.hirehub.dto.user.MyProfileUpdateRequest;
 import com.we.hirehub.service.JobPostScrapService;
 import com.we.hirehub.service.MyPageService;
 import jakarta.validation.Valid;

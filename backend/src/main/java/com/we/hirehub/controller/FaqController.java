@@ -1,7 +1,7 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.FaqCategoryDto;
-import com.we.hirehub.dto.FaqItemDto;
+import com.we.hirehub.dto.support.FaqCategoryDto;
+import com.we.hirehub.dto.support.FaqItemDto;
 import com.we.hirehub.service.FaqService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

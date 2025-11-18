@@ -1,6 +1,6 @@
 package com.we.hirehub.mapper;
 
-import com.we.hirehub.dto.UsersDto;
+import com.we.hirehub.dto.user.UsersDto;
 import com.we.hirehub.entity.Users;
 import org.springframework.stereotype.Component;
 

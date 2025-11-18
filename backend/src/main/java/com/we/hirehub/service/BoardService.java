@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.BoardDto;
+import com.we.hirehub.dto.support.BoardDto;
 import com.we.hirehub.entity.Board;
 import com.we.hirehub.entity.Comments;
 import com.we.hirehub.entity.Users;
@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
