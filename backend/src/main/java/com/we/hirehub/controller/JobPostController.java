@@ -1,9 +1,8 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.common.CalendarDto;
+import com.we.hirehub.dto.common.CalendarSummaryDto;
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.job.DeadlineCountDto;
-import com.we.hirehub.dto.job.FavoriteJobPostSummaryDto;
+import com.we.hirehub.dto.company.FavoriteSummaryDto;
 import com.we.hirehub.dto.job.JobPostsDto;
 import com.we.hirehub.service.JobPostScrapService;
 import com.we.hirehub.service.JobPostService;
@@ -75,14 +74,14 @@ public class JobPostController {
     }
 
     @PostMapping("/{jobPostId}/scrap")
-    public ResponseEntity<FavoriteJobPostSummaryDto> scrap(Authentication auth,
-                                                           @PathVariable Long jobPostId) {
+    public ResponseEntity<FavoriteSummaryDto> scrap(Authentication auth,
+                                                    @PathVariable Long jobPostId) {
         Long uid = userId(auth);
         return ResponseEntity.ok(jobPostScrapService.add(uid, jobPostId));
     }
 
     @GetMapping("/calendar")
-    public List<CalendarDto> getCalendar(
+    public List<CalendarSummaryDto> getCalendar(
             @RequestParam LocalDate from,
             @RequestParam LocalDate to
     ) {
@@ -99,7 +98,7 @@ public class JobPostController {
     }
 
     @GetMapping("/calendar/counts")
-    public List<DeadlineCountDto> getCalendarCounts(
+    public List<CalendarSummaryDto> getCalendarCounts(
             @RequestParam LocalDate from,
             @RequestParam LocalDate to
     ) {

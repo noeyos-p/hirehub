@@ -1,6 +1,6 @@
 package com.we.hirehub.dto.resume;
 
-import com.we.hirehub.dto.user.UserProfileMiniDto;
+import com.we.hirehub.dto.user.UserSummaryDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,7 +32,7 @@ public class ResumeDto {
     private boolean locked;
     private LocalDate createAt;
     private LocalDate updateAt;
-    private UserProfileMiniDto profile;   // 온보딩 정보 (일반 사용자용)
+    private UserSummaryDto profile;   // 온보딩 정보 (일반 사용자용)
     private UserInfo users;               // 작성자 정보 (관리자용)
 
     // htmlContent 파싱 데이터
@@ -66,7 +66,7 @@ public class ResumeDto {
             boolean locked,
             LocalDate createAt,
             LocalDate updateAt,
-            UserProfileMiniDto profile
+            UserSummaryDto profile
     ) {
         this(id, title, idPhoto, essayTitle, essayContent, htmlContent, locked,
                 createAt, updateAt, profile, null,
@@ -101,7 +101,7 @@ public class ResumeDto {
             boolean locked,
             LocalDate createAt,
             LocalDate updateAt,
-            UserProfileMiniDto profile,
+            UserSummaryDto profile,
             UserInfo users
     ) {
         this(id, title, idPhoto, essayTitle, essayContent, htmlContent, locked,

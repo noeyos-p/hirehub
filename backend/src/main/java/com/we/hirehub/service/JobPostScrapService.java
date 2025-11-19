@@ -1,7 +1,7 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.job.FavoriteJobPostSummaryDto;
 import com.we.hirehub.dto.common.PagedResponse;
+import com.we.hirehub.dto.company.FavoriteSummaryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -46,10 +46,10 @@ public class JobPostScrapService {
         // 최종 못 찾으면 기본값 유지
     }
 
-    private RowMapper<FavoriteJobPostSummaryDto> rowMapper() {
+    private RowMapper<FavoriteSummaryDto> rowMapper() {
         return new RowMapper<>() {
-            @Override public FavoriteJobPostSummaryDto mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return new FavoriteJobPostSummaryDto(
+            @Override public FavoriteSummaryDto mapRow(ResultSet rs, int rowNum) throws SQLException {
+                return new FavoriteSummaryDto(
                         rs.getLong("id"),
                         rs.getLong("job_post_id"),
                         rs.getString("title"),
@@ -61,7 +61,7 @@ public class JobPostScrapService {
     }
 
     @Transactional
-    public FavoriteJobPostSummaryDto add(Long userId, Long jobPostId) {
+    public FavoriteSummaryDto add(Long userId, Long jobPostId) {
         // 중복 무시
         String insertSql = "INSERT IGNORE INTO scrap_posts (users_id, " + jobPostCol + ") VALUES (?, ?)";
         jdbc.update(insertSql, userId, jobPostId);
@@ -77,7 +77,7 @@ public class JobPostScrapService {
         return jdbc.queryForObject(selectOne, rowMapper(), userId, jobPostId);
     }
 
-    public PagedResponse<FavoriteJobPostSummaryDto> list(Long userId, int page, int size) {
+    public PagedResponse<FavoriteSummaryDto> list(Long userId, int page, int size) {
         int limit  = Math.max(size, 1);
         int offset = Math.max(page, 0) * limit;
 
@@ -96,7 +96,7 @@ public class JobPostScrapService {
                         "ORDER BY s.id DESC " +
                         "LIMIT ? OFFSET ?";
 
-        List<FavoriteJobPostSummaryDto> rows = jdbc.query(listSql, rowMapper(), userId, limit, offset);
+        List<FavoriteSummaryDto> rows = jdbc.query(listSql, rowMapper(), userId, limit, offset);
 
         int totalPages = (int) Math.ceil(totalCount / (double) limit);
         return new PagedResponse<>(rows, page, limit, totalCount, totalPages);

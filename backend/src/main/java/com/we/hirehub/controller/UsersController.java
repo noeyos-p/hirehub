@@ -1,6 +1,6 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.user.UsersDto;
+import com.we.hirehub.dto.user.UserSummaryDto;
 import com.we.hirehub.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -17,7 +17,7 @@ public class UsersController {
     private final UserService usersService;
 
     @PostMapping("/register")
-    public String register(@ModelAttribute("users") UsersDto dto, Model model) {
+    public String register(@ModelAttribute("users") UserSummaryDto dto, Model model) {
         usersService.register(dto);
         model.addAttribute("ok", true);
         return "users/success";
