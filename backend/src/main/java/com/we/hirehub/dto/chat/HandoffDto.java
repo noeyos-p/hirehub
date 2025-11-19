@@ -1,4 +1,4 @@
-package com.we.hirehub.dto.job;
+package com.we.hirehub.dto.chat;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

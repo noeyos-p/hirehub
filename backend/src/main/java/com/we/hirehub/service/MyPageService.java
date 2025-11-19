@@ -4,13 +4,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.company.FavoriteCompanySummaryDto;
+import com.we.hirehub.dto.company.FavoriteSummaryDto;
 import com.we.hirehub.dto.job.ApplyDto;
 import com.we.hirehub.dto.resume.ResumeDto;
 import com.we.hirehub.dto.resume.ResumeUpsertRequest;
 import com.we.hirehub.dto.user.MyProfileDto;
 import com.we.hirehub.dto.user.MyProfileUpdateRequest;
-import com.we.hirehub.dto.user.UserProfileMiniDto;
+import com.we.hirehub.dto.user.UserSummaryDto;
 import com.we.hirehub.entity.*;
 import com.we.hirehub.exception.ForbiddenEditException;
 import com.we.hirehub.exception.ResourceNotFoundException;
@@ -172,9 +172,9 @@ public class MyPageService {
      */
     private ResumeDto toDto(Resume r) {
         Users u = r.getUsers();
-        UserProfileMiniDto profile = null;
+        UserSummaryDto profile = null;
         if (u != null) {
-            profile = new UserProfileMiniDto(
+            profile = new UserSummaryDto(
                     u.getId(),
                     u.getNickname(),
                     u.getName(),
@@ -517,7 +517,7 @@ public class MyPageService {
 
     // --- 즐겨찾기 기업: 컨트롤러 시그니처 그대로 ---
     @Transactional
-    public FavoriteCompanySummaryDto addFavoriteCompany(Long userId, Long companyId) {
+    public FavoriteSummaryDto addFavoriteCompany(Long userId, Long companyId) {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
         var company = companyRepository.findById(companyId)
@@ -533,7 +533,7 @@ public class MyPageService {
         return toSummary(saved);
     }
 
-    public PagedResponse<FavoriteCompanySummaryDto> listFavoriteCompanies(Long userId, int page, int size) {
+    public PagedResponse<FavoriteSummaryDto> listFavoriteCompanies(Long userId, int page, int size) {
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         var p = favoriteCompanyRepository.findByUsers_Id(userId, pageable);
         var items = p.getContent().stream().map(this::toSummary).toList();
@@ -545,13 +545,13 @@ public class MyPageService {
         favoriteCompanyRepository.deleteByUsers_IdAndCompany_Id(userId, companyId);
     }
 
-    private FavoriteCompanySummaryDto toSummary(FavoriteCompany fc) {
+    private FavoriteSummaryDto toSummary(FavoriteCompany fc) {
         var company = fc.getCompany();
         long openCount = (company != null && company.getId() != null)
                 ? jobPostsRepository.countByCompany_Id(company.getId())
                 : 0L;
 
-        return new FavoriteCompanySummaryDto(
+        return new FavoriteSummaryDto(
                 fc.getId(),
                 company != null ? company.getId() : null,
                 company != null ? company.getName() : null,

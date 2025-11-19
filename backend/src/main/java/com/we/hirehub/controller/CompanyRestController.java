@@ -1,8 +1,8 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.dto.company.CompanyDto;
-import com.we.hirehub.dto.company.FavoriteCompanySummaryDto;
 import com.we.hirehub.dto.common.PagedResponse;
+import com.we.hirehub.dto.company.FavoriteSummaryDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.repository.CompanyRepository;
 import com.we.hirehub.service.CompanyService;
@@ -36,10 +36,10 @@ public class CompanyRestController {
      * 기업상세 페이지에서 즐겨찾기 추가(C)
      */
     @PostMapping("/{companyId}/favorite")
-    public ResponseEntity<FavoriteCompanySummaryDto> addFavorite(Authentication auth,
-                                                                 @PathVariable Long companyId) {
+    public ResponseEntity<FavoriteSummaryDto> addFavorite(Authentication auth,
+                                                          @PathVariable Long companyId) {
         Long uid = userId(auth);
-        FavoriteCompanySummaryDto body = myPageService.addFavoriteCompany(uid, companyId);
+        FavoriteSummaryDto body = myPageService.addFavoriteCompany(uid, companyId);
         return ResponseEntity.ok(body);
     }
 

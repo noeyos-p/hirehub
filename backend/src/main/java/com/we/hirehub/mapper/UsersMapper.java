@@ -1,15 +1,15 @@
 package com.we.hirehub.mapper;
 
-import com.we.hirehub.dto.user.UsersDto;
+import com.we.hirehub.dto.user.UserSummaryDto;
 import com.we.hirehub.entity.Users;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UsersMapper {
 
-    public UsersDto toDto(Users e){
+    public UserSummaryDto toDto(Users e){
         if (e == null) return null;
-        return UsersDto.builder()
+        return UserSummaryDto.builder()
                 .id(e.getId())
                 .email(e.getEmail())
                 .name(e.getName())
@@ -29,7 +29,7 @@ public class UsersMapper {
     }
 
     /** 부분 업데이트용 (null이 아닌 값만 반영) */
-    public void updateEntity(UsersDto d, Users e){
+    public void updateEntity(UserSummaryDto d, Users e){
         if (d == null || e == null) return;
 
         if (d.getEmail() != null) e.setEmail(d.getEmail());
@@ -49,7 +49,7 @@ public class UsersMapper {
     }
 
     /** 신규 생성용 */
-    public Users toEntity(UsersDto d){
+    public Users toEntity(UserSummaryDto d){
         if (d == null) return null;
         Users e = new Users();
         e.setId(d.getId());
