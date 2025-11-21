@@ -2,41 +2,16 @@ import React, { useEffect, useState } from "react";
 import { BookmarkIcon, StarIcon, XMarkIcon, PhotoIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
-import api from "../../api/api";
+import { jobPostApi } from "../../api/jobPostApi";
+import type { JobPostResponse, ResumeResponse } from "../../types/interface";
 
 interface JobDetailProps {
   jobId: number;
   onBack: () => void;
 }
 
-interface ResumeItem {
-  id: number;
-  title: string;
-  locked: boolean;
-  createAt: string;
-  updateAt: string;
-}
-
-interface Job {
-  id: number;
-  title: string;
-  companyName: string;
-  companyId: number;
-  views: number;
-  careerLevel: string;
-  position: string;
-  education: string;
-  type?: string;
-  location: string;
-  salary?: string;
-  startAt?: string;
-  endAt: string;
-  content?: string;
-  photo?: string;
-}
-
 const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
-  const [job, setJob] = useState<Job | null>(null);
+  const [job, setJob] = useState<JobPostResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
   const [error, setError] = useState("");
@@ -44,7 +19,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [isFavoriteProcessing, setIsFavoriteProcessing] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [resumes, setResumes] = useState<ResumeItem[]>([]);
+  const [resumes, setResumes] = useState<ResumeResponse[]>([]);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [isApplying, setIsApplying] = useState(false);
 
@@ -53,8 +28,8 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
     try {
       setIsLoading(true);
       setError("");
-      const res = await api.get<Job>(`/api/jobposts/${jobId}`);
-      setJob(res.data);
+      const data = await jobPostApi.getJobPostById(jobId);
+      setJob(data);
     } catch (err: any) {
       console.error("❌ 공고 불러오기 실패:", err);
       if (err.response?.status === 404) setError("해당 공고를 찾을 수 없습니다.");
@@ -67,8 +42,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   // 스크랩 상태 확인
   const fetchScrapStatus = async () => {
     try {
-      const res = await api.get(`/api/mypage/favorites/jobposts?page=0&size=1000`);
-      const scrappedItems = res.data.rows || res.data.content || [];
+      const scrappedItems = await jobPostApi.getScrappedJobs();
       const exists = scrappedItems.some((item: any) => Number(item.jobPostId) === Number(jobId));
       setIsScrapped(exists);
       if (exists) {
@@ -84,21 +58,17 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
     const isScrapped = scrappedJobs.has(targetJobId);
     try {
       if (isScrapped) {
-        const res = await api.delete(`/api/mypage/favorites/jobposts/${targetJobId}`);
-        if (res.status === 204 || res.status === 200) {
-          setScrappedJobs((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(targetJobId);
-            return newSet;
-          });
-          setIsScrapped(false);
-        }
+        await jobPostApi.removeScrapJob(targetJobId);
+        setScrappedJobs((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(targetJobId);
+          return newSet;
+        });
+        setIsScrapped(false);
       } else {
-        const res = await api.post(`/api/mypage/favorites/jobposts/${targetJobId}`);
-        if (res.status === 200 && res.data) {
-          setScrappedJobs((prev) => new Set(prev).add(targetJobId));
-          setIsScrapped(true);
-        }
+        await jobPostApi.addScrapJob(targetJobId);
+        setScrappedJobs((prev) => new Set(prev).add(targetJobId));
+        setIsScrapped(true);
       }
     } catch (err: any) {
       let errorMsg = "북마크 처리에 실패했습니다.";
@@ -115,8 +85,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   const fetchFavoriteStatus = async () => {
     if (!job?.companyId) return;
     try {
-      const res = await api.get(`/api/mypage/favorites/companies?page=0&size=1000`);
-      const favoritedItems = res.data.rows || res.data.content || [];
+      const favoritedItems = await jobPostApi.getFavoriteCompanies();
       const exists = favoritedItems.some((item: any) => Number(item.companyId) === Number(job.companyId));
       setIsFavorited(exists);
     } catch (err: any) {
@@ -151,11 +120,11 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
 
     try {
       if (previousState) {
-        const res = await api.delete(`/api/mypage/favorites/companies/${job.companyId}`);
-        if (res.status === 204 || res.status === 200) setIsFavorited(false);
+        await jobPostApi.removeFavoriteCompany(job.companyId);
+        setIsFavorited(false);
       } else {
-        const res = await api.post(`/api/mypage/favorites/companies/${job.companyId}`);
-        if (res.status === 200 && res.data) setIsFavorited(true);
+        await jobPostApi.addFavoriteCompany(job.companyId);
+        setIsFavorited(true);
       }
     } catch (err: any) {
       setIsFavorited(previousState);
@@ -168,8 +137,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   // 이력서 목록
   const fetchResumes = async () => {
     try {
-      const { data } = await api.get("/api/mypage/resumes", { params: { page: 0, size: 50 } });
-      const list: ResumeItem[] = data?.items ?? data?.content ?? [];
+      const list = await jobPostApi.getResumes();
       setResumes(list.filter(r => !r.locked));
     } catch (e) {
       alert("이력서 목록을 불러올 수 없습니다.");
@@ -187,7 +155,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
 
     try {
       setIsApplying(true);
-      await api.post("/api/mypage/applies", { jobPostId: job!.id, resumeId: selectedResumeId });
+      await jobPostApi.applyToJob({ jobPostId: job!.id, resumeId: selectedResumeId });
       alert("지원이 완료되었습니다!");
       setShowApplyModal(false);
       setSelectedResumeId(null);
@@ -244,14 +212,14 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   if (isLoading) return (
     <div className="text-center py-10 text-gray-600">로딩 중...</div>
   );
-  
+
   if (error) return (
     <div className="text-center py-10 text-red-600">
       {error}
       <button onClick={onBack} className="block mt-4 text-blue-600 underline mx-auto">목록으로 돌아가기</button>
     </div>
   );
-  
+
   if (!job) return null;
 
   return (
@@ -299,7 +267,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
               {/* 상세 내용 */}
               <div className="mt-10">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">상세 내용</h2>
-                
+
                 {job.content ? (
                   <div
                     className="text-gray-800 leading-relaxed font-normal whitespace-pre-line"
@@ -354,7 +322,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
               </div>
 
               {/* 지원하기 버튼 */}
-              <button 
+              <button
                 onClick={handleApplyClick}
                 className="w-full py-3 bg-[#006AFF] text-white rounded-lg text-base font-semibold hover:bg-[#0053cc] transition-colors"
               >
@@ -363,7 +331,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
 
               {/* 스크랩 + 이력서 바로가기 버튼 */}
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={(e) => {
                     e.preventDefault();
                     handleBookmarkClick(e, jobId);
@@ -377,8 +345,8 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                   )}
                   <span>스크랩</span>
                 </button>
-                <Link 
-                  to="/mypage/resumes" 
+                <Link
+                  to="/mypage/resumes"
                   className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center"
                 >
                   이력서 바로가기

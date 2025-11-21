@@ -2,30 +2,8 @@ import React, { useEffect, useState } from "react";
 import { StarIcon, PhotoIcon } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../api/api";
-
-interface Review {
-  id: number;
-  usersId: number;
-  nickname: string;
-  content: string;
-  score: number;
-  date?: string;
-}
-
-interface Company {
-  id: number;
-  name: string;
-  description: string;
-  content: string;
-  address: string;
-  website: string;
-  since: string;
-  industry: string;
-  benefits: string;
-  ceo: string;
-  photo?: string;
-}
+import { jobPostApi } from "../../api/jobPostApi";
+import type { CompanyResponse, ReviewResponse } from "../../types/interface";
 
 
 interface CompanyDetailProps {
@@ -39,8 +17,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const numericCompanyId = companyId && !isNaN(Number(companyId)) ? parseInt(companyId, 10) : null;
   const companyName = companyId && isNaN(Number(companyId)) ? decodeURIComponent(companyId) : null;
 
-  const [company, setCompany] = useState<Company | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [company, setCompany] = useState<CompanyResponse | null>(null);
+  const [reviews, setReviews] = useState<ReviewResponse[]>([]);
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -73,31 +51,29 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
       try {
         setIsLoading(true);
-        let companyRes;
+        let companyData: CompanyResponse | undefined;
 
         if (numericCompanyId) {
-          companyRes = await api.get(`/api/companies/${numericCompanyId}`);
+          companyData = await jobPostApi.getCompanyById(numericCompanyId);
         } else if (companyName) {
-          const allCompaniesRes = await api.get('/api/companies');
-          const foundCompany = allCompaniesRes.data.find(
-            (c: any) => c.name === companyName
+          const allCompanies = await jobPostApi.getCompanies();
+          companyData = allCompanies.find(
+            (c) => c.name === companyName
           );
 
-          if (!foundCompany) {
+          if (!companyData) {
             setError(`'${companyName}' 회사를 찾을 수 없습니다.`);
             setIsLoading(false);
             return;
           }
-
-          companyRes = { data: foundCompany };
         }
 
-        setCompany(companyRes.data);
+        setCompany(companyData || null);
         setError("");
 
-        if (companyRes.data?.id) {
-          fetchFavoriteStatus(companyRes.data.id);
-          fetchReviews(companyRes.data.id);
+        if (companyData?.id) {
+          fetchFavoriteStatus(companyData.id);
+          fetchReviews(companyData.id);
         }
       } catch (err: any) {
         setError("회사 정보를 불러오는데 실패했습니다.");
@@ -111,8 +87,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
   const fetchFavoriteStatus = async (companyId: number) => {
     try {
-      const res = await api.get(`/api/mypage/favorites/companies?page=0&size=1000`);
-      const items = res.data.content || res.data.rows || res.data.items || [];
+      const items = await jobPostApi.getFavoriteCompanies();
       const exists = items.some((item: any) => parseInt(item.companyId, 10) === companyId);
       setIsFavorited(exists);
     } catch (err) {
@@ -122,15 +97,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
   const fetchReviews = async (companyId: number) => {
     try {
-      const res = await api.get(`/api/reviews/company/${companyId}`);
-
-      if (Array.isArray(res.data)) {
-        setReviews(res.data);
-      } else if (res.data?.content && Array.isArray(res.data.content)) {
-        setReviews(res.data.content);
-      } else {
-        setReviews([]);
-      }
+      const reviewsData = await jobPostApi.getCompanyReviews(companyId);
+      setReviews(reviewsData);
     } catch (err) {
       setReviews([]);
     }
@@ -149,11 +117,11 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
     try {
       if (prev) {
-        await api.delete(`/api/mypage/favorites/companies/${company.id}`);
+        await jobPostApi.removeFavoriteCompany(company.id);
         setIsFavorited(false);
         window.dispatchEvent(new CustomEvent("favorite-changed"));
       } else {
-        await api.post(`/api/mypage/favorites/companies/${company.id}`);
+        await jobPostApi.addFavoriteCompany(company.id);
         setIsFavorited(true);
         window.dispatchEvent(new CustomEvent("favorite-changed"));
       }
@@ -181,7 +149,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
     }
 
     try {
-      await api.post(`/api/reviews`, {
+      await jobPostApi.createReview({
         content: newReview,
         score: newRating,
         companyId: company!.id,
@@ -308,8 +276,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                         >
                           <StarSolidIcon
                             className={`w-8 h-8 ${star <= (hoverRating || newRating)
-                                ? "text-yellow-400"
-                                : "text-gray-300"
+                              ? "text-yellow-400"
+                              : "text-gray-300"
                               }`}
                           />
                         </button>
