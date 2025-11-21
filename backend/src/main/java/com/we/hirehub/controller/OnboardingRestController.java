@@ -3,7 +3,8 @@ package com.we.hirehub.controller;
 
 import com.we.hirehub.config.JwtTokenProvider;
 import com.we.hirehub.config.JwtUserPrincipal;
-import com.we.hirehub.dto.user.OnboardingForm;
+import com.we.hirehub.dto.user.UsersDto;
+import com.we.hirehub.dto.user.UsersRequestDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.OnboardingService;
@@ -41,7 +42,7 @@ public class OnboardingRestController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<?> save(
-            @RequestBody OnboardingForm form,
+            @RequestBody UsersRequestDto profile,
             @AuthenticationPrincipal JwtUserPrincipal principal  // ✅ 추가: Principal 직접 주입
     ) {
         // ✅ Principal로 직접 이메일 가져오기
@@ -58,7 +59,7 @@ public class OnboardingRestController {
         Long userId = principal.getUserId();
 
         log.info("🎯 온보딩 요청 수신 - userId: {}, email: {}", userId, email);
-        log.debug("📩 폼 내용: {}", form);
+        log.debug("📩 폼 내용: {}", profile);
 
         // ✅ 디버깅: SecurityContext 확인
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -69,7 +70,7 @@ public class OnboardingRestController {
 
         try {
             // 1️⃣ 온보딩 데이터 저장
-            onboardingService.save(email, form);
+            onboardingService.save(email, profile);
             log.info("✅ 온보딩 저장 완료 - userId: {}, email: {}", userId, email);
 
             // 2️⃣ 새 JWT 발급용 유저 조회

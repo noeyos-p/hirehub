@@ -8,9 +8,8 @@ import com.we.hirehub.dto.company.FavoriteSummaryDto;
 import com.we.hirehub.dto.job.ApplyDto;
 import com.we.hirehub.dto.resume.ResumeDto;
 import com.we.hirehub.dto.resume.ResumeUpsertRequest;
-import com.we.hirehub.dto.user.MyProfileDto;
-import com.we.hirehub.dto.user.MyProfileUpdateRequest;
-import com.we.hirehub.dto.user.UserSummaryDto;
+import com.we.hirehub.dto.user.UsersRequestDto;
+import com.we.hirehub.dto.user.UsersDto;
 import com.we.hirehub.entity.*;
 import com.we.hirehub.exception.ForbiddenEditException;
 import com.we.hirehub.exception.ResourceNotFoundException;
@@ -170,28 +169,14 @@ public class MyPageService {
     /**
      * Resume → DTO (profile 포함)
      */
-    private ResumeDto toDto(Resume r) {
-        Users u = r.getUsers();
-        UserSummaryDto profile = null;
-        if (u != null) {
-            profile = new UserSummaryDto(
-                    u.getId(),
-                    u.getNickname(),
-                    u.getName(),
-                    u.getPhone(),
-                    u.getGender(),
-                    (u.getDob() != null ? LocalDate.parse(u.getDob()) : null),
-                    u.getAddress(),
-                    u.getEmail()
-            );
+    private ResumeDto toDto(Resume resume) {
+        Users user = resume.getUsers();
+        UsersDto.Profile profile = null;
+        if (user != null) {
+            profile = UsersDto.toProfile(user);
         }
 
-        Long rid = r.getId();
-
-        // ★★ 1) 여기: 리포지토리 메서드 이름을 프로젝트에 맞춰 "findByResumeId" 로 통일 ★★
-        //    (이미 deleteByResumeId(...)를 쓰고 있었다면, find도 같은 규칙으로 만드세요)
-        //    repository 인터페이스에 아래 시그니처 추가 필요:
-        //    List<Education> findByResumeId(Long resumeId);  (등등 동일)
+        Long rid = resume.getId();
 
         List<Map<String, Object>> eduList =
                 educationRepo.findByResumeId(rid).stream().map(e -> {
@@ -241,15 +226,15 @@ public class MyPageService {
                 }).toList();
 
         return new ResumeDto(
-                r.getId(),
-                r.getTitle(),
-                r.getIdPhoto(),
-                r.getEssayTittle(),
-                r.getEssayContent(),
-                r.getHtmlContent(),
-                r.isLocked(),
-                r.getCreateAt(),
-                r.getUpdateAt(),
+                resume.getId(),
+                resume.getTitle(),
+                resume.getIdPhoto(),
+                resume.getEssayTittle(),
+                resume.getEssayContent(),
+                resume.getHtmlContent(),
+                resume.isLocked(),
+                resume.getCreateAt(),
+                resume.getUpdateAt(),
                 profile,
                 null,            // users (관리자용이 아니니 null)
                 eduList,
@@ -452,56 +437,27 @@ public class MyPageService {
      *                [2] 내 프로필 (온보딩)
      * ========================================================== */
 
-    public MyProfileDto getProfile(Long userId) {
-        Users u = userRepository.findById(userId)
+    public UsersDto.Profile getProfile(Long userId) {
+        Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
 
-        MyProfileDto dto = new MyProfileDto();
-        dto.setId(u.getId());
-        dto.setEmail(u.getEmail());
-        dto.setNickname(u.getNickname());
-        dto.setName(u.getName());
-        dto.setPhone(u.getPhone());
-        dto.setGender(u.getGender());
-        dto.setAddress(u.getAddress());
-        dto.setPosition(u.getPosition());
-        dto.setEducation(u.getEducation());
-
-        LocalDate birth = (u.getDob() != null ? LocalDate.parse(u.getDob()) : null);
-        dto.setBirth(birth);
-        if (birth != null) {
-            int age = LocalDate.now().getYear() - birth.getYear();
-            if (LocalDate.now().getDayOfYear() < birth.getDayOfYear()) age--;
-            dto.setAge(Math.max(age, 0));
-        }
-        dto.setRegion(u.getLocation());
-        dto.setCareer(u.getCareerLevel());
-        return dto;
+        return UsersDto.toProfile(user);
     }
 
     @Transactional
-    public MyProfileDto updateProfile(Long userId, MyProfileUpdateRequest req) {
-        Users u = userRepository.findById(userId)
+    public UsersDto.Profile updateProfile(Long userId, UsersRequestDto dto) {
+        Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
         // 닉네임 중복 체크
-        if (req.getNickname() != null && !req.getNickname().equals(u.getNickname())) {
-            boolean exists = userRepository.existsByNickname(req.getNickname());
+        if (dto.getNickname() != null && !dto.getNickname().equals(user.getNickname())) {
+            boolean exists = userRepository.existsByNickname(dto.getNickname());
             if (exists) {
                 throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
             }
-            u.setNickname(req.getNickname());
         }
-        if (req.getName() != null) u.setName(req.getName());
-        if (req.getPhone() != null) u.setPhone(req.getPhone());
-        if (req.getGender() != null) u.setGender(req.getGender());
-        if (req.getAddress() != null) u.setAddress(req.getAddress());
-        if (req.getPosition() != null) u.setPosition(req.getPosition());
-        if (req.getEducation() != null) u.setEducation(req.getEducation());
-        if (req.getBirth() != null) u.setDob(req.getBirth().toString());
-        if (req.getRegion() != null) u.setLocation(req.getRegion());
-        if (req.getCareer() != null) u.setCareerLevel(req.getCareer());
-        userRepository.save(u);
-        return getProfile(u.getId());
+        dto.toEntity(user);
+        usersRepository.save(user);
+        return UsersDto.toProfile(user);
     }
 
     /* ==========================================================

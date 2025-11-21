@@ -5,8 +5,8 @@ import com.we.hirehub.dto.company.FavoriteSummaryDto;
 import com.we.hirehub.dto.job.ApplyDto;
 import com.we.hirehub.dto.resume.ResumeDto;
 import com.we.hirehub.dto.resume.ResumeUpsertRequest;
-import com.we.hirehub.dto.user.MyProfileDto;
-import com.we.hirehub.dto.user.MyProfileUpdateRequest;
+import com.we.hirehub.dto.user.UsersDto;
+import com.we.hirehub.dto.user.UsersRequestDto;
 import com.we.hirehub.service.JobPostScrapService;
 import com.we.hirehub.service.MyPageService;
 import jakarta.validation.Valid;
@@ -193,7 +193,7 @@ public class MyPageRestController {
      * ✅ 내 프로필 조회 (온보딩 데이터)
      */
     @GetMapping("/me")
-    public ResponseEntity<MyProfileDto> getMe(Authentication auth) {
+    public ResponseEntity<UsersDto.Profile> getMe(Authentication auth) {
         return ResponseEntity.ok(myPageService.getProfile(userId(auth)));
     }
 
@@ -201,8 +201,8 @@ public class MyPageRestController {
      * ✅ 내 프로필 수정
      */
     @PutMapping("/me")
-    public ResponseEntity<MyProfileDto> updateMe(Authentication auth,
-                                                 @Valid @RequestBody MyProfileUpdateRequest req) {
+    public ResponseEntity<UsersDto.Profile> updateMe(Authentication auth,
+                                                     @Valid @RequestBody UsersRequestDto req) {
         return ResponseEntity.ok(myPageService.updateProfile(userId(auth), req));
     }
 
@@ -279,8 +279,8 @@ public class MyPageRestController {
      */
     @GetMapping("/favorites/companies")
     public PagedResponse<FavoriteSummaryDto> favoriteCompanies(Authentication auth,
-                                                                      @RequestParam(defaultValue = "0") int page,
-                                                                      @RequestParam(defaultValue = "10") int size) {
+                                                               @RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "10") int size) {
         return myPageService.listFavoriteCompanies(userId(auth), page, size);
     }
 

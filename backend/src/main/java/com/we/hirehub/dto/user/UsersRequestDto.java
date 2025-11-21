@@ -1,6 +1,7 @@
 package com.we.hirehub.dto.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.we.hirehub.entity.Users;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -8,7 +9,8 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-public class MyProfileUpdateRequest {
+/** 입력/수정용 **/
+public class UsersRequestDto {
 
     @Size(max = 50)
     private String name;
@@ -28,7 +30,7 @@ public class MyProfileUpdateRequest {
     private String address;
 
     @Size(max = 50)
-    private String region;
+    private String location;
 
     @Size(max = 50)
     private String position;
@@ -42,5 +44,20 @@ public class MyProfileUpdateRequest {
     @Size(max = 50)
     private String nickname;
 
-    // ⚠ email 필드는 아예 두지 않는다(불변).
+    public void toEntity(Users user) {
+
+        if (this.name != null) user.setName(this.name);
+        if (this.nickname != null) user.setNickname(this.nickname);
+        if (this.phone != null) user.setPhone(this.phone);
+
+        if (this.birth != null) user.setDob(this.birth.toString());
+
+        if (this.gender != null) user.setGender(this.gender);
+        if (this.address != null) user.setAddress(this.address);
+        if (this.position != null) user.setPosition(this.position);
+        if (this.education != null) user.setEducation(this.education);
+
+        if (this.career != null) user.setCareerLevel(this.career);
+        if (this.location != null) user.setLocation(this.location);
+    }
 }
