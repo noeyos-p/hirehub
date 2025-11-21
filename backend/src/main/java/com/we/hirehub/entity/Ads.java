@@ -1,14 +1,18 @@
 package com.we.hirehub.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDate;
 
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "Ads")
 public class Ads {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

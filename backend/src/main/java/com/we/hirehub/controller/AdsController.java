@@ -1,7 +1,7 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.entity.Ads;
-import com.we.hirehub.service.AdsAdminService;
+import com.we.hirehub.service.admin.AdsAdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
