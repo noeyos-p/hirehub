@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { boardApi, type BoardListResponse } from '../../api/boardApi';
+import { boardApi } from '../../api/boardApi';
+import type { BoardListResponse } from '../../types/interface';
 
 const PopularPosts: React.FC = () => {
   const navigate = useNavigate();

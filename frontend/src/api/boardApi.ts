@@ -1,42 +1,11 @@
 import api from './api';
-
-export interface BoardListResponse {
-  id: number;
-  title: string;
-  content: string;
-  usersId: number;
-  usersName: string;
-  nickname: string;
-  usersProfileImage: string | null;
-  createAt: string;
-  updateAt: string | null;
-  views: number;
-  comments: CommentResponse[];
-}
-
-export interface CommentResponse {
-  id: number;
-  content: string;
-  usersId: number;
-  usersName: string;
-  nickname: string;
-  usersProfileImage: string | null;
-  boardId: number;
-  parentCommentId: number | null;
-  createAt: string;
-  updateAt: string | null;
-}
-
-export interface CreateBoardRequest {
-  title: string;
-  content: string;
-}
-
-export interface CreateCommentRequest {
-  content: string;
-  boardId: number;
-  parentCommentId?: number | null;
-}
+import type {
+  BoardListResponse,
+  CommentResponse,
+  CreateBoardRequest,
+  CreateCommentRequest,
+  Ad
+} from '../types/interface';
 
 export const boardApi = {
   getAllBoards: async (): Promise<BoardListResponse[]> => {
@@ -64,13 +33,17 @@ export const boardApi = {
     return response.data;
   },
 
+  deleteBoard: async (id: number): Promise<void> => {
+    await api.delete(`/api/board/${id}`);
+  },
+
   // 방법 1: 쿼리 파라미터로 전달 (추천)
   searchBoards: async (keyword: string): Promise<BoardListResponse[]> => {
     console.log('🔍 검색 API 호출:', keyword);
     try {
       const response = await api.get('/api/board/search', {
-        params: { 
-          keyword: keyword.trim() 
+        params: {
+          keyword: keyword.trim()
         }
       });
       console.log('✅ 검색 API 응답:', response.data);
@@ -79,6 +52,13 @@ export const boardApi = {
       console.error('❌ 검색 API 에러:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  getAds: async (): Promise<Ad[]> => {
+    const response = await api.get('/api/ads');
+    // API 응답 구조에 따라 처리 (data.data 또는 data)
+    const adsData = response.data.data ?? response.data;
+    return adsData;
   }
 };
 

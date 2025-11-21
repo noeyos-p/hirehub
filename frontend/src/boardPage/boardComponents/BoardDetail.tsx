@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EyeIcon, ArrowLeftIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
-import { boardApi, commentApi, type BoardListResponse, type CommentResponse } from '../../api/boardApi';
+import { boardApi, commentApi } from '../../api/boardApi';
+import type { BoardListResponse, CommentResponse } from '../../types/interface';
 import { useAuth } from '../../hooks/useAuth';
-import api from '../../api/api';
 import CommentSection from './CommentSection';
 
 const BoardDetail: React.FC = () => {
@@ -35,23 +35,23 @@ const BoardDetail: React.FC = () => {
     }
   };
 
-const fetchComments = async (boardId: number) => {
-  try {
-    const data = await commentApi.getCommentsByBoardId(boardId);
-    setComments(data);
-  } catch (err: any) {
-    console.error('댓글 조회 실패:', err);
-    
-    // 401/404 에러는 조용히 처리 (빈 댓글 목록 유지)
-    if (err.response?.status === 401 || err.response?.status === 404) {
-      setComments([]); // 빈 배열로 설정
-      console.log('인증 필요 또는 댓글 없음 - 빈 목록 표시');
-    } else {
-      // 다른 에러는 사용자에게 알림
-      alert('댓글을 불러오는데 실패했습니다.');
+  const fetchComments = async (boardId: number) => {
+    try {
+      const data = await commentApi.getCommentsByBoardId(boardId);
+      setComments(data);
+    } catch (err: any) {
+      console.error('댓글 조회 실패:', err);
+
+      // 401/404 에러는 조용히 처리 (빈 댓글 목록 유지)
+      if (err.response?.status === 401 || err.response?.status === 404) {
+        setComments([]); // 빈 배열로 설정
+        console.log('인증 필요 또는 댓글 없음 - 빈 목록 표시');
+      } else {
+        // 다른 에러는 사용자에게 알림
+        alert('댓글을 불러오는데 실패했습니다.');
+      }
     }
-  }
-};
+  };
 
   const handleCommentSubmit = async (content: string) => {
     if (!id) return;
@@ -65,7 +65,7 @@ const fetchComments = async (boardId: number) => {
       content,
       boardId: Number(id)
     });
-    
+
     await fetchComments(Number(id));
   };
 
@@ -82,7 +82,7 @@ const fetchComments = async (boardId: number) => {
       boardId: Number(id),
       parentCommentId
     });
-    
+
     await fetchComments(Number(id));
   };
 
@@ -101,7 +101,7 @@ const fetchComments = async (boardId: number) => {
     if (!window.confirm('게시글을 삭제하시겠습니까?')) return;
 
     try {
-      await api.delete(`/api/board/${id}`);
+      await boardApi.deleteBoard(Number(id));
       alert('게시글이 삭제되었습니다.');
       navigate('/board');
     } catch (err) {
@@ -177,9 +177,9 @@ const fetchComments = async (boardId: number) => {
       <div className="flex items-center text-sm text-gray-500 mb-6">
         <div className="w-10 h-10 rounded-full mr-3 overflow-hidden flex items-center justify-center bg-gray-300">
           {board.usersProfileImage ? (
-            <img 
-              src={board.usersProfileImage} 
-              alt={`${board.nickname || board.usersName}'s profile`} 
+            <img
+              src={board.usersProfileImage}
+              alt={`${board.nickname || board.usersName}'s profile`}
               className="w-full h-full object-cover"
             />
           ) : (

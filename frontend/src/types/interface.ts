@@ -287,3 +287,49 @@ export interface ScrapPosts {
   users?: Users;
   jobPosts?: JobPosts;
 }
+
+// Board DTOs
+export interface BoardListResponse {
+  id: number;
+  title: string;
+  content: string;
+  usersId: number;
+  usersName: string;
+  nickname: string;
+  usersProfileImage: string | null;
+  createAt: string;
+  updateAt: string | null;
+  views: number;
+  comments: CommentResponse[];
+}
+
+export interface CommentResponse {
+  id: number;
+  content: string;
+  usersId: number;
+  usersName: string;
+  nickname: string;
+  usersProfileImage: string | null;
+  boardId: number;
+  parentCommentId: number | null;
+  createAt: string;
+  updateAt: string | null;
+}
+
+export interface CreateBoardRequest {
+  title: string;
+  content: string;
+}
+
+export interface CreateCommentRequest {
+  content: string;
+  boardId: number;
+  parentCommentId?: number | null;
+}
+
+// Ads
+export interface Ad {
+  id: number;
+  photo: string;
+  // Add other fields if necessary based on API response
+}
