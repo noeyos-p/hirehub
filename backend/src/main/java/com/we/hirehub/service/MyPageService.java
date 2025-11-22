@@ -279,7 +279,8 @@ public class MyPageService {
                 certs = extractList(root, "certificate");
                 skills = extractList(root, "skill");
                 languages = extractList(root, "language");
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
 
         // Education 저장
@@ -316,27 +317,34 @@ public class MyPageService {
             careerRepo.saveAll(list);
         }
 
-        // Certificate
+        // Certificate 저장
         if (!certs.isEmpty()) {
             List<Certificate> list = new ArrayList<>();
+
             for (Map<String, Object> m : certs) {
-                Certificate c = new Certificate();
-                c.setName(asString(m.get("name")));
-                c.setResume(resume);
+                Certificate c = Certificate.builder()
+                        .name(asString(m.get("name")))
+                        .resume(resume)
+                        .build();
                 list.add(c);
             }
+
             certRepo.saveAll(list);
         }
 
         // Skill
         if (!skills.isEmpty()) {
             List<Skill> list = new ArrayList<>();
+
             for (Map<String, Object> m : skills) {
-                Skill s = new Skill();
-                s.setName(asString(m.get("name")));
-                s.setResume(resume);
+                Skill s = Skill.builder()
+                        .name(asString(m.get("name")))
+                        .resume(resume)
+                        .build();
+
                 list.add(s);
             }
+
             skillRepo.saveAll(list);
         }
 
@@ -344,9 +352,11 @@ public class MyPageService {
         if (!languages.isEmpty()) {
             List<Language> list = new ArrayList<>();
             for (Map<String, Object> m : languages) {
-                Language l = new Language();
-                l.setName(asString(m.get("name")));
-                l.setResume(resume);
+                Language l = Language.builder()
+                        .name(asString(m.get("name")))
+                        .resume(resume)
+                        .build();
+
                 list.add(l);
             }
             languageRepo.saveAll(list);

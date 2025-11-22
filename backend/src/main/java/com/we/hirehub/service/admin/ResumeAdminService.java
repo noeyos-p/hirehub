@@ -270,10 +270,10 @@ public class ResumeAdminService {
     @SuppressWarnings("unchecked")
     private void upsertChildrenFromUpdateMap(Long resumeId, Map<String, Object> updateData) {
         // 배열로 들어온 경우와 문자열(JSON) 모두 처리
-        List<Map<String, Object>> educations     = extractArray(updateData, "educations", "educationJson");
-        List<Map<String, Object>> careers        = extractArray(updateData, "careers", "careerJson");
+        List<Map<String, Object>> educations = extractArray(updateData, "educations", "educationJson");
+        List<Map<String, Object>> careers = extractArray(updateData, "careers", "careerJson");
         List<Map<String, Object>> certifications = extractArray(updateData, "certifications", "certJson");
-        List<Map<String, Object>> skills         = extractArray(updateData, "skills", "skillJson");
+        List<Map<String, Object>> skills = extractArray(updateData, "skills", "skillJson");
         // 언어는 엔티티가 없으므로 저장 스킵
 
         // 전체 갈아끼우기
@@ -312,19 +312,27 @@ public class ResumeAdminService {
 
         // 자격증
         for (Map<String, Object> m : certifications) {
-            Certificate c = new Certificate();
-            c.setName(str(m.get("name")));
-            c.setResume(ref);
+            Certificate c = Certificate.builder()
+                    .name(str(m.get("name")))
+                    .resume(ref)
+                    .build();
             certificateRepository.save(c);
         }
 
         // 스킬
+        List<Skill> skillList = new ArrayList<>();
+
         for (Map<String, Object> m : skills) {
-            Skill s = new Skill();
-            s.setName(str(m.get("name")));
-            s.setResume(ref);
-            skillRepository.save(s);
+            Skill s = Skill.builder()
+                    .name(str(m.get("name")))
+                    .resume(ref)
+                    .build();
+
+            skillList.add(s);
         }
+
+
+        skillRepository.saveAll(skillList);
     }
 
     private List<Map<String, Object>> extractArray(Map<String, Object> map, String arrayKey, String jsonKey) {
