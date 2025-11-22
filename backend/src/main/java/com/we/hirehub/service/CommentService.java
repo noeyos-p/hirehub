@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.CommentDto;
+import com.we.hirehub.dto.support.CommentDto;
 import com.we.hirehub.entity.Board;
 import com.we.hirehub.entity.Comments;
 import com.we.hirehub.entity.Users;

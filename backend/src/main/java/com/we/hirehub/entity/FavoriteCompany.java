@@ -1,12 +1,16 @@
 package com.we.hirehub.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.List;
 
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "favorite_company")
 public class FavoriteCompany {
     @Id

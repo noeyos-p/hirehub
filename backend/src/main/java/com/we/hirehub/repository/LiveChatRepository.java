@@ -30,4 +30,5 @@ public interface LiveChatRepository extends JpaRepository<LiveChat, Long> {
             "WHERE lc.session.id = :sessionId " +
             "ORDER BY lc.createAt DESC")
     List<LiveChat> findBySessionIdWithUser(@Param("sessionId") String sessionId, Pageable pageable);
+
 }

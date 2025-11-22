@@ -1,10 +1,14 @@
 package com.we.hirehub.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "scrap_posts")
 public class ScrapPosts {
     @Id

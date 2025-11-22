@@ -1,6 +1,6 @@
 package com.we.hirehub.service.admin;
 
-import com.we.hirehub.dto.JobPostsDto;
+import com.we.hirehub.dto.job.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.repository.JobPostsRepository; // ✅ [수정] JobPostRepository → JobPostsRepository 로 변경
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class JobPostsAdminService {
         }
 
         // ✅ [수정] Page<JobPosts> → Page<JobPostsDto> 변환
-        return jobPosts.map(this::convertToDto);
+        return jobPosts.map(JobPostsDto::toDto);
     }
 
     // ✅ [추가] 기존 page, size 기반 메서드 (Controller에서 page 파라미터 받는 경우)
@@ -56,7 +56,7 @@ public class JobPostsAdminService {
     public JobPostsDto getJobPostById(Long jobPostId) {
         JobPosts jobPost = jobPostsRepository.findById(jobPostId)
                 .orElseThrow(() -> new IllegalArgumentException("공고를 찾을 수 없습니다: " + jobPostId));
-        return convertToDto(jobPost);
+        return JobPostsDto.toDto(jobPost);
     }
 
     // ✅ 공고 등록
@@ -71,40 +71,22 @@ public class JobPostsAdminService {
         // 3️⃣ 다른 공고 photo 절대 건드리지 않음 (중요)
         //    기존 코드에서 jobPostsRepository.findAll() or updateAll() 같은 루프 절대 넣지 말기!
 
-        return convertToDto(saved);
+        return JobPostsDto.toDto(saved);
     }
 
-    // ✅ 공고 수정
     @Transactional
-    public JobPostsDto updateJobPost(Long jobPostId, JobPosts updateData) {
+    public JobPostsDto updateJobPost(Long jobPostId, JobPostsDto dto) {
         JobPosts jobPost = jobPostsRepository.findById(jobPostId)
                 .orElseThrow(() -> new IllegalArgumentException("공고를 찾을 수 없습니다: " + jobPostId));
 
-        if (updateData.getTitle() != null && !updateData.getTitle().isBlank())
-            jobPost.setTitle(updateData.getTitle());
-        if (updateData.getContent() != null && !updateData.getContent().isBlank())
-            jobPost.setContent(updateData.getContent());
-        if (updateData.getLocation() != null && !updateData.getLocation().isBlank())
-            jobPost.setLocation(updateData.getLocation());
-        if (updateData.getCareerLevel() != null && !updateData.getCareerLevel().isBlank())
-            jobPost.setCareerLevel(updateData.getCareerLevel());
-        if (updateData.getEducation() != null && !updateData.getEducation().isBlank())
-            jobPost.setEducation(updateData.getEducation());
-        if (updateData.getPosition() != null && !updateData.getPosition().isBlank())
-            jobPost.setPosition(updateData.getPosition());
-        if (updateData.getType() != null && !updateData.getType().isBlank())
-            jobPost.setType(updateData.getType());
-        if (updateData.getSalary() != null && !updateData.getSalary().isBlank())
-            jobPost.setSalary(updateData.getSalary());
-        if (updateData.getStartAt() != null)
-            jobPost.setStartAt(updateData.getStartAt());
-        if (updateData.getEndAt() != null)
-            jobPost.setEndAt(updateData.getEndAt());
+        JobPostsDto.updateEntity(dto, jobPost);
 
         validateJobPostDates(jobPost.getStartAt(), jobPost.getEndAt());
         JobPosts updated = jobPostsRepository.save(jobPost);
-        return convertToDto(updated);
+
+        return JobPostsDto.toDto(updated);
     }
+
 
     // ✅ 공고 삭제
     @Transactional
@@ -146,33 +128,5 @@ public class JobPostsAdminService {
         if (endAt.isBefore(today)) {
             throw new IllegalArgumentException("마감일은 오늘 이후여야 합니다");
         }
-    }
-
-    // ✅ DTO 변환
-    private JobPostsDto convertToDto(JobPosts jobPost) {
-        JobPostsDto.CompanyDto companyDto = null;
-        if (jobPost.getCompany() != null) {
-            companyDto = JobPostsDto.CompanyDto.builder()
-                    .id(jobPost.getCompany().getId())
-                    .name(jobPost.getCompany().getName())
-                    .build();
-        }
-
-        return JobPostsDto.builder()
-                .id(jobPost.getId())
-                .title(jobPost.getTitle())
-                .content(jobPost.getContent())
-                .startAt(jobPost.getStartAt())
-                .endAt(jobPost.getEndAt())
-                .location(jobPost.getLocation())
-                .careerLevel(jobPost.getCareerLevel())
-                .education(jobPost.getEducation())
-                .position(jobPost.getPosition())
-                .type(jobPost.getType())
-                .salary(jobPost.getSalary())
-                .photo(jobPost.getPhoto())
-                .company(companyDto)
-                .companyName(jobPost.getCompany() != null ? jobPost.getCompany().getName() : null)
-                .build();
     }
 }

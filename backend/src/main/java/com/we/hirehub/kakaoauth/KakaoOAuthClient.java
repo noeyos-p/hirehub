@@ -1,7 +1,7 @@
 package com.we.hirehub.kakaoauth;
 
-import com.we.hirehub.dto.KakaoTokenResponse;
-import com.we.hirehub.dto.KakaoUserResponse;
+import com.we.hirehub.dto.login.KakaoTokenResponse;
+import com.we.hirehub.dto.login.KakaoUserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;

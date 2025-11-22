@@ -1,7 +1,7 @@
 // src/main/java/com/we/hirehub/naverauth/NaverAuthController.java
 package com.we.hirehub.naverauth;
 
-import com.we.hirehub.dto.NaverAuthResult;
+import com.we.hirehub.dto.login.NaverAuthResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -40,10 +40,13 @@ public class NaverAuthController {
     @GetMapping("/naver/callback")
     public String callback(String code) {
         log.info("네이버 콜백 수신 - code: {}", code);
+
         NaverAuthResult result = service.handleCallback(code, props);
+
         String redirect = props.getFrontRedirectUrl()
-                + "?token=" + java.net.URLEncoder.encode(result.jwt(), java.nio.charset.StandardCharsets.UTF_8)
+                + "?token=" + java.net.URLEncoder.encode(result.getJwt(), java.nio.charset.StandardCharsets.UTF_8)
                 + "&isNewUser=" + result.isNewUser();
+
         log.info("프론트로 리다이렉트: {}", redirect);
         return "redirect:" + redirect;
     }

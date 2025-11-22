@@ -2,7 +2,7 @@ package com.we.hirehub.service.admin;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.we.hirehub.dto.ResumeDto;
+import com.we.hirehub.dto.resume.ResumeDto;
 import com.we.hirehub.entity.*;
 import com.we.hirehub.repository.*;
 import lombok.RequiredArgsConstructor;

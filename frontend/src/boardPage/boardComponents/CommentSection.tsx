@@ -1,10 +1,10 @@
 import React from 'react';
-import type { CommentResponse } from '../../api/boardApi';
+import type { CommentResponse } from '../../types/interface';
 import CommentInput from './CommentInput';
 import CommentItem from './CommentItem';
 
-type CommentWithChildren = CommentResponse & { 
-  children: CommentWithChildren[] 
+type CommentWithChildren = CommentResponse & {
+  children: CommentWithChildren[]
 };
 
 interface CommentSectionProps {
@@ -79,8 +79,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({
           {commentTree.map((comment) => (
             <div key={comment.id}>
               {/* 최상위 댓글 */}
-              <CommentItem 
-                comment={comment} 
+              <CommentItem
+                comment={comment}
                 depth={0}
                 currentUserId={currentUserId}
                 currentUserRole={currentUserRole}
@@ -92,9 +92,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({
               {comment.children.length > 0 && (
                 <div className="ml-10 mt-2 border-l-2 border-gray-200 pl-4 space-y-2">
                   {comment.children.map((child) => (
-                    <CommentItem 
-                      key={child.id} 
-                      comment={child} 
+                    <CommentItem
+                      key={child.id}
+                      comment={child}
                       depth={1}
                       currentUserId={currentUserId}
                       currentUserRole={currentUserRole}

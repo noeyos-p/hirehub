@@ -1,6 +1,7 @@
 // src/myPage/myPageComponents/MyInfo.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../api/api";
+import type { UsersRequest, UsersResponse } from "../../types/interface";
 
 /* 아이콘 (로컬) */
 const Svg = (p: React.SVGProps<SVGSVGElement>) => (
@@ -70,33 +71,13 @@ const EDUCATION_OPTIONS = ["고졸", "초대졸", "대졸", "석사", "박사"];
 // 성별: 코드값은 MALE/FEMALE/UNKNOWN, 라벨은 한글
 const GENDER_LABEL: Record<string, string> = { MALE: "남성", FEMALE: "여성", UNKNOWN: "선택 안 함" };
 
-/* 타입 */
-export type MyProfile = {
-  id?: number;
-  email?: string;
-  nickname?: string;
-  name?: string;
-  phone?: string;
-  birth?: string;     // yyyy-MM-dd
-  age?: number | null;
-  gender?: string;    // MALE/FEMALE/UNKNOWN 권장
-  address?: string;
-  region?: string;    // 선호 지역
-  position?: string;
-  career?: string;
-  education?: string;
-};
-type UpdatableKeys =
-  | "nickname" | "name" | "phone" | "birth" | "gender" | "address"
-  | "region" | "position" | "career" | "education";
-
 /* API */
-async function fetchMe(): Promise<MyProfile> {
+async function fetchMe(): Promise<UsersResponse> {
   const { data } = await api.get(`${API_BASE}/me`);
   return data;
 }
-async function updateMe(partial: Partial<Pick<MyProfile, UpdatableKeys>>): Promise<MyProfile> {
-  const { data } = await api.put(`${API_BASE}/me`, partial, { headers: { "Content-Type": "application/json" } });
+async function updateMe(partial: Partial<UsersRequest>) {
+  const { data } = await api.put(`${API_BASE}/me`, partial);
   return data;
 }
 
@@ -131,24 +112,25 @@ const FieldRow: React.FC<{
 
 /* 페이지 */
 const MyInfo: React.FC = () => {
-  const [me, setMe] = useState<MyProfile | null>(null);
-  const [editing, setEditing] = useState<null | keyof MyProfile>(null);
+  const [me, setMe] = useState<UsersResponse | null>(null);
+  const [editing, setEditing] = useState<null | keyof UsersResponse>(null);
   const [draft, setDraft] = useState<Record<string, any>>({});
   const emailFallback = useMemo(() => readJwtEmail(), []);
 
   useEffect(() => {
     (async () => {
       const data = await fetchMe();
+      console.log("📌 /me 응답:", data);
       setMe(data);
     })().catch(console.error);
   }, []);
 
-  const startEdit = (key: keyof MyProfile, init?: any) => {
+  const startEdit = (key: keyof UsersResponse, init?: any) => {
     setEditing(key);
     setDraft({ [key]: init ?? me?.[key] ?? "" });
   };
   const cancel = () => { setEditing(null); setDraft({}); };
-const commit = async (key: UpdatableKeys) => {
+const commit = async (key: keyof UsersResponse) => {
   try {
     const payload: any = { [key]: draft[key] };
     const updated = await updateMe(payload);
@@ -184,7 +166,7 @@ const commit = async (key: UpdatableKeys) => {
     }
   };
 
-  const ageToShow = useMemo(() => me?.age ?? calcAge(me?.birth), [me]);
+  const ageToShow = useMemo(() => me?.age ?? calcAge(me?.dob), [me]);
   const genderLabel = (code?: string) => (code && GENDER_LABEL[code]) || "-";
 
   return (
@@ -266,11 +248,11 @@ const commit = async (key: UpdatableKeys) => {
               </FieldRow>
 
               {/* 생년월일 */}
-              <FieldRow label="생년월일" value={prettyDate(me?.birth)} onEdit={() => startEdit("birth")} editing={editing === "birth"}>
+              <FieldRow label="생년월일" value={prettyDate(me?.dob)} onEdit={() => startEdit("dob")} editing={editing === "dob"}>
                 <div className="flex items-center gap-2">
                   <input type="date" className="border border-zinc-300 rounded px-3 py-2"
-                    value={draft.birth ?? me?.birth ?? ""} onChange={(e) => setDraft((d) => ({ ...d, birth: e.target.value }))} />
-                  <button className="p-2" onClick={() => commit("birth")}><Check /></button>
+                    value={draft.dob ?? me?.dob ?? ""} onChange={(e) => setDraft((d) => ({ ...d, dob: e.target.value }))} />
+                  <button className="p-2" onClick={() => commit("dob")}><Check /></button>
                   <button className="p-2" onClick={cancel}><X /></button>
                 </div>
               </FieldRow>
@@ -304,14 +286,14 @@ const commit = async (key: UpdatableKeys) => {
               </FieldRow>
 
               {/* 지역(희망근무지역) — 서울 25개 구 셀렉트 */}
-              <FieldRow label="지역" value={me?.region || "-"} onEdit={() => startEdit("region")} editing={editing === "region"}>
+              <FieldRow label="지역" value={me?.location || "-"} onEdit={() => startEdit("location")} editing={editing === "location"}>
                 <div className="flex items-center gap-2 w-full">
                   <select className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.region ?? me?.region ?? ""} onChange={(e) => setDraft((d) => ({ ...d, region: e.target.value }))}>
+                    value={draft.location ?? me?.location ?? ""} onChange={(e) => setDraft((d) => ({ ...d, location: e.target.value }))}>
                     <option value="">선택하세요</option>
                     {SEOUL_DISTRICTS.map((d) => (<option key={d} value={d}>{d}</option>))}
                   </select>
-                  <button className="p-2" onClick={() => commit("region")}><Check /></button>
+                  <button className="p-2" onClick={() => commit("location")}><Check /></button>
                   <button className="p-2" onClick={cancel}><X /></button>
                 </div>
               </FieldRow>
@@ -330,14 +312,14 @@ const commit = async (key: UpdatableKeys) => {
               </FieldRow>
 
               {/* 경력 — 동일 옵션 */}
-              <FieldRow label="경력" value={me?.career || "-"} onEdit={() => startEdit("career")} editing={editing === "career"}>
+              <FieldRow label="경력" value={me?.careerLevel || "-"} onEdit={() => startEdit("careerLevel")} editing={editing === "careerLevel"}>
                 <div className="flex items-center gap-2 w-full">
                   <select className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.career ?? me?.career ?? ""} onChange={(e) => setDraft((d) => ({ ...d, career: e.target.value }))}>
+                    value={draft.careerLevel ?? me?.careerLevel ?? ""} onChange={(e) => setDraft((d) => ({ ...d, careerLevel: e.target.value }))}>
                     <option value="">선택하세요</option>
                     {CAREER_OPTIONS.map((c) => (<option key={c} value={c}>{c}</option>))}
                   </select>
-                  <button className="p-2" onClick={() => commit("career")}><Check /></button>
+                  <button className="p-2" onClick={() => commit("careerLevel")}><Check /></button>
                   <button className="p-2" onClick={cancel}><X /></button>
                 </div>
               </FieldRow>

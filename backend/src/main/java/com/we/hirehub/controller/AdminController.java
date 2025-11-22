@@ -1,6 +1,6 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.ResumeDto;
+import com.we.hirehub.dto.resume.ResumeDto;
 import com.we.hirehub.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

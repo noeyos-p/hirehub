@@ -8,7 +8,8 @@ import {
   ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from 'react-router-dom';
-import { boardApi, type BoardListResponse } from '../../api/boardApi';
+import { boardApi } from '../../api/boardApi';
+import type { BoardListResponse } from '../../types/interface';
 
 const AllPosts: React.FC = () => {
   const navigate = useNavigate();
@@ -262,11 +263,10 @@ const AllPosts: React.FC = () => {
                 <button
                   key={i}
                   onClick={() => setCurrentPage(i)}
-                  className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${
-                    currentPage === i
+                  className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
                       ? 'bg-white text-[#006AFF] border-[#006AFF]'
                       : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
-                  }`}
+                    }`}
                 >
                   {i}
                 </button>

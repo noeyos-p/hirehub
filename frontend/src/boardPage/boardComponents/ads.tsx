@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { boardApi } from '../../api/boardApi';
 
 const Ads: React.FC = () => {
   const [ads, setAds] = useState<string[]>([]);
@@ -8,16 +8,12 @@ const Ads: React.FC = () => {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        // ✅ 상대 경로로 수정 (HTTPS 제거, localhost 제거)
-        const response = await axios.get("/api/ads");
-
-        // ✅ API 응답에서 data 배열 꺼냄
-        const adsData = response.data.data ?? response.data;
+        const adsData = await boardApi.getAds();
 
         // ✅ photo 컬럼만 뽑아서 state에 넣음
         const imageUrls = adsData
-          .map((ad: any) => ad.photo)
-          .filter((photo: string) => photo); // 빈 photo 제외
+          .map((ad) => ad.photo)
+          .filter((photo) => photo); // 빈 photo 제외
 
         setAds(imageUrls);
       } catch (error) {

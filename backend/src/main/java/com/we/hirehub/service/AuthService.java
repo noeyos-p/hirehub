@@ -1,7 +1,7 @@
 // src/main/java/com/we/hirehub/service/AuthService.java
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.SignupEmailRequest;
+import com.we.hirehub.dto.login.SignupEmailRequest;
 import com.we.hirehub.entity.Role;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;

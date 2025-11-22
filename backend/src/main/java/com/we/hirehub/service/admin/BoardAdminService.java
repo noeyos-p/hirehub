@@ -1,6 +1,6 @@
 package com.we.hirehub.service.admin;
 
-import com.we.hirehub.dto.BoardDto;
+import com.we.hirehub.dto.support.BoardDto;
 import com.we.hirehub.entity.Board;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.BoardRepository;

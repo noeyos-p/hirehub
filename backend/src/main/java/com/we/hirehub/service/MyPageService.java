@@ -3,7 +3,13 @@ package com.we.hirehub.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.we.hirehub.dto.*;
+import com.we.hirehub.dto.common.PagedResponse;
+import com.we.hirehub.dto.company.FavoriteDto;
+import com.we.hirehub.dto.job.ApplyDto;
+import com.we.hirehub.dto.resume.ResumeDto;
+import com.we.hirehub.dto.resume.ResumeUpsertRequest;
+import com.we.hirehub.dto.user.UsersRequestDto;
+import com.we.hirehub.dto.user.UsersDto;
 import com.we.hirehub.entity.*;
 import com.we.hirehub.exception.ForbiddenEditException;
 import com.we.hirehub.exception.ResourceNotFoundException;
@@ -85,15 +91,16 @@ public class MyPageService {
      */
     @Transactional
     public ResumeDto create(Long userId, ResumeUpsertRequest req) {
+
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
 
         Resume resume = Resume.builder()
-                .title(req.title())
-                .idPhoto(req.idPhoto())
-                .essayTittle(req.essayTitle())
-                .essayContent(req.essayContent())
-                .htmlContent(req.htmlContent())  // 원본 JSON 보관
+                .title(req.getTitle())
+                .idPhoto(req.getIdPhoto())
+                .essayTittle(req.getEssayTitle())
+                .essayContent(req.getEssayContent())
+                .htmlContent(req.getHtmlContent())
                 .createAt(LocalDate.now())
                 .updateAt(LocalDate.now())
                 .locked(false)
@@ -102,7 +109,7 @@ public class MyPageService {
 
         Resume saved = resumeRepository.save(resume);
 
-        // 섹션 저장 (htmlContent만 있어도 파싱해서 저장)
+        // JSON → 섹션 저장
         upsertSections(saved, req);
 
         return toDto(saved);
@@ -113,26 +120,28 @@ public class MyPageService {
      */
     @Transactional
     public ResumeDto update(Long userId, Long resumeId, ResumeUpsertRequest req) {
+
         Resume resume = resumeRepository.findByIdAndUsers_Id(resumeId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("이력서를 찾을 수 없습니다."));
 
-        if (resume.isLocked() || resumeRepository.existsByIdAndUsers_IdAndLockedTrue(resumeId, userId)) {
+        if (resume.isLocked()) {
             throw new ForbiddenEditException("이미 제출된 이력서는 수정할 수 없습니다.");
         }
 
-        resume.setTitle(req.title());
-        resume.setIdPhoto(req.idPhoto());
-        resume.setEssayTittle(req.essayTitle());
-        resume.setEssayContent(req.essayContent());
-        resume.setHtmlContent(req.htmlContent());
+        resume.setTitle(req.getTitle());
+        resume.setIdPhoto(req.getIdPhoto());
+        resume.setEssayTittle(req.getEssayTitle());
+        resume.setEssayContent(req.getEssayContent());
+        resume.setHtmlContent(req.getHtmlContent());
         resume.setUpdateAt(LocalDate.now());
+
         resumeRepository.save(resume);
 
-        // 섹션 전부 갈아끼우기
         upsertSections(resume, req);
 
         return toDto(resume);
     }
+
 
     /**
      * 삭제
@@ -160,28 +169,14 @@ public class MyPageService {
     /**
      * Resume → DTO (profile 포함)
      */
-    private ResumeDto toDto(Resume r) {
-        Users u = r.getUsers();
-        UserProfileMiniDto profile = null;
-        if (u != null) {
-            profile = new UserProfileMiniDto(
-                    u.getId(),
-                    u.getNickname(),
-                    u.getName(),
-                    u.getPhone(),
-                    u.getGender(),
-                    (u.getDob() != null ? LocalDate.parse(u.getDob()) : null),
-                    u.getAddress(),
-                    u.getEmail()
-            );
+    private ResumeDto toDto(Resume resume) {
+        Users user = resume.getUsers();
+        UsersDto.Profile profile = null;
+        if (user != null) {
+            profile = UsersDto.toProfile(user);
         }
 
-        Long rid = r.getId();
-
-        // ★★ 1) 여기: 리포지토리 메서드 이름을 프로젝트에 맞춰 "findByResumeId" 로 통일 ★★
-        //    (이미 deleteByResumeId(...)를 쓰고 있었다면, find도 같은 규칙으로 만드세요)
-        //    repository 인터페이스에 아래 시그니처 추가 필요:
-        //    List<Education> findByResumeId(Long resumeId);  (등등 동일)
+        Long rid = resume.getId();
 
         List<Map<String, Object>> eduList =
                 educationRepo.findByResumeId(rid).stream().map(e -> {
@@ -231,15 +226,15 @@ public class MyPageService {
                 }).toList();
 
         return new ResumeDto(
-                r.getId(),
-                r.getTitle(),
-                r.getIdPhoto(),
-                r.getEssayTittle(),
-                r.getEssayContent(),
-                r.getHtmlContent(),
-                r.isLocked(),
-                r.getCreateAt(),
-                r.getUpdateAt(),
+                resume.getId(),
+                resume.getTitle(),
+                resume.getIdPhoto(),
+                resume.getEssayTittle(),
+                resume.getEssayContent(),
+                resume.getHtmlContent(),
+                resume.isLocked(),
+                resume.getCreateAt(),
+                resume.getUpdateAt(),
                 profile,
                 null,            // users (관리자용이 아니니 null)
                 eduList,
@@ -258,23 +253,24 @@ public class MyPageService {
 
     @Transactional
     protected void upsertSections(Resume resume, ResumeUpsertRequest req) {
-        final Long rid = resume.getId();
 
-        // 1) 전부 삭제(덮어쓰기 전략)
+        Long rid = resume.getId();
+
+        // 기존 데이터 삭제
         educationRepo.deleteByResumeId(rid);
         careerRepo.deleteByResumeId(rid);
         certRepo.deleteByResumeId(rid);
         skillRepo.deleteByResumeId(rid);
         languageRepo.deleteByResumeId(rid);
 
-        // 2) 입력 소스 만들기 (우선순위: *_Json → htmlContent)
-        List<Map<String, Object>> educations = parseList(req.educationJson());
-        List<Map<String, Object>> careers = parseList(req.careerJson());
-        List<Map<String, Object>> certs = parseList(req.certJson());
-        List<Map<String, Object>> skills = parseList(req.skillJson());
-        List<Map<String, Object>> languages = parseList(req.langJson());
+        // JSON 읽기
+        List<Map<String, Object>> educations = parseList(req.getEducationJson());
+        List<Map<String, Object>> careers = parseList(req.getCareerJson());
+        List<Map<String, Object>> certs = parseList(req.getCertJson());
+        List<Map<String, Object>> skills = parseList(req.getSkillJson());
+        List<Map<String, Object>> languages = parseList(req.getLangJson());
 
-// ★ 폴백 복구: *_Json이 전부 비어 있고, htmlContent가 JSON이면 거기서 추출
+        // htmlContent fallback
         if (allEmpty(educations, careers, certs, skills, languages) && looksJson(resume.getHtmlContent())) {
             try {
                 JsonNode root = om.readTree(resume.getHtmlContent());
@@ -283,85 +279,80 @@ public class MyPageService {
                 certs = extractList(root, "certificate");
                 skills = extractList(root, "skill");
                 languages = extractList(root, "language");
-            } catch (Exception e) {
-                log.warn("htmlContent 파싱 실패: {}", e.getMessage());
-            }
+            } catch (Exception ignore) {}
         }
 
-
-        log.debug("섹션 파싱 결과 - edu:{} career:{} cert:{} skill:{} lang:{}",
-                sizeOf(educations), sizeOf(careers), sizeOf(certs), sizeOf(skills), sizeOf(languages));
-
-        // 3) 저장: Education
+        // Education 저장
         if (!educations.isEmpty()) {
-            List<Education> toSave = new ArrayList<>();
+            List<Education> list = new ArrayList<>();
             for (Map<String, Object> m : educations) {
                 Education e = new Education();
-                e.setName(asString(m.get("name")));     // 학교명
+                e.setName(asString(m.get("name")));
                 e.setMajor(asString(m.get("major")));
                 e.setStatus(asString(m.get("status")));
                 e.setType(asString(m.get("type")));
                 e.setStartAt(parseLocalDate(m.get("startAt")));
                 e.setEndAt(parseLocalDate(m.get("endAt")));
                 e.setResume(resume);
-                toSave.add(e);
+                list.add(e);
             }
-            educationRepo.saveAll(toSave);
+            educationRepo.saveAll(list);
         }
 
-        // 4) 저장: CareerLevel
+        // Career 저장
         if (!careers.isEmpty()) {
-            List<CareerLevel> toSave = new ArrayList<>();
+            List<CareerLevel> list = new ArrayList<>();
             for (Map<String, Object> m : careers) {
                 CareerLevel c = new CareerLevel();
-                c.setCompanyName(asString(m.get("companyName"))); // 키 주의
+                c.setCompanyName(asString(m.get("companyName")));
                 c.setType(asString(m.get("type")));
                 c.setPosition(asString(m.get("position")));
                 c.setStartAt(parseLocalDate(m.get("startAt")));
                 c.setEndAt(parseLocalDate(m.get("endAt")));
                 c.setContent(asString(m.get("content")));
                 c.setResume(resume);
-                toSave.add(c);
+                list.add(c);
             }
-            careerRepo.saveAll(toSave);
+            careerRepo.saveAll(list);
         }
 
-        // 5) 저장: Certificate
+        // Certificate
         if (!certs.isEmpty()) {
-            List<Certificate> toSave = new ArrayList<>();
+            List<Certificate> list = new ArrayList<>();
             for (Map<String, Object> m : certs) {
                 Certificate c = new Certificate();
                 c.setName(asString(m.get("name")));
                 c.setResume(resume);
-                toSave.add(c);
+                list.add(c);
             }
-            certRepo.saveAll(toSave);
+            certRepo.saveAll(list);
         }
 
-        // 6) 저장: Skill
+        // Skill
         if (!skills.isEmpty()) {
-            List<Skill> toSave = new ArrayList<>();
+            List<Skill> list = new ArrayList<>();
             for (Map<String, Object> m : skills) {
                 Skill s = new Skill();
                 s.setName(asString(m.get("name")));
                 s.setResume(resume);
-                toSave.add(s);
+                list.add(s);
             }
-            skillRepo.saveAll(toSave);
+            skillRepo.saveAll(list);
         }
 
-        // 7) 저장: Language
+        // Language
         if (!languages.isEmpty()) {
-            List<Language> toSave = new ArrayList<>();
+            List<Language> list = new ArrayList<>();
             for (Map<String, Object> m : languages) {
                 Language l = new Language();
                 l.setName(asString(m.get("name")));
                 l.setResume(resume);
-                toSave.add(l);
+                list.add(l);
             }
-            languageRepo.saveAll(toSave);
+            languageRepo.saveAll(list);
         }
     }
+
 
     /* ------- 유틸: JSON 파싱 & 변환 ------- */
 
@@ -446,56 +437,27 @@ public class MyPageService {
      *                [2] 내 프로필 (온보딩)
      * ========================================================== */
 
-    public MyProfileDto getProfile(Long userId) {
-        Users u = userRepository.findById(userId)
+    public UsersDto.Profile getProfile(Long userId) {
+        Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
 
-        MyProfileDto dto = new MyProfileDto();
-        dto.setId(u.getId());
-        dto.setEmail(u.getEmail());
-        dto.setNickname(u.getNickname());
-        dto.setName(u.getName());
-        dto.setPhone(u.getPhone());
-        dto.setGender(u.getGender());
-        dto.setAddress(u.getAddress());
-        dto.setPosition(u.getPosition());
-        dto.setEducation(u.getEducation());
-
-        LocalDate birth = (u.getDob() != null ? LocalDate.parse(u.getDob()) : null);
-        dto.setBirth(birth);
-        if (birth != null) {
-            int age = LocalDate.now().getYear() - birth.getYear();
-            if (LocalDate.now().getDayOfYear() < birth.getDayOfYear()) age--;
-            dto.setAge(Math.max(age, 0));
-        }
-        dto.setRegion(u.getLocation());
-        dto.setCareer(u.getCareerLevel());
-        return dto;
+        return UsersDto.toProfile(user);
     }
 
     @Transactional
-    public MyProfileDto updateProfile(Long userId, MyProfileUpdateRequest req) {
-        Users u = userRepository.findById(userId)
+    public UsersDto.Profile updateProfile(Long userId, UsersRequestDto dto) {
+        Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
         // 닉네임 중복 체크
-        if (req.getNickname() != null && !req.getNickname().equals(u.getNickname())) {
-            boolean exists = userRepository.existsByNickname(req.getNickname());
+        if (dto.getNickname() != null && !dto.getNickname().equals(user.getNickname())) {
+            boolean exists = userRepository.existsByNickname(dto.getNickname());
             if (exists) {
                 throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
             }
-            u.setNickname(req.getNickname());
         }
-        if (req.getName() != null) u.setName(req.getName());
-        if (req.getPhone() != null) u.setPhone(req.getPhone());
-        if (req.getGender() != null) u.setGender(req.getGender());
-        if (req.getAddress() != null) u.setAddress(req.getAddress());
-        if (req.getPosition() != null) u.setPosition(req.getPosition());
-        if (req.getEducation() != null) u.setEducation(req.getEducation());
-        if (req.getBirth() != null) u.setDob(req.getBirth().toString());
-        if (req.getRegion() != null) u.setLocation(req.getRegion());
-        if (req.getCareer() != null) u.setCareerLevel(req.getCareer());
-        userRepository.save(u);
-        return getProfile(u.getId());
+        dto.toEntity(user);
+        usersRepository.save(user);
+        return UsersDto.toProfile(user);
     }
 
     /* ==========================================================
@@ -511,46 +473,63 @@ public class MyPageService {
 
     // --- 즐겨찾기 기업: 컨트롤러 시그니처 그대로 ---
     @Transactional
-    public FavoriteCompanySummaryDto addFavoriteCompany(Long userId, Long companyId) {
+    public FavoriteDto.FavoriteCompanyDto addFavoriteCompany(Long userId, Long companyId) {
+
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
+
         var company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("회사를 찾을 수 없습니다. id=" + companyId));
 
-        var existed = favoriteCompanyRepository.findByUsers_IdAndCompany_Id(userId, companyId).orElse(null);
-        if (existed != null) return toSummary(existed);
+        var existed = favoriteCompanyRepository
+                .findByUsers_IdAndCompany_Id(userId, companyId)
+                .orElse(null);
+
+        if (existed != null) {
+            var dto = FavoriteDto.FavoriteCompanyDto.toDto(existed);
+            dto.setPostCount(jobPostsRepository.countByCompany_Id(dto.getCompanyId()));
+            return dto;
+        }
 
         var fav = new FavoriteCompany();
         fav.setUsers(user);
         fav.setCompany(company);
+
         var saved = favoriteCompanyRepository.save(fav);
-        return toSummary(saved);
+
+        var dto = FavoriteDto.FavoriteCompanyDto.toDto(saved);
+        dto.setPostCount(jobPostsRepository.countByCompany_Id(dto.getCompanyId()));
+
+        return dto;
     }
 
-    public PagedResponse<FavoriteCompanySummaryDto> listFavoriteCompanies(Long userId, int page, int size) {
+
+    public PagedResponse<FavoriteDto.FavoriteCompanyDto> listFavoriteCompanies(Long userId, int page, int size) {
+
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         var p = favoriteCompanyRepository.findByUsers_Id(userId, pageable);
-        var items = p.getContent().stream().map(this::toSummary).toList();
-        return new PagedResponse<>(items, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
+
+        var items = p.getContent().stream()
+                .map(entity -> {
+                    var dto = FavoriteDto.FavoriteCompanyDto.toDto(entity);
+                    dto.setPostCount(jobPostsRepository.countByCompany_Id(dto.getCompanyId()));
+                    return dto;
+                })
+                .toList();
+
+        return new PagedResponse<>(
+                items,
+                p.getNumber(),
+                p.getSize(),
+                p.getTotalElements(),
+                p.getTotalPages()
+        );
     }
+
 
     @Transactional
     public void removeFavoriteCompany(Long userId, Long companyId) {
         favoriteCompanyRepository.deleteByUsers_IdAndCompany_Id(userId, companyId);
-    }
-
-    private FavoriteCompanySummaryDto toSummary(FavoriteCompany fc) {
-        var company = fc.getCompany();
-        long openCount = (company != null && company.getId() != null)
-                ? jobPostsRepository.countByCompany_Id(company.getId())
-                : 0L;
-
-        return new FavoriteCompanySummaryDto(
-                fc.getId(),
-                company != null ? company.getId() : null,
-                company != null ? company.getName() : null,
-                openCount
-        );
     }
 
     @Transactional

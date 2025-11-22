@@ -2,13 +2,14 @@ package com.we.hirehub.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.we.hirehub.dto.ChatBotDto;
-import com.we.hirehub.dto.FaqCategoryDto;
-import com.we.hirehub.dto.FaqItemDto;
+import com.we.hirehub.dto.chat.ChatBotDto;
+import com.we.hirehub.dto.support.FaqCategoryDto;
+import com.we.hirehub.dto.support.FaqItemDto;
+import com.we.hirehub.entity.ChatBot;
 import com.we.hirehub.repository.ChatBotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,10 +48,9 @@ public class ChatBotService {
     }
 
     /**
-     * 계층형 FAQ 전체 조회 (캐싱)
+     * 계층형 FAQ 전체 조회
      */
     @Transactional(readOnly = true)
-    @Cacheable(value = "faqCategories", unless = "#result.isEmpty()")
     public List<FaqCategoryDto> getFaqCategoriesFromDb() {
         log.debug("FAQ 계층형 카테고리 조회 시작");
 

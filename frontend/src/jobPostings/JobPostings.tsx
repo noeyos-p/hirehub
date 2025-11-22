@@ -12,8 +12,9 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
-import JobDetail from "./jopPostingComponents/JobDetail"; // 'jop' 오타로 보임, 'job'으로 수정 권장
-import api from "../api/api";
+import JobDetail from "./jopPostingComponents/JobDetail";
+import { jobPostApi } from "../api/jobPostApi";
+import type { JobPostResponse, ResumeResponse } from "../types/interface";
 
 const JobPostings: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -28,13 +29,13 @@ const JobPostings: React.FC = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
-  const [jobListings, setJobListings] = useState<any[]>([]);
+  const [jobListings, setJobListings] = useState<JobPostResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [favoritedCompanies, setFavoritedCompanies] = useState<Set<number>>(new Set());
   const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [resumes, setResumes] = useState<any[]>([]);
+  const [resumes, setResumes] = useState<ResumeResponse[]>([]);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const itemsPerPage = 10;
@@ -68,8 +69,7 @@ const JobPostings: React.FC = () => {
 
   const fetchFavorites = async () => {
     try {
-      const res = await api.get("/api/mypage/favorites/companies?page=0&size=1000");
-      const items = res.data.rows || res.data.content || res.data.items || [];
+      const items = await jobPostApi.getFavoriteCompanies();
       const companyIds = new Set<number>(
         items.map((item: any) => Number(item.companyId)).filter((id: number) => !isNaN(id))
       );
@@ -87,8 +87,8 @@ const JobPostings: React.FC = () => {
       setIsLoading(true);
       setError("");
       try {
-        const response = await api.get("/api/jobposts");
-        setJobListings(response.data);
+        const data = await jobPostApi.getJobPosts();
+        setJobListings(data);
       } catch (err: any) {
         setError(err.response?.data?.message || "채용공고를 불러오는데 실패했습니다.");
       } finally {
@@ -112,8 +112,7 @@ const JobPostings: React.FC = () => {
   useEffect(() => {
     const fetchScrappedJobs = async () => {
       try {
-        const res = await api.get("/api/mypage/favorites/jobposts?page=0&size=1000");
-        const items = res.data.rows || res.data.content || [];
+        const items = await jobPostApi.getScrappedJobs();
         const jobIds = new Set<number>(
           items.map((item: any) => Number(item.jobPostId)).filter((id: number) => !isNaN(id))
         );
@@ -140,21 +139,17 @@ const JobPostings: React.FC = () => {
     const isFavorited = favoritedCompanies.has(companyId);
     try {
       if (isFavorited) {
-        const res = await api.delete(`/api/mypage/favorites/companies/${companyId}`);
-        if (res.status === 204 || res.status === 200) {
-          setFavoritedCompanies((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(companyId);
-            return newSet;
-          });
-          window.dispatchEvent(new CustomEvent("favorite-changed"));
-        }
+        await jobPostApi.removeFavoriteCompany(companyId);
+        setFavoritedCompanies((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(companyId);
+          return newSet;
+        });
+        window.dispatchEvent(new CustomEvent("favorite-changed"));
       } else {
-        const res = await api.post(`/api/mypage/favorites/companies/${companyId}`);
-        if (res.status === 200 && res.data) {
-          setFavoritedCompanies((prev) => new Set(prev).add(companyId));
-          window.dispatchEvent(new CustomEvent("favorite-changed"));
-        }
+        await jobPostApi.addFavoriteCompany(companyId);
+        setFavoritedCompanies((prev) => new Set(prev).add(companyId));
+        window.dispatchEvent(new CustomEvent("favorite-changed"));
       }
     } catch (err: any) {
       let errorMsg = "즐겨찾기 처리에 실패했습니다.";
@@ -172,19 +167,15 @@ const JobPostings: React.FC = () => {
     const isScrapped = scrappedJobs.has(jobId);
     try {
       if (isScrapped) {
-        const res = await api.delete(`/api/mypage/favorites/jobposts/${jobId}`);
-        if (res.status === 204 || res.status === 200) {
-          setScrappedJobs((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(jobId);
-            return newSet;
-          });
-        }
+        await jobPostApi.removeScrapJob(jobId);
+        setScrappedJobs((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(jobId);
+          return newSet;
+        });
       } else {
-        const res = await api.post(`/api/mypage/favorites/jobposts/${jobId}`);
-        if (res.status === 200 && res.data) {
-          setScrappedJobs((prev) => new Set(prev).add(jobId));
-        }
+        await jobPostApi.addScrapJob(jobId);
+        setScrappedJobs((prev) => new Set(prev).add(jobId));
       }
     } catch (err: any) {
       let errorMsg = "북마크 처리에 실패했습니다.";
@@ -199,7 +190,7 @@ const JobPostings: React.FC = () => {
 
   const handleJobClick = async (jobId: number) => {
     try {
-      await api.post(`/api/jobposts/${jobId}/views`);
+      await jobPostApi.incrementJobView(jobId);
       setJobListings((prev) =>
         prev.map((j) => (j.id === jobId ? { ...j, views: (j.views ?? 0) + 1 } : j))
       );
@@ -217,11 +208,8 @@ const JobPostings: React.FC = () => {
   // 이력서 목록 가져오기
   const fetchResumes = async () => {
     try {
-      const { data } = await api.get("/api/mypage/resumes", {
-        params: { page: 0, size: 50 },
-      });
-      const list: any[] = data?.items ?? data?.content ?? [];
-      setResumes(list.filter((r: any) => !r.locked));
+      const list = await jobPostApi.getResumes();
+      setResumes(list.filter((r) => !r.locked));
     } catch (e) {
       alert("이력서 목록을 불러올 수 없습니다.");
     }
@@ -242,7 +230,7 @@ const JobPostings: React.FC = () => {
     if (!confirm("선택한 이력서로 지원하시겠습니까? 제출 후에는 이력서를 수정할 수 없습니다.")) return;
     try {
       setIsApplying(true);
-      await api.post("/api/mypage/applies", {
+      await jobPostApi.applyToJob({
         jobPostId: selectedJobId,
         resumeId: selectedResumeId,
       });
@@ -353,10 +341,10 @@ const JobPostings: React.FC = () => {
       return filterType === "position"
         ? "직무"
         : filterType === "experience"
-        ? "경력"
-        : filterType === "education"
-        ? "학력"
-        : "희망지역";
+          ? "경력"
+          : filterType === "education"
+            ? "학력"
+            : "희망지역";
     }
     return value;
   };
@@ -388,12 +376,11 @@ const JobPostings: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {resumes.map((resume: any) => (
+                {resumes.map((resume) => (
                   <label
                     key={resume.id}
-                    className={`block border rounded-lg p-4 cursor-pointer transition-all ${
-                      selectedResumeId === resume.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    className={`block border rounded-lg p-4 cursor-pointer transition-all ${selectedResumeId === resume.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <input
@@ -501,9 +488,8 @@ const JobPostings: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => handleFilterSelect("position", option.value)}
-                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
-                      filters.position === option.value ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${filters.position === option.value ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -520,9 +506,8 @@ const JobPostings: React.FC = () => {
             >
               <span>{getDisplayLabel("experience")}</span>
               <ChevronDownIcon
-                className={`w-4 h-4 text-gray-500 transition-transform ${
-                  openDropdown === "experience" ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === "experience" ? "rotate-180" : ""
+                  }`}
               />
             </button>
             {openDropdown === "experience" && (
@@ -531,9 +516,8 @@ const JobPostings: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => handleFilterSelect("experience", option.value)}
-                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
-                      filters.experience === option.value ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${filters.experience === option.value ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -559,9 +543,8 @@ const JobPostings: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => handleFilterSelect("education", option.value)}
-                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
-                      filters.education === option.value ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${filters.education === option.value ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -587,9 +570,8 @@ const JobPostings: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => handleFilterSelect("location", option.value)}
-                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${
-                      filters.location === option.value ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition ${filters.location === option.value ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -606,8 +588,8 @@ const JobPostings: React.FC = () => {
             {companyFilter
               ? `${companyFilter}의 채용 공고가 없습니다.`
               : searchQuery
-              ? "검색 결과가 없습니다."
-              : "채용 공고가 없습니다."}
+                ? "검색 결과가 없습니다."
+                : "채용 공고가 없습니다."}
           </div>
         ) : (
           <>
@@ -705,11 +687,10 @@ const JobPostings: React.FC = () => {
                     <button
                       key={i}
                       onClick={() => setCurrentPage(i)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${
-                        currentPage === i
+                      className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
                           ? "bg-white text-[#006AFF] border-[#006AFF]"
                           : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
-                      }`}
+                        }`}
                     >
                       {i}
                     </button>

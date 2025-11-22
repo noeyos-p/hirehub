@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import api from "../../api/api";
+import type { ScrapPostResponse, PagedResponse } from "../../types/interface";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
 const prettyMDW = (iso?: string) => {
@@ -11,22 +12,6 @@ const prettyMDW = (iso?: string) => {
   const dd = String(d.getDate()).padStart(2, "0");
   const w = yoil[d.getDay()];
   return `${mm}.${dd}(${w})`;
-};
-
-const deepPick = (obj: any, paths: string[], def: any = "") => {
-  for (const p of paths) {
-    const v = p.split(".").reduce((acc: any, k) => (acc && acc[k] != null ? acc[k] : undefined), obj);
-    if (v !== undefined && v !== null && v !== "") return v;
-  }
-  return def;
-};
-
-type NoticeItem = {
-  id: number;        // jobPostId
-  company: string;
-  title: string;
-  info: string;
-  deadline: string;
 };
 
 type ResumeItem = {
@@ -41,7 +26,7 @@ type ResumeItem = {
 const LS_APPLIED = "hirehub_applied_job_ids";
 
 const FavoriteNotices: React.FC = () => {
-  const [notices, setNotices] = useState<NoticeItem[]>([]);
+  const [notices, setNotices] = useState<ScrapPostResponse[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -82,28 +67,14 @@ const FavoriteNotices: React.FC = () => {
     return [];
   };
 
-  const mapRow = (r: any): NoticeItem | null => {
-    const rawId = deepPick(r, ["jobPostId", "id", "postId", "jobPost.id"]);
-    const idNum = Number(rawId);
-    if (!rawId || Number.isNaN(idNum)) return null;
-
-    const company = String(deepPick(r, ["companyName", "company", "corpName", "jobPost.companyName", "jobPost.company.name"], ""));
-    const title = String(deepPick(r, ["title", "jobPostTitle", "jobPost.title"], ""));
-    const loc = String(deepPick(r, ["location", "region", "addr", "jobPost.location"], ""));
-    const career = String(deepPick(r, ["career", "careerLevel", "jobPost.careerLevel"], ""));
-    const edu = String(deepPick(r, ["education", "edu", "jobPost.education"], ""));
-    const info = [career, loc, edu].filter(Boolean).join(", ");
-    const endIso = String(deepPick(r, ["endAt", "deadline", "dueDate", "jobPost.endAt"], ""));
-    const deadline = prettyMDW(endIso);
-    return { id: idNum, company, title, info, deadline };
-  };
-
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/api/mypage/favorites/jobposts", { params: { page: 0, size: 100 } });
-      const raw = firstArrayIn(data);
-      const list = raw.map(mapRow).filter(Boolean) as NoticeItem[];
+      const { data } = await api.get<PagedResponse<ScrapPostResponse>>(
+        "/api/mypage/favorites/jobposts", 
+        { params: { page: 0, size: 100 } }
+      );
+      const list = firstArrayIn(data) as ScrapPostResponse[];
       setNotices(list);
       setSelectedIds([]);
     } catch (e: any) {
@@ -207,7 +178,7 @@ const FavoriteNotices: React.FC = () => {
       setIsApplying(true);
       await api.post("/api/mypage/applies", { jobPostId: applyTargetJobId, resumeId: selectedResumeId });
       alert("지원이 완료되었습니다!");
-      markApplied(applyTargetJobId); // ✅ 바로 ‘지원 완료’ 상태 반영
+      markApplied(applyTargetJobId); // ✅ 바로 '지원 완료' 상태 반영
       setShowApplyModal(false);
       setApplyTargetJobId(null);
       setSelectedResumeId(null);
@@ -320,7 +291,7 @@ const FavoriteNotices: React.FC = () => {
         {notices.length === 0 && !loading && <div className="text-sm text-gray-500">스크랩한 공고가 없습니다.</div>}
 
         {notices.map((n) => {
-          const applied = appliedIds.has(n.id);
+          const applied = appliedIds.has(n.jobPostId);
           return (
             <div key={n.id} className="flex items-center justify-between border-b border-gray-200 pb-4">
               <div className="flex items-start gap-3">
@@ -332,15 +303,14 @@ const FavoriteNotices: React.FC = () => {
                   disabled={loading}
                 />
                 <div>
-                  <div className="text-gray-900 font-semibold">{n.company}</div>
+                  <div className="text-gray-900 font-semibold">{n.companyName}</div>
                   <div className="text-gray-700 mt-1">{n.title}</div>
-                  <div className="text-sm text-gray-500 mt-1">{n.info}</div>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-2">
                 <button
-                  onClick={() => openApplyModal(n.id)}
+                  onClick={() => openApplyModal(n.jobPostId)}
                   disabled={applied}
                   className={`text-sm px-4 py-1.5 rounded-md ${
                     applied
@@ -350,7 +320,7 @@ const FavoriteNotices: React.FC = () => {
                 >
                   {applied ? "지원 완료" : "지원하기"}
                 </button>
-                <span className="text-sm text-gray-500">- {n.deadline}</span>
+                <span className="text-sm text-gray-500">- {prettyMDW(n.endAt)}</span>
               </div>
             </div>
           );

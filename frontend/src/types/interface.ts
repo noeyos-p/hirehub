@@ -37,7 +37,7 @@ export interface Session {
   id: string;
   users_id: number;
   ctx: Record<string, any>; // JSON -> object
-  
+
   // OneToMany relationships (optional - only when fetching with relations)
   liveChats?: LiveChat[];
   chatBots?: ChatBot[];
@@ -52,7 +52,7 @@ export interface Board {
   create_at: string; // LocalDateTime -> string
   update_at: string | null;
   views: number;
-  
+
   // OneToMany relationships (optional - only when fetching with relations)
   comments?: Comments[];
 }
@@ -65,7 +65,7 @@ export interface Comments {
   comment_id: number | null; // parent comment for replies
   create_at: string; // LocalDateTime -> string
   update_at: string | null;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   users?: Users;
   board?: Board;
@@ -88,7 +88,7 @@ export interface Users {
   address: string | null;
   location: string | null; // 선호하는 지역
   role: Role;
-  
+
   // OneToMany relationships (optional - only when fetching with relations)
   chatBots?: ChatBot[];
   helps?: Help[];
@@ -102,13 +102,44 @@ export interface Users {
   scrapPosts?: ScrapPosts[];
 }
 
+export interface UsersResponse {
+  id: number;
+  email: string;
+  nickname: string;
+  name: string;
+  phone: string;
+  dob: string;
+  age: number | null;
+  gender: string;
+  address: string;
+  location: string;
+  position: string;
+  careerLevel: string;
+  education: string;
+}
+
+
+export interface UsersRequest {
+  name: string;
+  nickname: string;
+  phone: string;
+  dob: string;        // LocalDate → "yyyy-MM-dd"
+  gender: string;
+  address: string;
+  location: string;
+  position: string;
+  careerLevel: string;
+  education: string;
+  age?: number;       // 선택값 (백엔드에서도 optional)
+}
+
 export interface Review {
   id: number;
   score: number;
   content: string | null;
   users_id: number;
   company_id: number;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   users?: Users;
   company?: Company;
@@ -125,7 +156,7 @@ export interface Company {
   industry: string;
   ceo: string;
   photo: string | null; // AWS S3 URL
-  
+
   // OneToMany relationships (optional - only when fetching with relations)
   jobPosts?: JobPosts[];
   reviews?: Review[];
@@ -158,7 +189,7 @@ export interface FaqQuestion {
   tags: string | null;
   create_at: string; // LocalDateTime -> string
   update_at: string | null;
-  
+
   // OneToMany relationships (optional - only when fetching with relations)
   faqAnswers?: FaqAnswer[];
 }
@@ -176,18 +207,20 @@ export interface JobPosts {
   type: string; // 고용형태
   salary: string; // 급여
   company_id: number;
-  
+
   // OneToMany relationships (optional - only when fetching with relations)
   apply?: Apply;
   scrapPosts?: ScrapPosts[];
 }
+
+
 
 export interface Apply {
   id: number;
   resume_id: number;
   job_posts_id: number; // JobPosts FK
   apply_at: string; // LocalDate -> string (YYYY-MM-DD)
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   resume?: Resume;
   jobPosts?: JobPosts;
@@ -203,7 +236,7 @@ export interface Resume {
   create_at: string; // LocalDate -> string (YYYY-MM-DD)
   update_at: string | null;
   locked: boolean; // 지원완료 된 이력서 여부
-  
+
   // OneToMany relationships (optional - only when fetching with relations)
   education?: Education[];
   careerLevel?: CareerLevel[];
@@ -222,7 +255,7 @@ export interface Education {
   start_at: string; // LocalDate -> string (YYYY-MM-DD)
   end_at: string | null;
   resume_id: number;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   resume?: Resume;
 }
@@ -236,7 +269,7 @@ export interface CareerLevel {
   end_at: string | null;
   content: string;
   resume_id: number | null;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   resume?: Resume;
 }
@@ -245,7 +278,7 @@ export interface Certificate {
   id: number;
   name: string;
   resume_id: number | null;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   resume?: Resume;
 }
@@ -254,7 +287,7 @@ export interface Language {
   id: number;
   name: string;
   resume_id: number | null;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   resume?: Resume;
 }
@@ -263,7 +296,7 @@ export interface Skill {
   id: number;
   name: string;
   resume_id: number | null;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   resume?: Resume;
 }
@@ -272,18 +305,161 @@ export interface FavoriteCompany {
   id: number;
   users_id: number;
   company_id: number;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   users?: Users;
   company?: Company;
 }
 
+export interface FavoriteCompanyResponse {
+  id: number;            
+  userId?: number;       
+  companyId: number;
+  companyName: string;
+  postCount: number;  
+};
+
+export interface FavoriteCompanyGroup {
+  companyId: number;
+  companyName: string;
+  postCount: number;
+  ids: number[];
+}
+
+
 export interface ScrapPosts {
   id: number;
   users_id: number;
   job_posts_id: number;
-  
+
   // ManyToOne relationships (optional - only when fetching with relations)
   users?: Users;
   jobPosts?: JobPosts;
+}
+
+export interface ScrapPostResponse {
+  id: number;
+  userId: number;
+  jobPostId: number;
+  title: string;
+  companyName: string;
+  endAt: string; // LocalDate -> string (YYYY-MM-DD)
+}
+
+// Board DTOs
+export interface BoardListResponse {
+  id: number;
+  title: string;
+  content: string;
+  usersId: number;
+  usersName: string;
+  nickname: string;
+  usersProfileImage: string | null;
+  createAt: string;
+  updateAt: string | null;
+  views: number;
+  comments: CommentResponse[];
+}
+
+export interface CommentResponse {
+  id: number;
+  content: string;
+  usersId: number;
+  usersName: string;
+  nickname: string;
+  usersProfileImage: string | null;
+  boardId: number;
+  parentCommentId: number | null;
+  createAt: string;
+  updateAt: string | null;
+}
+
+export interface CreateBoardRequest {
+  title: string;
+  content: string;
+}
+
+export interface CreateCommentRequest {
+  content: string;
+  boardId: number;
+  parentCommentId?: number | null;
+}
+
+// Ads
+export interface Ad {
+  id: number;
+  photo: string;
+  // Add other fields if necessary based on API response
+}
+
+// Job Postings DTOs
+export interface JobPostResponse {
+  id: number;
+  title: string;
+  companyName: string;
+  companyId: number;
+  views: number;
+  careerLevel: string;
+  position: string;
+  education: string;
+  type?: string;
+  location: string;
+  salary?: string;
+  startAt?: string;
+  endAt: string;
+  content?: string;
+  photo?: string;
+}
+
+export interface CompanyResponse {
+  id: number;
+  name: string;
+  description: string;
+  content: string;
+  address: string;
+  website: string;
+  since: string;
+  industry: string;
+  benefits: string;
+  ceo: string;
+  photo?: string;
+}
+
+export interface ReviewResponse {
+  id: number;
+  usersId: number;
+  nickname: string;
+  content: string;
+  score: number;
+  date?: string;
+}
+
+export interface ResumeResponse {
+  id: number;
+  title: string;
+  locked: boolean;
+  createAt: string;
+  updateAt: string;
+}
+
+export interface CreateReviewRequest {
+  content: string;
+  score: number;
+  companyId: number;
+  date: string;
+}
+
+export interface ApplyRequest {
+  jobPostId: number;
+  resumeId: number;
+}
+
+export interface PagedResponse<T> {
+  items?: T[];
+  content?: T[];
+  rows?: T[];
+  page?: number;
+  size?: number;
+  totalElements?: number;
+  totalPages?: number;
 }

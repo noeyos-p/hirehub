@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import type { CommentResponse } from '../../api/boardApi';
+import type { CommentResponse } from '../../types/interface';
 import CommentInput from './CommentInput';
 
-type CommentWithChildren = CommentResponse & { 
-  children: CommentWithChildren[] 
+type CommentWithChildren = CommentResponse & {
+  children: CommentWithChildren[]
 };
 
 interface CommentItemProps {
@@ -47,9 +47,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
     return (
       <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-gray-300 flex-shrink-0">
         {comment.usersProfileImage ? (
-          <img 
-            src={comment.usersProfileImage} 
-            alt={`${displayName}'s profile`} 
+          <img
+            src={comment.usersProfileImage}
+            alt={`${displayName}'s profile`}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -73,7 +73,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       <div className={`${isReply ? 'mt-4' : 'mt-6'}`}>
         <div className="flex items-start space-x-3">
           {renderProfileImage()}
-          
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center space-x-2">
@@ -84,7 +84,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   {formatDateTime(comment.createAt)}
                 </p>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 {isAuthenticated && (
                   <button
@@ -104,7 +104,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 )}
               </div>
             </div>
-            
+
             <p className="text-sm text-gray-800 break-words whitespace-pre-line">
               {comment.content}
             </p>
@@ -127,9 +127,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
       {depth > 0 && comment.children.length > 0 && (
         <>
           {comment.children.map(child => (
-            <CommentItem 
-              key={child.id} 
-              comment={child} 
+            <CommentItem
+              key={child.id}
+              comment={child}
               depth={1}
               currentUserId={currentUserId}
               currentUserRole={currentUserRole}

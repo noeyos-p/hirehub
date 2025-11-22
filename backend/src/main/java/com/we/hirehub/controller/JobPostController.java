@@ -1,8 +1,11 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.*;
+import com.we.hirehub.dto.common.CalendarSummaryDto;
+import com.we.hirehub.dto.common.PagedResponse;
+import com.we.hirehub.dto.company.FavoriteDto;
+import com.we.hirehub.dto.job.JobPostsDto;
 import com.we.hirehub.service.JobPostScrapService;
-import com.we.hirehub.service.JobPostServiceImpl;
+import com.we.hirehub.service.JobPostService;
 import com.we.hirehub.service.JobPostsCalendarService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;  // ✅ 추가
@@ -23,7 +26,7 @@ public class JobPostController {
 
     private final JobPostScrapService jobPostScrapService;
     private final JobPostsCalendarService jobPostsCalendarService;
-    private final JobPostServiceImpl jobPostServiceImpl;
+    private final JobPostService jobPostService;
 
     private Long userId(Authentication auth) {
         if (auth == null) {
@@ -47,13 +50,13 @@ public class JobPostController {
     @GetMapping
     public List<JobPostsDto> getAllJobPosts() {
         log.info("🌐 GET /api/jobposts - getAllJobPosts 호출됨");
-        return jobPostServiceImpl.getAllJobPosts();
+        return jobPostService.getAllJobPosts();
     }
 
     @GetMapping("/{id}")
     public JobPostsDto getJobPostById(@PathVariable Long id) {
         log.info("🌐 GET /api/jobposts/{} - Controller 진입!", id);
-        JobPostsDto result = jobPostServiceImpl.getJobPostById(id);
+        JobPostsDto result = jobPostService.getJobPostById(id);
         log.info("🌐 Controller 반환 photo: {}", result.getPhoto());
         return result;
     }
@@ -61,24 +64,24 @@ public class JobPostController {
     @GetMapping("/search")
     public List<JobPostsDto> searchJobPosts(@RequestParam String keyword) {
         log.info("🌐 GET /api/jobposts/search?keyword={}", keyword);
-        return jobPostServiceImpl.searchJobPosts(keyword);
+        return jobPostService.searchJobPosts(keyword);
     }
 
     @PostMapping
     public JobPostsDto createJobPost(@RequestBody JobPostsDto jobPostsDto) {
         log.info("🌐 POST /api/jobposts - createJobPost 호출됨");
-        return jobPostServiceImpl.createJobPost(jobPostsDto);
+        return jobPostService.createJobPost(jobPostsDto);
     }
 
     @PostMapping("/{jobPostId}/scrap")
-    public ResponseEntity<FavoriteJobPostSummaryDto> scrap(Authentication auth,
-                                                           @PathVariable Long jobPostId) {
+    public ResponseEntity<FavoriteDto.ScrapPostsDto> scrap(Authentication auth,
+                                             @PathVariable Long jobPostId) {
         Long uid = userId(auth);
         return ResponseEntity.ok(jobPostScrapService.add(uid, jobPostId));
     }
 
     @GetMapping("/calendar")
-    public List<CalendarDayDto> getCalendar(
+    public List<CalendarSummaryDto> getCalendar(
             @RequestParam LocalDate from,
             @RequestParam LocalDate to
     ) {
@@ -86,7 +89,7 @@ public class JobPostController {
     }
 
     @GetMapping("/deadlines")
-    public PagedResponse<JobPostMiniDto> getDayDeadlines(
+    public PagedResponse<JobPostsDto.Mini> getDayDeadlines(
             @RequestParam LocalDate date,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
@@ -95,7 +98,7 @@ public class JobPostController {
     }
 
     @GetMapping("/calendar/counts")
-    public List<DeadlineCountDto> getCalendarCounts(
+    public List<CalendarSummaryDto> getCalendarCounts(
             @RequestParam LocalDate from,
             @RequestParam LocalDate to
     ) {
@@ -105,6 +108,6 @@ public class JobPostController {
     @PostMapping("/{id}/views")
     public JobPostsDto incrementViews(@PathVariable Long id) {
         log.info("🌐 POST /api/jobposts/{}/views - incrementViews 호출됨", id);
-        return jobPostServiceImpl.incrementViews(id);
+        return jobPostService.incrementViews(id);
     }
 }
