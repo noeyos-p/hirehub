@@ -1,8 +1,18 @@
 package com.we.hirehub.service;
 
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.company.FavoriteSummaryDto;
+import com.we.hirehub.dto.company.FavoriteDto;
+import com.we.hirehub.entity.JobPosts;
+import com.we.hirehub.entity.ScrapPosts;
+import com.we.hirehub.entity.Users;
+import com.we.hirehub.repository.JobPostsRepository;
+import com.we.hirehub.repository.ScrapPostsRepository;
+import com.we.hirehub.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -18,6 +28,9 @@ import java.util.List;
 public class JobPostScrapService {
 
     private final JdbcTemplate jdbc;
+    private final ScrapPostsRepository scrapPostsRepository;
+    private final JobPostsRepository jobPostsRepository;
+    private final UsersRepository usersRepository;
 
     /** 실제 컬럼명 (실제 테이블에 있는 쪽으로 자동 설정됨) */
     private String jobPostCol = "job_post_id";
@@ -46,65 +59,62 @@ public class JobPostScrapService {
         // 최종 못 찾으면 기본값 유지
     }
 
-    private RowMapper<FavoriteSummaryDto> rowMapper() {
-        return new RowMapper<>() {
-            @Override public FavoriteSummaryDto mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return new FavoriteSummaryDto(
-                        rs.getLong("id"),
-                        rs.getLong("job_post_id"),
-                        rs.getString("title"),
-                        rs.getString("company_name"),
-                        rs.getDate("end_at") != null ? rs.getDate("end_at").toLocalDate() : null
-                );
-            }
-        };
-    }
-
     @Transactional
-    public FavoriteSummaryDto add(Long userId, Long jobPostId) {
-        // 중복 무시
-        String insertSql = "INSERT IGNORE INTO scrap_posts (users_id, " + jobPostCol + ") VALUES (?, ?)";
-        jdbc.update(insertSql, userId, jobPostId);
+    public FavoriteDto.ScrapPostsDto add(Long userId, Long jobPostId) {
 
-        String selectOne =
-                "SELECT s.id, s." + jobPostCol + " AS job_post_id, j.title, c.name AS company_name, j.end_at " +
-                        "FROM scrap_posts s " +
-                        "JOIN job_posts j ON j.id = s." + jobPostCol + " " +
-                        "JOIN company c ON c.id = j.company_id " +
-                        "WHERE s.users_id = ? AND s." + jobPostCol + " = ? " +
-                        "LIMIT 1";
+        boolean exists = scrapPostsRepository.existsByUsersIdAndJobPostsId(userId, jobPostId);
 
-        return jdbc.queryForObject(selectOne, rowMapper(), userId, jobPostId);
+        if (exists) {
+            ScrapPosts entity = scrapPostsRepository
+                    .findByUsersIdAndJobPostsId(userId, jobPostId)
+                    .orElseThrow();
+            return FavoriteDto.ScrapPostsDto.toDto(entity);
+        }
+
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
+
+        JobPosts jobPosts = jobPostsRepository.findById(jobPostId)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 공고입니다."));
+
+        ScrapPosts newScrap = new ScrapPosts();
+        newScrap.setUsers(user);
+        newScrap.setJobPosts(jobPosts);
+
+        ScrapPosts saved = scrapPostsRepository.save(newScrap);
+        return FavoriteDto.ScrapPostsDto.toDto(saved);
     }
 
-    public PagedResponse<FavoriteSummaryDto> list(Long userId, int page, int size) {
-        int limit  = Math.max(size, 1);
-        int offset = Math.max(page, 0) * limit;
+    @Transactional(readOnly = true)
+    public PagedResponse<FavoriteDto.ScrapPostsDto> list(Long userId, int page, int size) {
 
-        Long total = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM scrap_posts WHERE users_id = ?",
-                Long.class, userId
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(size, 1),
+                Sort.by(Sort.Direction.DESC, "id")
         );
-        long totalCount = total != null ? total : 0L;
 
-        String listSql =
-                "SELECT s.id, s." + jobPostCol + " AS job_post_id, j.title, c.name AS company_name, j.end_at " +
-                        "FROM scrap_posts s " +
-                        "JOIN job_posts j ON j.id = s." + jobPostCol + " " +
-                        "JOIN company c ON c.id = j.company_id " +
-                        "WHERE s.users_id = ? " +
-                        "ORDER BY s.id DESC " +
-                        "LIMIT ? OFFSET ?";
+        Page<ScrapPosts> pageResult = scrapPostsRepository.findByUsersId(userId, pageable);
 
-        List<FavoriteSummaryDto> rows = jdbc.query(listSql, rowMapper(), userId, limit, offset);
+        List<FavoriteDto.ScrapPostsDto> content = pageResult.getContent()
+                .stream()
+                .map(FavoriteDto.ScrapPostsDto::toDto)
+                .toList();
 
-        int totalPages = (int) Math.ceil(totalCount / (double) limit);
-        return new PagedResponse<>(rows, page, limit, totalCount, totalPages);
+        return new PagedResponse<>(
+                content,
+                pageResult.getNumber(),
+                pageResult.getSize(),
+                pageResult.getTotalElements(),
+                pageResult.getTotalPages()
+        );
     }
-
     @Transactional
     public void remove(Long userId, Long jobPostId) {
-        String deleteSql = "DELETE FROM scrap_posts WHERE users_id = ? AND " + jobPostCol + " = ?";
-        jdbc.update(deleteSql, userId, jobPostId);
+        ScrapPosts entity = scrapPostsRepository
+                .findByUsersIdAndJobPostsId(userId, jobPostId)
+                .orElseThrow(() -> new IllegalArgumentException("스크랩이 존재하지 않습니다."));
+
+        scrapPostsRepository.delete(entity);
     }
 }

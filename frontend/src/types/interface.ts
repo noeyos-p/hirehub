@@ -213,6 +213,8 @@ export interface JobPosts {
   scrapPosts?: ScrapPosts[];
 }
 
+
+
 export interface Apply {
   id: number;
   resume_id: number;
@@ -309,6 +311,22 @@ export interface FavoriteCompany {
   company?: Company;
 }
 
+export interface FavoriteCompanyResponse {
+  id: number;            
+  userId?: number;       
+  companyId: number;
+  companyName: string;
+  postCount: number;  
+};
+
+export interface FavoriteCompanyGroup {
+  companyId: number;
+  companyName: string;
+  postCount: number;
+  ids: number[];
+}
+
+
 export interface ScrapPosts {
   id: number;
   users_id: number;
@@ -317,6 +335,15 @@ export interface ScrapPosts {
   // ManyToOne relationships (optional - only when fetching with relations)
   users?: Users;
   jobPosts?: JobPosts;
+}
+
+export interface ScrapPostResponse {
+  id: number;
+  userId: number;
+  jobPostId: number;
+  title: string;
+  companyName: string;
+  endAt: string; // LocalDate -> string (YYYY-MM-DD)
 }
 
 // Board DTOs
@@ -425,4 +452,14 @@ export interface CreateReviewRequest {
 export interface ApplyRequest {
   jobPostId: number;
   resumeId: number;
+}
+
+export interface PagedResponse<T> {
+  items?: T[];
+  content?: T[];
+  rows?: T[];
+  page?: number;
+  size?: number;
+  totalElements?: number;
+  totalPages?: number;
 }

@@ -2,7 +2,7 @@ package com.we.hirehub.controller;
 
 import com.we.hirehub.dto.common.CalendarSummaryDto;
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.company.FavoriteSummaryDto;
+import com.we.hirehub.dto.company.FavoriteDto;
 import com.we.hirehub.dto.job.JobPostsDto;
 import com.we.hirehub.service.JobPostScrapService;
 import com.we.hirehub.service.JobPostService;
@@ -74,8 +74,8 @@ public class JobPostController {
     }
 
     @PostMapping("/{jobPostId}/scrap")
-    public ResponseEntity<FavoriteSummaryDto> scrap(Authentication auth,
-                                                    @PathVariable Long jobPostId) {
+    public ResponseEntity<FavoriteDto.ScrapPostsDto> scrap(Authentication auth,
+                                             @PathVariable Long jobPostId) {
         Long uid = userId(auth);
         return ResponseEntity.ok(jobPostScrapService.add(uid, jobPostId));
     }

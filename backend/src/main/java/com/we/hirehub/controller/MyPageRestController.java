@@ -1,7 +1,7 @@
 package com.we.hirehub.controller;// MyPageRestController.java의 userId() 메서드만 교체
 
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.company.FavoriteSummaryDto;
+import com.we.hirehub.dto.company.FavoriteDto;
 import com.we.hirehub.dto.job.ApplyDto;
 import com.we.hirehub.dto.resume.ResumeDto;
 import com.we.hirehub.dto.resume.ResumeUpsertRequest;
@@ -266,11 +266,11 @@ public class MyPageRestController {
      * ✅ 즐겨찾기 추가 (기업)
      */
     @PostMapping("/favorites/companies/{companyId}")
-    public ResponseEntity<FavoriteSummaryDto> addFavoriteCompany(
+    public ResponseEntity<FavoriteDto.FavoriteCompanyDto> addFavoriteCompany(
             Authentication auth,
             @PathVariable Long companyId
     ) {
-        FavoriteSummaryDto dto = myPageService.addFavoriteCompany(userId(auth), companyId);
+        FavoriteDto.FavoriteCompanyDto dto = myPageService.addFavoriteCompany(userId(auth), companyId);
         return ResponseEntity.ok(dto);
     }
 
@@ -278,7 +278,7 @@ public class MyPageRestController {
      * ✅ 즐겨찾기 목록 조회 (기업)
      */
     @GetMapping("/favorites/companies")
-    public PagedResponse<FavoriteSummaryDto> favoriteCompanies(Authentication auth,
+    public PagedResponse<FavoriteDto.FavoriteCompanyDto> favoriteCompanies(Authentication auth,
                                                                @RequestParam(defaultValue = "0") int page,
                                                                @RequestParam(defaultValue = "10") int size) {
         return myPageService.listFavoriteCompanies(userId(auth), page, size);
@@ -297,11 +297,11 @@ public class MyPageRestController {
      * ✅ 스크랩 추가 (공고)
      */
     @PostMapping("/favorites/jobposts/{jobPostId}")
-    public ResponseEntity<FavoriteSummaryDto> addScrapJobPost(
+    public ResponseEntity<FavoriteDto.ScrapPostsDto> addScrapJobPost(
             Authentication auth,
             @PathVariable Long jobPostId
     ) {
-        FavoriteSummaryDto dto = jobPostScrapService.add(userId(auth), jobPostId);
+        FavoriteDto.ScrapPostsDto dto = jobPostScrapService.add(userId(auth), jobPostId);
         return ResponseEntity.ok(dto);
     }
 
@@ -309,7 +309,7 @@ public class MyPageRestController {
      * ✅ 스크랩 목록 조회 (공고)
      */
     @GetMapping("/favorites/jobposts")
-    public PagedResponse<FavoriteSummaryDto> scrapJobPosts(
+    public PagedResponse<FavoriteDto.ScrapPostsDto> scrapJobPosts(
             Authentication auth,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size

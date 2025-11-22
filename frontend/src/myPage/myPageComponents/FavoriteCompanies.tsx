@@ -2,39 +2,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
-
-/** 서버 응답 DTO */
-type FavoriteCompanyRow = {
-  favoriteId: number;
-  companyId: number;
-  companyName: string;
-  openPostCount: number;
-};
-type AggregatedCompanyRow = {
-  companyId: number;
-  companyName: string;
-  openPostCount: number;
-  favoriteIds: number[];
-};
-type PagedResponse<T> = {
-  items?: T[];
-  content?: T[];
-  rows?: T[];
-  page?: number;
-  size?: number;
-  totalElements?: number;
-  totalPages?: number;
-};
-type JobPostLite = {
-  id: number;
-  companyId?: number;
-  title: string;
-  position?: string;
-  location?: string;
-  endAt?: string;
-  status?: string;
-  isOpen?: boolean;
-};
+import type { FavoriteCompanyResponse, FavoriteCompanyGroup, JobPosts, PagedResponse } from "../../types/interface";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
 const prettyMDW = (iso?: string) => {
@@ -59,35 +27,35 @@ const firstArrayIn = (data: any): any[] => {
   return [];
 };
 
-const mapJobPost = (r: any): JobPostLite | null => {
+const mapJobPost = (r: any): JobPosts | null => {
   const rawId = r?.id ?? r?.jobPostId ?? r?.postId;
   const id = Number(rawId);
   if (!id || Number.isNaN(id)) return null;
-  const endAt = String(r?.endAt ?? r?.deadline ?? r?.dueDate ?? "") || undefined;
-  const status = String(r?.status ?? r?.state ?? "") || undefined;
-  const companyId: number | undefined = (() => {
-    const v = r?.companyId ?? r?.company?.id ?? r?.jobPost?.companyId;
-    return v != null ? Number(v) : undefined;
+  
+  const companyId: number = (() => {
+    const v = r?.companyId ?? r?.company?.id ?? r?.company_id;
+    return v != null ? Number(v) : 0;
   })();
+  
   return {
     id,
-    companyId,
     title: String(r?.title ?? r?.jobPostTitle ?? r?.name ?? ""),
-    position: String(r?.position ?? r?.role ?? r?.job ?? "") || undefined,
-    location: String(r?.location ?? r?.region ?? r?.addr ?? "") || undefined,
-    endAt,
-    status,
+    content: String(r?.content ?? ""),
+    start_at: String(r?.startAt ?? r?.start_at ?? ""),
+    end_at: String(r?.endAt ?? r?.end_at ?? r?.deadline ?? ""),
+    location: String(r?.location ?? r?.region ?? r?.address ?? ""),
+    career_level: String(r?.careerLevel ?? r?.career_level ?? ""),
+    position: String(r?.position ?? r?.role ?? ""),
+    education: String(r?.education ?? ""),
+    type: String(r?.type ?? ""),
+    salary: String(r?.salary ?? ""),
+    company_id: companyId,
   };
 };
 
-const computeIsOpen = (p: JobPostLite): boolean => {
-  if (p.status) {
-    const s = p.status.toUpperCase();
-    if (["OPEN", "OPENED", "OPENING", "ACTIVE"].includes(s)) return true;
-    if (["CLOSE", "CLOSED", "ENDED", "INACTIVE"].includes(s)) return false;
-  }
-  if (p.endAt) {
-    const end = new Date(p.endAt).getTime();
+const computeIsOpen = (p: JobPosts): boolean => {
+  if (p.end_at) {
+    const end = new Date(p.end_at).getTime();
     if (!Number.isNaN(end)) return end >= Date.now();
   }
   return true;
@@ -96,38 +64,53 @@ const computeIsOpen = (p: JobPostLite): boolean => {
 const FavoriteCompanies: React.FC = () => {
   const navigate = useNavigate();
 
-  const [rows, setRows] = useState<AggregatedCompanyRow[]>([]);
+  const [rows, setRows] = useState<FavoriteCompanyGroup[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [expandedCompanyId, setExpandedCompanyId] = useState<number | null>(null);
   const [loadingPosts, setLoadingPosts] = useState(false);
-  const [postsCache, setPostsCache] = useState<Record<number, JobPostLite[]>>({});
+  const [postsCache, setPostsCache] = useState<Record<number, JobPosts[]>>({});
 
-  /** 목록 조회 */
+  /** 목록 조회 - FavoriteCompanyResponse 타입 사용 */
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get<PagedResponse<FavoriteCompanyRow>>(
+      const { data } = await api.get<PagedResponse<FavoriteCompanyResponse>>(
         "/api/mypage/favorites/companies",
         { params: { page: 0, size: 300 } }
       );
-      const list = (firstArrayIn(data) as FavoriteCompanyRow[]) || [];
+      const list = (firstArrayIn(data) as FavoriteCompanyResponse[]) || [];
+      
+      console.log("API 응답 데이터:", list); // 디버깅용
+      
       // 같은 companyId 합치기
-      const map = new Map<number, AggregatedCompanyRow>();
+      const map = new Map<number, FavoriteCompanyGroup>();
       for (const r of list) {
         const cid = Number(r?.companyId);
         if (!cid || Number.isNaN(cid)) continue;
+        
+        // postCount 필드명이 다를 수 있으니 여러 가능성 확인
+        const count = Number(
+          r?.postCount ?? 
+          r?.postCount ?? 
+          (r as any)?.post_count ?? 
+          (r as any)?.open_post_count ?? 
+          0
+        );
+        
+        console.log(`회사 ${r.companyName}: postCount=${count}`); // 디버깅용
+        
         const prev = map.get(cid);
         if (prev) {
-          prev.openPostCount += Number(r.openPostCount ?? 0);
-          prev.favoriteIds.push(Number(r.favoriteId));
+          prev.postCount += count;
+          prev.ids.push(Number(r.id));
         } else {
           map.set(cid, {
             companyId: cid,
             companyName: String(r.companyName ?? ""),
-            openPostCount: Number(r.openPostCount ?? 0),
-            favoriteIds: [Number(r.favoriteId)],
+            postCount: count,
+            ids: [Number(r.id)],
           });
         }
       }
@@ -191,23 +174,23 @@ const FavoriteCompanies: React.FC = () => {
   };
 
   /** 특정 회사의 '채용중' 공고만 조회해서 캐시에 저장 */
-  const fetchOpenPosts = async (companyId: number): Promise<JobPostLite[]> => {
-    const loadCandidates = async (): Promise<JobPostLite[]> => {
+  const fetchOpenPosts = async (companyId: number): Promise<JobPosts[]> => {
+    const loadCandidates = async (): Promise<JobPosts[]> => {
       try {
         const { data } = await api.get(`/api/companies/${companyId}/jobposts`, {
-          params: { status: "open", size: 200 },
+          params: { size: 200 },
         });
-        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPostLite[];
+        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPosts[];
       } catch {}
       try {
         const { data } = await api.get(`/api/jobposts`, {
-          params: { companyId, status: "open", size: 200 },
+          params: { companyId, size: 200 },
         });
-        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPostLite[];
+        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPosts[];
       } catch {}
       try {
         const { data } = await api.get(`/api/jobposts/company/${companyId}`);
-        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPostLite[];
+        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPosts[];
       } catch (e) {
         console.error("채용중 공고 조회 실패:", e);
         return [];
@@ -216,9 +199,8 @@ const FavoriteCompanies: React.FC = () => {
 
     const raw = await loadCandidates();
     return raw
-      .map((p) => ({ ...p, isOpen: computeIsOpen(p) }))
-      .filter((p) => (p.companyId == null ? true : p.companyId === companyId))
-      .filter((p) => p.isOpen);
+      .filter((p) => p.company_id === companyId)
+      .filter((p) => computeIsOpen(p));
   };
 
   const toggleOpenPosts = async (companyId: number) => {
@@ -235,7 +217,7 @@ const FavoriteCompanies: React.FC = () => {
     setLoadingPosts(false);
   };
 
-  /** ✅ 공고 상세로 이동 - 프로젝트 라우팅 구조에 맞춤 */
+  /** 공고 상세로 이동 */
   const goJobDetail = (jobId: number) => {
     navigate(`/jobPostings/${jobId}`);
   };
@@ -258,7 +240,7 @@ const FavoriteCompanies: React.FC = () => {
           {rows.map((r) => {
             const isOpen = expandedCompanyId === r.companyId;
             const cached = postsCache[r.companyId] || [];
-            const postsToShow = cached.slice(0, r.openPostCount || undefined);
+            const postsToShow = cached.slice(0, r.postCount || undefined);
 
             return (
               <div key={r.companyId} className="border-b border-gray-200 pb-4">
@@ -281,7 +263,7 @@ const FavoriteCompanies: React.FC = () => {
                   >
                     채용 중{" "}
                     <span className="text-blue-800 underline underline-offset-2">
-                      {r.openPostCount ?? 0}
+                      {r.postCount ?? 0}
                     </span>
                     개
                   </button>
@@ -297,7 +279,6 @@ const FavoriteCompanies: React.FC = () => {
                       <ul className="space-y-2">
                         {postsToShow.map((p) => (
                           <li key={p.id}>
-                            {/* ✅ 프로젝트 라우팅에 맞게 수정 */}
                             <div
                               onClick={() => goJobDetail(p.id)}
                               className="flex items-center justify-between bg-white rounded-md px-3 py-2 border hover:border-gray-300 cursor-pointer transition-colors"
@@ -310,7 +291,7 @@ const FavoriteCompanies: React.FC = () => {
                                 </div>
                               </div>
                               <div className="text-xs text-gray-600">
-                                {p.endAt ? `마감: ${prettyMDW(p.endAt)}` : ""}
+                                {p.end_at ? `마감: ${prettyMDW(p.end_at)}` : ""}
                               </div>
                             </div>
                           </li>
