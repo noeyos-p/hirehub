@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,8 +75,12 @@ public class ResumeService {
         try {
             root = Optional.ofNullable(resume.getHtmlContent())
                     .map(s -> {
-                        try { return om.readValue(s, new TypeReference<Map<String,Object>>(){}); }
-                        catch (Exception e) { return Map.<String,Object>of(); }
+                        try {
+                            return om.readValue(s, new TypeReference<Map<String, Object>>() {
+                            });
+                        } catch (Exception e) {
+                            return Map.<String, Object>of();
+                        }
                     })
                     .orElse(Map.of());
         } catch (Exception e) {
@@ -83,9 +88,9 @@ public class ResumeService {
         }
 
         List<Map<String, Object>> educations = listOfMap(root.get("educations"));
-        List<Map<String, Object>> careers    = listOfMap(root.get("careers"));
-        List<String> certs                   = listOfString(root.get("certs"));
-        List<String> skills                  = listOfString(root.get("skills"));
+        List<Map<String, Object>> careers = listOfMap(root.get("careers"));
+        List<String> certs = listOfString(root.get("certs"));
+        List<String> skills = listOfString(root.get("skills"));
 
         Long rid = resume.getId();
         educationRepository.deleteByResumeId(rid);
@@ -97,12 +102,12 @@ public class ResumeService {
             String school = str(m.get("school"));
             String period = str(m.get("period"));
             String status = str(m.get("status"));
-            String major  = str(m.get("major"));
+            String major = str(m.get("major"));
             LocalDate[] se = parsePeriodToDates(period);
             Education e = new Education();
             e.setName(school);
             e.setMajor(major);
-            e.setStatus(status != null && !status.isBlank()? status : "재학/졸업");
+            e.setStatus(status != null && !status.isBlank() ? status : "재학/졸업");
             e.setType("학력");
             e.setStartAt(se[0]);
             e.setEndAt(se[1]);
@@ -112,10 +117,10 @@ public class ResumeService {
 
         List<CareerLevel> careerEntities = careers.stream().map(m -> {
             String company = str(m.get("company"));
-            String period  = str(m.get("period"));
-            String role    = str(m.get("role"));
-            String job     = str(m.get("job"));
-            String desc    = str(m.get("desc"));
+            String period = str(m.get("period"));
+            String role = str(m.get("role"));
+            String job = str(m.get("job"));
+            String desc = str(m.get("desc"));
             LocalDate[] se = parsePeriodToDates(period);
             CareerLevel c = new CareerLevel();
             c.setCompanyName(company);
@@ -124,33 +129,38 @@ public class ResumeService {
 
             String content = List.of(job, desc).stream()
                     .filter(s -> s != null && !s.isBlank())
-                    .reduce("", (a,b)-> a.isBlank()? b : a + "\n" + b);
+                    .reduce("", (a, b) -> a.isBlank() ? b : a + "\n" + b);
 
-            c.setContent(content.isBlank()? "상세 없음" : content);
+            c.setContent(content.isBlank() ? "상세 없음" : content);
             c.setStartAt(se[0]);
             c.setEndAt(se[1]);
             c.setResume(resume);
             return c;
         }).toList();
 
+        // ★ Certificate 저장 (certs = List<String>)
         List<Certificate> certEntities = certs.stream()
-                .filter(s->!s.isBlank())
-                .map(name -> {
-                    Certificate c = new Certificate();
-                    c.setName(name);
-                    c.setResume(resume);
-                    return c;
-                }).toList();
+                .filter(c -> c != null && !c.isBlank())
+                .map(c -> Certificate.builder()
+                        .name(c)
+                        .resume(resume)
+                        .build()
+                ).toList();
 
+        certificateRepository.saveAll(certEntities);
+
+// ★ Skill 저장 (skills = List<String>)
         List<Skill> skillEntities = skills.stream()
-                .filter(s->!s.isBlank())
-                .map(name -> {
-                    Skill s = new Skill();
-                    s.setName(name);
-                    s.setResume(resume);
-                    return s;
-                }).toList();
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> Skill.builder()
+                        .name(s)
+                        .resume(resume)
+                        .build())
+                .toList();
 
+        skillRepository.saveAll(skillEntities);
+
+// ★ 교육/경력 저장
         educationRepository.saveAll(eduEntities);
         careerLevelRepository.saveAll(careerEntities);
         certificateRepository.saveAll(certEntities);

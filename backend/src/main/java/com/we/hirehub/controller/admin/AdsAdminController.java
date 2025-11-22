@@ -1,7 +1,7 @@
 package com.we.hirehub.controller.admin;
 
-import com.we.hirehub.entity.Ads;
-import com.we.hirehub.service.AdsAdminService;
+import com.we.hirehub.dto.support.AdsResponseDto;
+import com.we.hirehub.service.admin.AdsAdminService;
 import com.we.hirehub.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,9 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 관리자 전용 - 광고 생성 및 이미지 업로드/삭제 컨트롤러
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/ads-management")
@@ -30,7 +27,7 @@ public class AdsAdminController {
     @GetMapping("/ads")
     public ResponseEntity<Map<String, Object>> getAllAds() {
         try {
-            List<Ads> adsList = adsAdminService.getAllAds();
+            List<AdsResponseDto> adsList = adsAdminService.getAllAds();
             log.info("📋 광고 {}개 조회됨", adsList.size());
 
             Map<String, Object> response = new HashMap<>();
@@ -56,17 +53,17 @@ public class AdsAdminController {
             log.info("📤 광고 업로드 요청 - adId: {}, file: {}", adId, file.getOriginalFilename());
 
             // 1️⃣ S3 업로드
-            String fileUrl = s3Service.uploadAdImage(file, (adId != null) ? adId : 0L);
+            String fileUrl = s3Service.uploadAdImage(file, (adId != null ? adId : 0L));
             log.info("✅ S3 업로드 완료: {}", fileUrl);
 
-            // 2️⃣ DB 저장 (새로 생성 or 업데이트)
-            Ads savedAd;
+            // 2️⃣ DB 저장 또는 업데이트
+            AdsResponseDto savedAd;
             if (adId == null || adId == 0) {
                 savedAd = adsAdminService.createAd(fileUrl);
                 log.info("🆕 새 광고 생성 완료 - id={}, photo={}", savedAd.getId(), savedAd.getPhoto());
             } else {
                 savedAd = adsAdminService.updateAdPhoto(adId, fileUrl);
-                log.info("🔁 광고 업데이트 완료 - id={}, photo={}", adId, fileUrl);
+                log.info("🔁 광고 업데이트 완료 - id={}, photo={}", adId, savedAd.getPhoto());
             }
 
             // 3️⃣ 응답
@@ -90,7 +87,7 @@ public class AdsAdminController {
         }
     }
 
-    /** ✅ 광고 삭제 (S3 + DB 완전 삭제) */
+    /** ✅ 광고 삭제 */
     @DeleteMapping("/file")
     public ResponseEntity<Map<String, Object>> deleteFile(
             @RequestParam("fileUrl") String fileUrl,
@@ -103,7 +100,7 @@ public class AdsAdminController {
             s3Service.deleteFile(fileUrl);
             log.info("✅ S3 파일 삭제 완료: {}", fileUrl);
 
-            // 2️⃣ DB 광고 완전 삭제
+            // 2️⃣ DB 광고 삭제
             if (adId != null && adId > 0) {
                 adsAdminService.deleteAd(adId);
                 log.info("✅ 광고 DB 삭제 완료 - adId={}", adId);
