@@ -19,7 +19,7 @@ public class UsersRequestDto {
     private String phone;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate birth;   // "1995-01-20" 형식
+    private LocalDate dob;   // "1995-01-20" 형식
 
     private Integer age;
 
@@ -36,7 +36,7 @@ public class UsersRequestDto {
     private String position;
 
     @Size(max = 50)
-    private String career;
+    private String careerLevel;
 
     @Size(max = 50)
     private String education;
@@ -50,14 +50,14 @@ public class UsersRequestDto {
         if (this.nickname != null) user.setNickname(this.nickname);
         if (this.phone != null) user.setPhone(this.phone);
 
-        if (this.birth != null) user.setDob(this.birth.toString());
+        if (this.dob != null) user.setDob(this.dob.toString());
 
         if (this.gender != null) user.setGender(this.gender);
         if (this.address != null) user.setAddress(this.address);
         if (this.position != null) user.setPosition(this.position);
         if (this.education != null) user.setEducation(this.education);
 
-        if (this.career != null) user.setCareerLevel(this.career);
+        if (this.careerLevel != null) user.setCareerLevel(this.careerLevel);
         if (this.location != null) user.setLocation(this.location);
     }
 }

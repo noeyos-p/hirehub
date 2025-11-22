@@ -3,22 +3,24 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { setAuthToken } from '../api/api'; // ✅ setAuthToken import
 import { AxiosError } from 'axios';
+import type { UsersRequest } from "../types/interface";
 
 const SignInfo: React.FC = () => {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    displayName: '',
+  const [formData, setFormData] = useState<UsersRequest>({
+    name: '',
     nickname: '',
     phone: '',
     dob: '',
     gender: '',
-    education: '',
-    careerLevel: '',
-    position: '',
     address: '',
-    location: ''
+    location: '',
+    position: '',
+    careerLevel: '',
+    education: ''
   });
+
 
   const seoulDistricts = [
     '강남구', '강동구', '강북구', '강서구', '관악구',
@@ -42,6 +44,8 @@ const SignInfo: React.FC = () => {
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
+    console.log("📤 보낼 데이터:", formData);
+    alert(JSON.stringify(formData, null, 2));
     event.preventDefault();
     setError('');
     setIsLoading(true);
@@ -95,7 +99,7 @@ const SignInfo: React.FC = () => {
     }
   };
 
-  const isFormComplete = Object.values(formData).every(value => 
+  const isFormComplete = Object.values(formData).every(value =>
     typeof value === 'string' ? value.trim() !== '' : value !== ''
   );
 
@@ -116,14 +120,14 @@ const SignInfo: React.FC = () => {
         className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
       >
         <div className="mb-4">
-          <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
             이름 *
           </label>
           <input
             type="text"
-            id="displayName"
-            name="displayName"
-            value={formData.displayName}
+            id="name"
+            name="name"
+            value={formData.name}
             onChange={handleChange}
             required
             disabled={isLoading}
