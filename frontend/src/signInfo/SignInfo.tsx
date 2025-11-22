@@ -44,8 +44,6 @@ const SignInfo: React.FC = () => {
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
-    console.log("📤 보낼 데이터:", formData);
-    alert(JSON.stringify(formData, null, 2));
     event.preventDefault();
     setError('');
     setIsLoading(true);
