@@ -1,7 +1,8 @@
 package com.we.hirehub.controller;
 
+import com.we.hirehub.dto.support.AdsResponseDto;
 import com.we.hirehub.entity.Ads;
-import com.we.hirehub.service.AdsAdminService;
+import com.we.hirehub.service.admin.AdsAdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,7 @@ public class AdsController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllAds() {
         try {
-            List<Ads> adsList = adsAdminService.getAllAds();
+            List<AdsResponseDto> adsList = adsAdminService.getAllAds();
             log.info("📋 일반 사용자 광고 {}개 조회됨", adsList.size());
 
             Map<String, Object> response = new HashMap<>();
