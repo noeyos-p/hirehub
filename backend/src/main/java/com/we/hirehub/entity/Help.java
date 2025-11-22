@@ -45,4 +45,15 @@ public class Help {
     @Type(JsonType.class)
     @Column(columnDefinition = "json")
     private Map<String, Object> meta;
+
+    @Column(columnDefinition = "TEXT")
+    private String content;
+
+    // ✅ 새로 추가: 메시지 생성 시간
+    @Column(name = "create_at", nullable = false)
+    private LocalDateTime createAt;
+
+    // ✅ 새로 추가: 메시지 역할 (USER, AGENT, SYS)
+    @Column(name = "role", length = 20)
+    private String role;
 }
