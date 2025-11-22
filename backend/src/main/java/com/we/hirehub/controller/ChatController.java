@@ -2,9 +2,11 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.dto.chat.ChatMessageRequest;
+import com.we.hirehub.dto.chat.HelpDto;
 import com.we.hirehub.dto.chat.LiveChatDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
+import com.we.hirehub.service.HelpService;
 import com.we.hirehub.service.LiveChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +24,14 @@ import java.util.List;
 public class ChatController {
 
     private final LiveChatService liveChatService;
+    private final HelpService helpService;  // ✅ HelpService 추가
     private final UsersRepository usersRepository;
 
+    // ===== LiveChat (유저 간 채팅) 관련 엔드포인트 =====
+
+    /**
+     * 유저 간 채팅 히스토리 조회
+     */
     @GetMapping("/history/{sessionId}")
     public ResponseEntity<List<LiveChatDto>> getChatHistory(
             @PathVariable String sessionId,
@@ -34,13 +42,76 @@ public class ChatController {
         return ResponseEntity.ok(messages);
     }
 
+    /**
+     * 유저 간 채팅 메시지 전송
+     */
     @PostMapping("/send")
     public ResponseEntity<?> sendMessage(@RequestBody ChatMessageRequest request) {
         log.info("=== /api/chat/send 컨트롤러 시작 ===");
         log.info("요청 데이터 - sessionId: {}, content: {}, nickname: {}",
                 request.getSessionId(), request.getContent(), request.getNickname());
 
-        // 컨트롤러에서 인증 정보 확인
+        Users authenticatedUser = getAuthenticatedUser();
+
+        liveChatService.send(
+                request.getSessionId(),
+                request.getContent(),
+                request.getNickname(),
+                authenticatedUser
+        );
+
+        log.info("=== /api/chat/send 컨트롤러 완료 ===");
+        return ResponseEntity.ok().build();
+    }
+
+    // ===== Help (상담사-유저 채팅) 관련 엔드포인트 =====
+
+    /**
+     * 상담 채팅 히스토리 조회
+     */
+    @GetMapping("/help/history/{sessionId}")
+    public ResponseEntity<List<HelpDto>> getHelpHistory(
+            @PathVariable String sessionId,
+            @RequestParam(defaultValue = "30") int limit
+    ) {
+        log.info("상담 채팅 히스토리 조회 - sessionId: {}, limit: {}", sessionId, limit);
+        List<HelpDto> messages = helpService.getRecentMessages(sessionId, limit);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * 상담 채팅 메시지 전송 (REST API용 - 일반적으로는 WebSocket 사용)
+     */
+    @PostMapping("/help/send")
+    public ResponseEntity<?> sendHelpMessage(@RequestBody ChatMessageRequest request) {
+        log.info("=== /api/chat/help/send 컨트롤러 시작 ===");
+        log.info("요청 데이터 - sessionId: {}, content: {}, role: {}",
+                request.getSessionId(), request.getContent(),
+                request.getNickname() != null ? "AGENT" : "USER");
+
+        Users authenticatedUser = getAuthenticatedUser();
+
+        // nickname이 있으면 상담사, 없으면 유저
+        String role = (request.getNickname() != null && !request.getNickname().isEmpty())
+                ? "AGENT" : "USER";
+
+        helpService.send(
+                request.getSessionId(),
+                request.getContent(),
+                role,
+                authenticatedUser
+        );
+
+        log.info("=== /api/chat/help/send 컨트롤러 완료 ===");
+        return ResponseEntity.ok().build();
+    }
+
+    // ===== Private Helper Methods =====
+
+    /**
+     * 현재 인증된 사용자 조회
+     */
+    private Users getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         log.info("컨트롤러 인증 정보: {}", auth);
         log.info("Principal: {}", auth != null ? auth.getName() : "null");
@@ -52,7 +123,6 @@ public class ChatController {
             String principal = auth.getName();
             log.info("Principal 값: {}", principal);
 
-            // Principal이 숫자(ID)인지 이메일인지 확인
             try {
                 // 숫자로 파싱 시도 - 성공하면 ID로 간주
                 Long userId = Long.parseLong(principal);
@@ -70,21 +140,12 @@ public class ChatController {
                         authenticatedUser.getEmail(),
                         authenticatedUser.getNickname());
             } else {
-                log.warn("❌ 컨트롤러에서 사용자 조회 실패 - Principal: {}", principal);
+                log.warn("⚠ 컨트롤러에서 사용자 조회 실패 - Principal: {}", principal);
             }
         } else {
-            log.warn("❌ 컨트롤러에서 인증 실패 또는 익명 사용자");
+            log.warn("⚠ 컨트롤러에서 인증 실패 또는 익명 사용자");
         }
 
-        // 서비스 호출
-        liveChatService.send(
-                request.getSessionId(),
-                request.getContent(),
-                request.getNickname(),
-                authenticatedUser
-        );
-
-        log.info("=== /api/chat/send 컨트롤러 완료 ===");
-        return ResponseEntity.ok().build();
+        return authenticatedUser;
     }
 }

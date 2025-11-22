@@ -1,16 +1,12 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.entity.LiveChat;
-import com.we.hirehub.entity.Session;
 import com.we.hirehub.entity.Users;
-import com.we.hirehub.repository.LiveChatRepository;
 import com.we.hirehub.repository.SessionRepository;
 import com.we.hirehub.repository.UsersRepository;
+import com.we.hirehub.service.HelpService;
 import com.we.hirehub.ws.SupportQueue;
-import com.we.hirehub.service.ChatService; // 네 서비스 시그니처에 맞추어 optional 사용
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -28,7 +24,7 @@ public class SupportSocketController {
     private final SimpMessagingTemplate messagingTemplate;
     private final SupportQueue supportQueue;
     private final UsersRepository usersRepository;
-    private final LiveChatRepository liveChatRepository;
+    private final HelpService helpService;  // ✅ HelpService로 변경
     private final SessionRepository sessionRepository;
 
     // ✅ 유저/상담사가 채팅 보냄 (DB 저장 + WebSocket 브로드캐스트)
@@ -85,7 +81,7 @@ public class SupportSocketController {
                 }
             }
         } catch (Exception e) {
-            log.error("❌ 사용자 정보 추출 실패", e);
+            log.error("⚠ 사용자 정보 추출 실패", e);
         }
 
         // payload에서 전달된 nickname이 있으면 우선 사용 (상담사의 경우)
@@ -94,43 +90,16 @@ public class SupportSocketController {
             nickname = payloadNickname.toString().trim();
         }
 
-        log.info("📝 최종 저장 정보: userId={}, nickname={}, role={}, text={}",
+        log.info("🔍 최종 저장 정보: userId={}, nickname={}, role={}, text={}",
                 user != null ? user.getId() : "null", nickname, role, text);
 
-        // ✅ 1. DB에 직접 저장
+        // ✅ HelpService를 통해 DB 저장 (자동으로 WebSocket 브로드캐스트도 수행)
         try {
-            Session session = sessionRepository.findById(roomId)
-                    .orElseGet(() -> {
-                        Session newSession = Session.builder()
-                                .id(roomId)
-                                .ctx(new HashMap<>())
-                                .build();
-                        return sessionRepository.saveAndFlush(newSession);
-                    });
-
-            LiveChat chat = LiveChat.builder()
-                    .session(session)
-                    .content(text)
-                    .createAt(LocalDateTime.now())
-                    .user(user)
-                    .build();
-
-            liveChatRepository.saveAndFlush(chat);
-            log.info("✅ DB 저장 완료");
+            helpService.send(roomId, text, role, user);
+            log.info("✅ HelpService를 통한 메시지 저장 및 브로드캐스트 완료");
         } catch (Exception e) {
-            log.error("❌ DB 저장 실패", e);
+            log.error("⚠ 메시지 저장/브로드캐스트 실패", e);
         }
-
-        // ✅ 2. WebSocket으로 브로드캐스트
-        Map<String, Object> echo = new HashMap<>();
-        echo.put("type", type);
-        echo.put("role", role);
-        echo.put("text", text);
-        echo.put("userId", user != null ? user.getId() : null);
-        echo.put("nickname", nickname);
-
-        messagingTemplate.convertAndSend("/topic/rooms/" + roomId, echo);
-        log.info("✅ WebSocket 브로드캐스트 완료");
 
         log.info("=== 메시지 처리 완료 ===");
     }
@@ -143,7 +112,10 @@ public class SupportSocketController {
         log.info("payload: {}", payload);
 
         var s = supportQueue.state(roomId);
+
+        // ✅ 재연결 요청 시 상태 초기화
         s.handoffRequested = true;
+        s.handoffAccepted = false;
 
         // ✅ userId로 DB에서 실제 유저 정보 조회
         Long userId = null;
@@ -165,15 +137,16 @@ public class SupportSocketController {
                 log.info("✅ userId 파싱 성공: {}", userId);
             }
         } catch (Exception e) {
-            log.error("❌ userId 파싱 실패", e);
+            log.error("⚠ userId 파싱 실패", e);
         }
 
         String userName = "user";
         String userNickname = "user";
+        Users user = null;
 
         if (userId != null) {
             log.info("🔍 DB에서 userId={} 조회 시도", userId);
-            Users user = usersRepository.findById(userId).orElse(null);
+            user = usersRepository.findById(userId).orElse(null);
             if (user != null) {
                 userName = user.getName() != null ? user.getName() : "user";
                 userNickname = user.getNickname() != null ? user.getNickname() : "user";
@@ -189,6 +162,14 @@ public class SupportSocketController {
         s.userName = userName;
         s.userNickname = userNickname;
         log.info("📦 SupportQueue에 저장: userName={}, userNickname={}", userName, userNickname);
+
+        // ✅ Help 테이블에 상담 요청 기록
+        try {
+            helpService.createHelpRequest(roomId, user);
+            log.info("✅ Help 테이블에 상담 요청 기록 완료");
+        } catch (Exception e) {
+            log.error("⚠ Help 테이블 기록 실패", e);
+        }
 
         // 대기 큐에 브로드캐스트
         Map<String, Object> notice = new HashMap<>();
@@ -222,6 +203,14 @@ public class SupportSocketController {
 
         log.info("✅ 핸드오프 수락: roomId={}, name={}, nickname={}", roomId, userName, userNickname);
 
+        // ✅ Help 테이블에 상담 수락 기록
+        try {
+            helpService.acceptHelp(roomId);
+            log.info("✅ Help 테이블에 상담 수락 기록 완료");
+        } catch (Exception e) {
+            log.error("⚠ Help 테이블 기록 실패", e);
+        }
+
         // ✅ 유저 방에 연결 완료 알림 (userName, userNickname 포함)
         Map<String, Object> msg = new HashMap<>();
         msg.put("type", "HANDOFF_ACCEPTED");
@@ -248,13 +237,24 @@ public class SupportSocketController {
 
         log.info("📌 유저 연결 해제: roomId={}, name={}, nickname={}", roomId, userName, userNickname);
 
+        // ✅ Help 테이블에 상담 종료 기록
+        try {
+            helpService.endHelp(roomId);
+            log.info("✅ Help 테이블에 상담 종료 기록 완료");
+        } catch (Exception e) {
+            log.error("⚠ Help 테이블 기록 실패", e);
+        }
+
         // 상담사와 유저 모두에게 알림
         Map<String, Object> msg = new HashMap<>();
         msg.put("type", "USER_DISCONNECTED");
+        msg.put("role", "SYS");
+        msg.put("text", "유저가 연결을 해제했습니다.");
         msg.put("userName", userName);
         msg.put("userNickname", userNickname);
         msg.put("roomId", roomId);
         messagingTemplate.convertAndSend("/topic/rooms/" + roomId, msg);
+        log.info("📤 방에 USER_DISCONNECTED 전송: /topic/rooms/{}", roomId);
 
         // 큐에도 알림 (상담사 대시보드 업데이트용)
         Map<String, Object> queueNotice = new HashMap<>();
@@ -263,6 +263,7 @@ public class SupportSocketController {
         queueNotice.put("userName", userName);
         queueNotice.put("userNickname", userNickname);
         messagingTemplate.convertAndSend("/topic/support.queue", queueNotice);
+        log.info("📤 큐에 USER_DISCONNECTED 전송: /topic/support.queue");
 
         log.info("✅ 유저 연결 해제 알림 전송 완료");
     }
@@ -279,9 +280,22 @@ public class SupportSocketController {
 
         log.info("📌 상담사 연결 해제: roomId={}", roomId);
 
+        // ✅ Help 테이블에 상담 종료 기록
+        try {
+            helpService.endHelp(roomId);
+            log.info("✅ Help 테이블에 상담 종료 기록 완료");
+        } catch (Exception e) {
+            log.error("⚠ Help 테이블 기록 실패", e);
+        }
+
         // 유저에게 알림
         Map<String, Object> msg = new HashMap<>();
         msg.put("type", "AGENT_DISCONNECTED");
+        msg.put("role", "SYS");
+        msg.put("text", "상담사가 연결을 해제했습니다.");
         messagingTemplate.convertAndSend("/topic/rooms/" + roomId, msg);
+        log.info("📤 방에 AGENT_DISCONNECTED 전송: /topic/rooms/{}", roomId);
+
+        log.info("✅ 상담사 연결 해제 알림 전송 완료");
     }
 }

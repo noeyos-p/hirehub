@@ -6,14 +6,10 @@ import com.we.hirehub.entity.Session;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.LiveChatRepository;
 import com.we.hirehub.repository.SessionRepository;
-import com.we.hirehub.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

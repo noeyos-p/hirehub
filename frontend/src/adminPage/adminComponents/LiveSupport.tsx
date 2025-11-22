@@ -103,11 +103,18 @@ const LiveSupport: React.FC = () => {
     roomSubRef.current = stompRef.current.subscribe(`/topic/rooms/${roomId}`, (frame) => {
       try {
         const body = JSON.parse(frame.body);
-        const messageId = `agent-${body.type}-${body.role}-${body.text}`;
+        
+        // ✅ HelpDto 형식 처리 (content 필드 사용)
+        const content = body.content || body.text;
+        const role = body.role || 'UNKNOWN';
+        
+        if (!content) return;
+
+        const messageId = `agent-${body.type}-${role}-${content}`;
 
         if (isMessageProcessed(messageId)) return;
 
-        handleRoomMessage(body);
+        handleRoomMessage({ ...body, text: content, role });
       } catch (e) {
         console.error("방 메시지 파싱 오류:", e);
         if (frame.body) setLogs(prev => [...prev, `[RAW] ${frame.body}`]);
@@ -117,6 +124,21 @@ const LiveSupport: React.FC = () => {
 
   // 방 메시지 핸들러
   const handleRoomMessage = useCallback((body: any) => {
+    console.log("📨 상담사가 받은 메시지:", body);
+
+    // type이 없고 role이 SYS인 경우도 처리 (일반 메시지 형식)
+    if (body.role === 'SYS' && body.text) {
+      console.log("🔔 시스템 메시지 수신:", body.text);
+      setLogs(prev => [...prev, `[시스템] ${body.text}`]);
+      
+      // 유저 연결 해제 메시지 감지
+      if (body.text.includes('유저가 연결을 해제') || body.text.includes('연결을 해제')) {
+        console.log("⚠️ 유저 연결 해제 감지");
+        setIsUserConnected(false);
+      }
+      return;
+    }
+
     switch (body.type) {
       case "HANDOFF_ACCEPTED":
         const userName = body.userName || "user";
@@ -126,11 +148,14 @@ const LiveSupport: React.FC = () => {
         break;
 
       case "USER_DISCONNECTED":
+        console.log("⚠️ 유저 연결 해제 수신 (type)");
         setIsUserConnected(false);
-        setLogs(prev => [...prev, `[SYS] 유저가 연결을 해제했습니다.`]);
+        const disconnectText = body.text || "유저가 연결을 해제했습니다.";
+        setLogs(prev => [...prev, `[SYS] ${disconnectText}`]);
         break;
 
       case "AGENT_DISCONNECTED":
+        console.log("ℹ️ 상담사 연결 해제 확인 메시지 수신");
         setIsUserConnected(false);
         break;
 
@@ -145,18 +170,37 @@ const LiveSupport: React.FC = () => {
 
   // 큐 메시지 핸들러
   const handleQueueMessage = useCallback((body: any) => {
+    console.log("📥 큐 메시지 수신:", body);
+
     if (body.event === "HANDOFF_REQUESTED" && body.roomId) {
+      console.log("🔔 핸드오프 요청 수신:", {
+        roomId: body.roomId,
+        userName: body.userName,
+        userNickname: body.userNickname
+      });
+
       setQueue(prev => {
-        if (prev.some(q => q.roomId === body.roomId)) {
-          return prev;
-        }
-        return [...prev, {
+        // ✅ 이미 큐에 있는 경우 업데이트 (재연결 요청 처리)
+        const existingIndex = prev.findIndex(q => q.roomId === body.roomId);
+        
+        const newItem: QueueItem = {
           roomId: body.roomId,
           userName: body.userName || "user",
           userNickname: body.userNickname || "user"
-        }];
+        };
+
+        if (existingIndex >= 0) {
+          console.log("♻️ 기존 큐 항목 업데이트:", body.roomId);
+          const updated = [...prev];
+          updated[existingIndex] = newItem;
+          return updated;
+        } else {
+          console.log("➕ 새 큐 항목 추가:", body.roomId);
+          return [...prev, newItem];
+        }
       });
     } else if (body.event === "USER_DISCONNECTED" && body.roomId) {
+      console.log("🗑️ 큐에서 제거:", body.roomId);
       setQueue(prev => prev.filter(q => q.roomId !== body.roomId));
     }
   }, []);
@@ -248,7 +292,12 @@ const LiveSupport: React.FC = () => {
     stompRef.current.send(
       `/app/support.send/${activeRoom}`,
       {},
-      JSON.stringify({ type: "TEXT", role: "AGENT", text: input })
+      JSON.stringify({ 
+        type: "TEXT", 
+        role: "AGENT", 
+        text: input,
+        nickname: "상담사" 
+      })
     );
 
     setInput("");

@@ -170,11 +170,18 @@ const ChatBot: React.FC = () => {
         client.subscribe(`/topic/rooms/${roomId}`, (frame) => {
           try {
             const body = JSON.parse(frame.body);
-            const messageId = `${body.type}-${body.role}-${body.text}-${Date.now()}`;
+            
+            // ✅ HelpDto 형식 처리 (content 필드 사용)
+            const content = body.content || body.text;
+            const role = body.role || 'BOT';
+            
+            if (!content) return;
+
+            const messageId = `${body.type}-${role}-${content}-${Date.now()}`;
 
             if (isMessageProcessed(messageId)) return;
 
-            handleWebSocketMessage(body);
+            handleWebSocketMessage({ ...body, text: content, role });
           } catch (error) {
             console.error("메시지 파싱 오류:", error);
           }
@@ -195,6 +202,8 @@ const ChatBot: React.FC = () => {
 
   // WebSocket 메시지 핸들러
   const handleWebSocketMessage = useCallback((body: any) => {
+    console.log("📨 받은 메시지:", body);
+
     switch (body.type) {
       case "HANDOFF_REQUESTED":
         setMessages(prev => [...prev, { 
@@ -209,13 +218,15 @@ const ChatBot: React.FC = () => {
           role: 'SYS', 
           text: '상담사가 연결되었습니다. 지금부터 실시간 상담이 가능합니다.' 
         }]);
+        resetInactivityTimer();
         break;
 
       case "AGENT_DISCONNECTED":
+        console.log("⚠️ 상담사 연결 해제 수신");
         setIsAgentConnected(false);
         setMessages(prev => [...prev, { 
           role: 'SYS', 
-          text: '상담사가 연결을 해제했습니다.' 
+          text: body.text || '상담사가 연결을 해제했습니다.' 
         }]);
         if (inactivityTimerRef.current) {
           clearTimeout(inactivityTimerRef.current);
@@ -223,6 +234,7 @@ const ChatBot: React.FC = () => {
         break;
 
       case "USER_DISCONNECTED":
+        console.log("ℹ️ 유저 연결 해제 확인 메시지 수신");
         if (inactivityTimerRef.current) {
           clearTimeout(inactivityTimerRef.current);
         }
@@ -230,8 +242,15 @@ const ChatBot: React.FC = () => {
 
       default:
         if (body.text) {
-          const role = (body.role as 'BOT' | 'USER' | 'AGENT') ?? 'BOT';
-          setMessages(prev => [...prev, { role, text: body.text }]);
+          const role = (body.role as 'BOT' | 'USER' | 'AGENT' | 'SYS') ?? 'BOT';
+          
+          // SYS 메시지도 표시
+          if (role === 'SYS') {
+            setMessages(prev => [...prev, { role: 'SYS', text: body.text }]);
+          } else {
+            setMessages(prev => [...prev, { role, text: body.text }]);
+          }
+          
           if (role === 'AGENT') {
             resetInactivityTimer();
           }
@@ -246,7 +265,12 @@ const ChatBot: React.FC = () => {
     stompRef.current.send(
       `/app/support.send/${roomId}`,
       {},
-      JSON.stringify({ type: "TEXT", role: "USER", text: input })
+      JSON.stringify({ 
+        type: "TEXT", 
+        role: "USER", 
+        text: input,
+        userId: userInfo.current.userId 
+      })
     );
     setInput("");
     resetInactivityTimer();
@@ -254,7 +278,15 @@ const ChatBot: React.FC = () => {
 
   // 핸드오프 요청
   const requestHandoff = useCallback(() => {
-    if (!stompRef.current?.connected || isAgentConnected) return;
+    if (!stompRef.current?.connected) {
+      console.error("WebSocket이 연결되지 않았습니다.");
+      return;
+    }
+
+    if (isAgentConnected) {
+      console.log("이미 상담사와 연결되어 있습니다.");
+      return;
+    }
 
     if (!userInfo.current.userId) {
       setMessages(prev => [...prev, { 
@@ -263,6 +295,13 @@ const ChatBot: React.FC = () => {
       }]);
       return;
     }
+
+    console.log("📤 핸드오프 요청 전송:", {
+      roomId,
+      userId: userInfo.current.userId,
+      userName: userInfo.current.name,
+      userNickname: userInfo.current.nickname
+    });
 
     stompRef.current.send(
       `/app/support.handoff/${roomId}`,
@@ -286,6 +325,8 @@ const ChatBot: React.FC = () => {
   const disconnectAgent = useCallback(() => {
     if (!stompRef.current?.connected) return;
 
+    console.log("📤 유저 연결 해제 요청");
+
     setIsAgentConnected(false);
     setMessages(prev => [...prev, { 
       role: 'SYS', 
@@ -295,7 +336,10 @@ const ChatBot: React.FC = () => {
     stompRef.current.send(
       `/app/support.disconnect/${roomId}`,
       {},
-      JSON.stringify({ userName: userInfo.current.name })
+      JSON.stringify({ 
+        userName: userInfo.current.name,
+        userNickname: userInfo.current.nickname
+      })
     );
 
     if (inactivityTimerRef.current) {
@@ -385,7 +429,7 @@ const ChatBot: React.FC = () => {
                     className="w-full text-left bg-gray-300 hover:bg-gray-400 text-gray-600 rounded-lg px-4 py-3 shadow-md transition flex items-center justify-between font-semibold"
                   >
                     <div>
-                      <div className="text-sm">📁 {category.category}</div>
+                      <div className="text-sm">📋 {category.category}</div>
                       <div className="text-xs opacity-90 mt-1">{category.description}</div>
                     </div>
                     {openCategoryId === category.id ? (
