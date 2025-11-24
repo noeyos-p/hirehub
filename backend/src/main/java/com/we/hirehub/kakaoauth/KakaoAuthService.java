@@ -1,7 +1,7 @@
 package com.we.hirehub.kakaoauth;
 
 import com.we.hirehub.config.JwtTokenProvider;
-import com.we.hirehub.dto.login.KakaoAuthResult;
+import com.we.hirehub.dto.login.AuthResult;
 import com.we.hirehub.dto.login.KakaoTokenResponse;
 import com.we.hirehub.dto.login.KakaoUserResponse;
 import com.we.hirehub.entity.Role;
@@ -24,7 +24,7 @@ public class KakaoAuthService {
      * 그리고 프론트 분기용으로 isNewUser까지 함께 리턴
      */
     @Transactional
-    public KakaoAuthResult handleCallback(String code, KakaoOAuthProperties props) {
+    public AuthResult handleCallback(String code, KakaoOAuthProperties props) {
         // 1) 인가코드로 토큰 교환
         KakaoTokenResponse token = kakaoClient.exchangeToken(code, props);
 
@@ -52,7 +52,7 @@ public class KakaoAuthService {
         String jwt = jwtTokenProvider.createToken(user.getEmail(), user.getId());
 
         // 6) 프론트 콜백에서 쿼리로 token & isNewUser 넘길 수 있게 패키징
-        return new KakaoAuthResult(jwt, email, isNewUser);
+        return new AuthResult(jwt, email, isNewUser);
     }
 
     /** 수동(독립) 인가 링크 필요 시 */

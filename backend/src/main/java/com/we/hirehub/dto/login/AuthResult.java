@@ -1,4 +1,3 @@
-// src/main/java/com/we/hirehub/kakaoauth/KakaoAuthResult.java
 package com.we.hirehub.dto.login;
 
 import lombok.AllArgsConstructor;
@@ -10,8 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class KakaoAuthResult {
-
+public class AuthResult {
     private String jwt;
     private String email;
     private boolean isNewUser;

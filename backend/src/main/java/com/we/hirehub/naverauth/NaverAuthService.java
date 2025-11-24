@@ -2,9 +2,9 @@
 package com.we.hirehub.naverauth;
 
 import com.we.hirehub.config.JwtTokenProvider;
+import com.we.hirehub.dto.login.AuthResult;
 import com.we.hirehub.entity.Role;
 import com.we.hirehub.entity.Users;
-import com.we.hirehub.dto.login.NaverAuthResult;
 import com.we.hirehub.dto.login.NaverTokenResponse;
 import com.we.hirehub.dto.login.NaverUserResponse;
 import com.we.hirehub.repository.UsersRepository;
@@ -21,7 +21,7 @@ public class NaverAuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
-    public NaverAuthResult handleCallback(String code, NaverOAuthProperties props) {
+    public AuthResult handleCallback(String code, NaverOAuthProperties props) {
         // 1) 코드 → 토큰
         NaverTokenResponse token = client.exchangeCode(
                 code,
@@ -53,6 +53,6 @@ public class NaverAuthService {
         String jwt = jwtTokenProvider.createToken(user.getEmail(), user.getId());
 
         // 5) 프론트로 토큰 전달
-        return new NaverAuthResult(jwt, email, isNewUser);
+        return new AuthResult(jwt, email, isNewUser);
     }
 }

@@ -1,7 +1,7 @@
 // src/main/java/com/we/hirehub/service/AuthService.java
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.login.SignupEmailRequest;
+import com.we.hirehub.dto.login.SignupAndLoginDto;
 import com.we.hirehub.entity.Role;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
@@ -29,7 +29,7 @@ public class AuthService {
     // [ADD] ✅ 일반 회원가입(이메일/비밀번호)
     // - 엔티티/DDL 변경 없이 동작
     // - 이메일 중복 검사 → 비밀번호 인코딩 → USER 롤로 저장
-    public Users signupEmail(SignupEmailRequest req) {
+    public Users signupEmail(SignupAndLoginDto req) {
         if (req == null || req.getEmail() == null || req.getEmail().isBlank()
                 || req.getPassword() == null || req.getPassword().isBlank()) {
             throw new IllegalArgumentException("email/password is required");

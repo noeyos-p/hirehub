@@ -1,7 +1,7 @@
 // src/main/java/com/we/hirehub/kakaoauth/KakaoAuthController.java
 package com.we.hirehub.kakaoauth;
 
-import com.we.hirehub.dto.login.KakaoAuthResult;
+import com.we.hirehub.dto.login.AuthResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class KakaoAuthController {
     /** 카카오 콜백 (인가코드 → 토큰 → 유저 조회 → JWT 발급 → 프론트 콜백 리다이렉트) */
     @GetMapping("/kakao/callback")
     public String callback(String code) {
-        KakaoAuthResult result = kakaoAuthService.handleCallback(code, props);
+        AuthResult result = kakaoAuthService.handleCallback(code, props);
 
         String redirect = props.getFrontRedirectUrl()
                 + "?token=" + java.net.URLEncoder.encode(result.getJwt(), java.nio.charset.StandardCharsets.UTF_8)
