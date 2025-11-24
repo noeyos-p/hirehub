@@ -9,13 +9,32 @@ const AttentionSection: React.FC = () => {
   const [popularJobs, setPopularJobs] = useState<JobPostResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
-  // ❌ companyPhotos 상태 제거 - 더 이상 필요 없음
+  const [companyPhotos, setCompanyPhotos] = useState<Record<number, string>>({});
 
   const cardsPerPage = 5;
   const totalPages = 3;
   const cardsContainerRef = useRef<HTMLDivElement>(null);
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const fetchCompanyPhotos = async (jobs: JobPostResponse[]) => {
+    const photos: Record<number, string> = {};
+    await Promise.all(
+      jobs.map(async (job) => {
+        if (job.companyId && !photos[job.companyId]) {
+          try {
+            const company = await jobPostApi.getCompanyById(job.companyId);
+            if (company.photo) {
+              photos[job.companyId] = company.photo;
+            }
+          } catch (e) {
+            console.error(`Failed to fetch photo for company ${job.companyId}`, e);
+          }
+        }
+      })
+    );
+    setCompanyPhotos((prev) => ({ ...prev, ...photos }));
+  };
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -30,15 +49,13 @@ const AttentionSection: React.FC = () => {
           .slice(0, 15);
 
         setPopularJobs(sortedJobs);
-        // ❌ fetchCompanyPhotos 호출 제거 - 더 이상 필요 없음
+        fetchCompanyPhotos(sortedJobs);
       } catch (err) {
         console.error("공고 불러오기 실패", err);
       }
     };
     fetchJobs();
   }, []);
-
-  // ❌ fetchCompanyPhotos 함수 전체 제거 - 더 이상 필요 없음
 
   // 스크랩 상태 확인
   useEffect(() => {
@@ -145,15 +162,15 @@ const AttentionSection: React.FC = () => {
               className="relative w-[253px] h-[288px] bg-white border border-gray-200 rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleJobClick(job.id)}
             >
-              {/* ✅ 회사 이미지 - job.companyPhoto 직접 사용 */}
+              {/* ✅ 회사 이미지 - companyPhotos 사용 */}
               <div className="w-full h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-4">
-                {job.photo ? (
+                {companyPhotos[job.companyId] ? (
                   <img
-                    src={job.photo}
+                    src={companyPhotos[job.companyId]}
                     alt={job.companyName}
                     className="max-w-[80%] max-h-[80%] object-contain"
                     onError={(e) => {
-                      console.error(`❌ 이미지 로드 실패: ${job.companyName}`, job.photo);
+                      console.error(`❌ 이미지 로드 실패: ${job.companyName}`, companyPhotos[job.companyId]);
                       // 이미지 로드 실패 시 대체 UI 표시
                       const target = e.currentTarget as HTMLImageElement;
                       target.style.display = 'none';
