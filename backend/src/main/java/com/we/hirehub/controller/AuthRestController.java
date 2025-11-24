@@ -1,8 +1,7 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.config.JwtTokenProvider;
-import com.we.hirehub.dto.login.LoginRequest;
-import com.we.hirehub.dto.login.SignupEmailRequest;
+import com.we.hirehub.dto.login.SignupAndLoginDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.AuthService;
@@ -44,7 +43,7 @@ public class AuthRestController {
      * POST /api/auth/login
      */
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody SignupAndLoginDto request) {
         try {
             log.info("로그인 시도: {}", request.getEmail());
 
@@ -94,7 +93,7 @@ public class AuthRestController {
      * POST /api/auth/signup
      */
     @PostMapping("/signup")
-    public ResponseEntity<Map<String, String>> signup(@Valid @RequestBody SignupEmailRequest request) {
+    public ResponseEntity<Map<String, String>> signup(@Valid @RequestBody SignupAndLoginDto request) {
         // [FIX] 클래스명이 아니라, 실제 파라미터 변수 request 를 전달해야 함
         authService.signupEmail(request);   // ← 여기만 수정
 
