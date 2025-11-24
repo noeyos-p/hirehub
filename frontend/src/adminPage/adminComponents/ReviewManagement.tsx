@@ -1,19 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { TrashIcon, PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import api from "../../api/api";
-
-interface Review {
-  id: number;
-  score: number;
-  content: string | null;
-  usersId: number;
-  nickname: string | null;
-  companyId: number;
-  companyName: string | null;
-}
+import { adminApi } from "../../api/adminApi";
+import type { AdminReview } from "../../types/interface";
 
 const ReviewManagement: React.FC = () => {
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,7 +12,7 @@ const ReviewManagement: React.FC = () => {
   const [error, setError] = useState("");
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editReview, setEditReview] = useState<Review | null>(null);
+  const [editReview, setEditReview] = useState<AdminReview | null>(null);
 
   const pageSize = 10;
 
@@ -31,23 +22,23 @@ const ReviewManagement: React.FC = () => {
     setError("");
 
     try {
-      const response = await api.get("/api/admin/reviews", {
-        params: {
-          page,
-          size: pageSize,
-          sortBy: "id",
-          direction: "DESC",
-        },
+      const res = await adminApi.getReviews({
+        page,
+        size: pageSize,
+        sortBy: "id",
+        direction: "DESC",
       });
 
-      const data = response.data;
-      // DTO 기반 Page 구조
-      setReviews(data.content || []);
-      setTotalPages(data.totalPages || 0);
-      setCurrentPage(page);
+      if (res.success) {
+        setReviews(res.data);
+        setTotalPages(res.totalPages);
+        setCurrentPage(page);
+      } else {
+        setError(res.message || "리뷰 목록을 불러오지 못했습니다.");
+      }
     } catch (err: any) {
       console.error("❌ 리뷰 목록 조회 실패:", err);
-      setError(err.response?.data?.message || "리뷰 목록을 불러오지 못했습니다.");
+      setError(err.message || "리뷰 목록을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
     }
@@ -62,23 +53,27 @@ const ReviewManagement: React.FC = () => {
     if (!window.confirm("정말 이 리뷰를 삭제하시겠습니까?")) return;
 
     try {
-      await api.delete(`/api/admin/reviews/${reviewId}`);
-      alert("리뷰가 삭제되었습니다.");
+      const res = await adminApi.deleteReview(reviewId);
+      if (res.success) {
+        alert("리뷰가 삭제되었습니다.");
 
-      // 마지막 항목 삭제 시 페이지 이동 처리
-      if (reviews.length === 1 && currentPage > 0) {
-        fetchReviews(currentPage - 1);
+        // 마지막 항목 삭제 시 페이지 이동 처리
+        if (reviews.length === 1 && currentPage > 0) {
+          fetchReviews(currentPage - 1);
+        } else {
+          fetchReviews(currentPage);
+        }
       } else {
-        fetchReviews(currentPage);
+        alert(res.message || "리뷰 삭제 실패");
       }
     } catch (err: any) {
       console.error("❌ 리뷰 삭제 실패:", err);
-      alert(err.response?.data?.message || "리뷰 삭제 중 오류가 발생했습니다.");
+      alert(err.message || "리뷰 삭제 중 오류가 발생했습니다.");
     }
   };
 
   // 리뷰 수정 모달 열기
-  const handleEdit = (review: Review) => {
+  const handleEdit = (review: AdminReview) => {
     setEditReview({ ...review });
     setIsEditModalOpen(true);
   };
@@ -89,17 +84,21 @@ const ReviewManagement: React.FC = () => {
     if (!editReview) return;
 
     try {
-      await api.put(`/api/admin/reviews/${editReview.id}`, {
+      const res = await adminApi.updateReview(editReview.id, {
         content: editReview.content,
         score: editReview.score,
       });
 
-      alert("리뷰 수정 완료!");
-      setIsEditModalOpen(false);
-      fetchReviews(currentPage);
+      if (res.success) {
+        alert("리뷰 수정 완료!");
+        setIsEditModalOpen(false);
+        fetchReviews(currentPage);
+      } else {
+        alert(res.message || "리뷰 수정 실패");
+      }
     } catch (err: any) {
       console.error("❌ 리뷰 수정 실패:", err);
-      alert(err.response?.data?.message || "리뷰 수정 중 오류가 발생했습니다.");
+      alert(err.message || "리뷰 수정 중 오류가 발생했습니다.");
     }
   };
 
@@ -146,11 +145,10 @@ const ReviewManagement: React.FC = () => {
             <button
               key={page}
               onClick={() => fetchReviews(page)}
-              className={`px-4 py-2 rounded-lg border ${
-                currentPage === page
+              className={`px-4 py-2 rounded-lg border ${currentPage === page
                   ? "bg-blue-600 text-white border-blue-600"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
+                }`}
             >
               {page + 1}
             </button>

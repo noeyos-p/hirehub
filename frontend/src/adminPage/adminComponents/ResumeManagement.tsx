@@ -1,64 +1,8 @@
 // src/admin/resume/ResumeManagement.tsx
 import React, { useEffect, useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import api from "../../api/api";
-
-/* =========================
- * Types from Admin API
- * ========================= */
-type ResumeDtoFromApi = {
-  id: number;
-  title: string;
-  idPhoto?: string | null;
-  essayTitle?: string | null;   // sometimes used by user side
-  essayTittle?: string | null;  // sometimes used by admin side
-  essayContent?: string | null;
-  htmlContent?: string | null;
-  locked: boolean;
-
-  // Admin page may provide these lists (optional)
-  educationList?: Array<{
-    name?: string;
-    major?: string;
-    status?: string;
-    type?: string;
-    startAt?: string | null;
-    endAt?: string | null;
-  }>;
-
-  careerList?: Array<{
-    companyName?: string;
-    type?: string;
-    position?: string;
-    startAt?: string | null;
-    endAt?: string | null;
-    content?: string;
-  }>;
-
-  certificateList?: Array<any>;
-  skillList?: Array<any>;
-  languageList?: Array<any>; // sometimes present
-
-  // sometimes languages: string[] (fallback key from server)
-  languages?: Array<any>;
-
-  users?: {
-    userId?: number;
-    nickname?: string;
-    email?: string;
-  };
-
-  createAt: string;
-  updateAt: string;
-};
-
-interface PageResponse<T> {
-  content: T[];
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  number: number;
-}
+import { adminApi } from "../../api/adminApi";
+import type { AdminResumeDto } from "../../types/interface";
 
 /* =========================
  * View Models for Admin UI
@@ -164,7 +108,7 @@ function parseHtmlContentToExtra(htmlContent?: string | null) {
 }
 
 /** 핵심: 서버 DTO + htmlContent → 화면 모델 병합(언어 포함) */
-function normalizeResume(dto: ResumeDtoFromApi): Resume {
+function normalizeResume(dto: AdminResumeDto): Resume {
   // users
   const users = {
     id: dto.users?.userId ?? 0,
@@ -223,7 +167,7 @@ function normalizeResume(dto: ResumeDtoFromApi): Resume {
     locked: dto.locked,
     users,
     createAt: dto.createAt,
-    updateAt: dto.updateAt,
+    updateAt: dto.updateAt || "",
   };
 }
 
@@ -261,11 +205,10 @@ const ResumeDetailModal: React.FC<ResumeDetailModalProps> = ({ resume, isOpen, o
             <span>작성자: {resume.users.nickname}</span>
             <span>이메일: {resume.users.email}</span>
             <span
-              className={`px-2 py-1 rounded text-xs ${
-                resume.locked
+              className={`px-2 py-1 rounded text-xs ${resume.locked
                   ? "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
                   : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
-              }`}
+                }`}
             >
               {resume.locked ? "지원됨" : "지원안됨"}
             </span>
@@ -422,16 +365,19 @@ const ResumeManagement: React.FC = () => {
   const fetchResumes = async (page: number = 0) => {
     try {
       setIsLoading(true);
-      const params = { page, size: 10, sort: "createAt,desc" };
-      const response = await api.get<PageResponse<ResumeDtoFromApi>>("/api/admin/resume-management", { params });
+      const res = await adminApi.getResumes({ page, size: 10, sort: "createAt,desc" });
 
-      const mapped = (response.data.content || []).map(normalizeResume);
-      setResumes(mapped);
-      setTotalPages(response.data.totalPages);
-      setTotalElements(response.data.totalElements);
-      setCurrentPage(response.data.number);
+      if (res.success) {
+        const mapped = (res.data || []).map(normalizeResume);
+        setResumes(mapped);
+        setTotalPages(res.totalPages);
+        setTotalElements(res.totalElements);
+        setCurrentPage(res.currentPage || page);
+      } else {
+        throw new Error(res.message || "이력서 목록을 불러오는데 실패했습니다.");
+      }
     } catch (err: any) {
-      alert(err?.response?.data?.message || "이력서 목록을 불러오는데 실패했습니다.");
+      alert(err.message || "이력서 목록을 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -448,18 +394,16 @@ const ResumeManagement: React.FC = () => {
 
   const handleResumeClick = async (resumeId: number) => {
     try {
-      const response = await api.get<{ success: boolean; data: ResumeDtoFromApi }>(
-        `/api/admin/resume-management/${resumeId}`
-      );
-      if (response.data.success) {
-        const mapped = normalizeResume(response.data.data);
+      const res = await adminApi.getResumeDetail(resumeId);
+      if (res.success) {
+        const mapped = normalizeResume(res.data);
         setSelectedResume(mapped);
         setIsModalOpen(true);
       } else {
-        throw new Error("이력서 상세 정보를 불러오는데 실패했습니다.");
+        throw new Error(res.message || "이력서 상세 정보를 불러오는데 실패했습니다.");
       }
     } catch (err: any) {
-      alert(err?.response?.data?.message || "이력서 상세 정보를 불러오는데 실패했습니다.");
+      alert(err.message || "이력서 상세 정보를 불러오는데 실패했습니다.");
     }
   };
 
@@ -495,11 +439,10 @@ const ResumeManagement: React.FC = () => {
                       {resume.title}
                     </div>
                     <span
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        resume.locked
+                      className={`px-2 py-0.5 rounded text-xs ${resume.locked
                           ? "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
                           : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
-                      }`}
+                        }`}
                     >
                       {resume.locked ? "지원됨" : "지원안됨"}
                     </span>
@@ -538,11 +481,10 @@ const ResumeManagement: React.FC = () => {
               <button
                 key={pageNum}
                 onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 rounded-lg ${
-                  currentPage === pageNum
+                className={`px-3 py-1 rounded-lg ${currentPage === pageNum
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                }`}
+                  }`}
               >
                 {pageNum + 1}
               </button>

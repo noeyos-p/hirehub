@@ -12,9 +12,9 @@ const MESSAGE_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5분
 
 const LiveSupport: React.FC = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
-  
+
   const [queue, setQueue] = useState<QueueItem[]>([]);
-  const [activeRoom, setActiveRoom] = useState<string | null>(() => 
+  const [activeRoom, setActiveRoom] = useState<string | null>(() =>
     localStorage.getItem('agent-activeRoom')
   );
   const [logs, setLogs] = useState<string[]>(() => {
@@ -26,7 +26,7 @@ const LiveSupport: React.FC = () => {
     }
   });
   const [input, setInput] = useState("");
-  const [isUserConnected, setIsUserConnected] = useState(() => 
+  const [isUserConnected, setIsUserConnected] = useState(() =>
     localStorage.getItem('agent-isUserConnected') === 'true'
   );
 
@@ -56,11 +56,11 @@ const LiveSupport: React.FC = () => {
   const isMessageProcessed = useCallback((messageId: string): boolean => {
     const now = Date.now();
     const lastProcessed = processedMessagesRef.current.get(messageId);
-    
+
     if (lastProcessed && now - lastProcessed < 5000) {
       return true;
     }
-    
+
     processedMessagesRef.current.set(messageId, now);
     return false;
   }, []);
@@ -103,11 +103,11 @@ const LiveSupport: React.FC = () => {
     roomSubRef.current = stompRef.current.subscribe(`/topic/rooms/${roomId}`, (frame) => {
       try {
         const body = JSON.parse(frame.body);
-        
+
         // ✅ HelpDto 형식 처리 (content 필드 사용)
         const content = body.content || body.text;
         const role = body.role || 'UNKNOWN';
-        
+
         if (!content) return;
 
         const messageId = `agent-${body.type}-${role}-${content}`;
@@ -130,7 +130,7 @@ const LiveSupport: React.FC = () => {
     if (body.role === 'SYS' && body.text) {
       console.log("🔔 시스템 메시지 수신:", body.text);
       setLogs(prev => [...prev, `[시스템] ${body.text}`]);
-      
+
       // 유저 연결 해제 메시지 감지
       if (body.text.includes('유저가 연결을 해제') || body.text.includes('연결을 해제')) {
         console.log("⚠️ 유저 연결 해제 감지");
@@ -182,7 +182,7 @@ const LiveSupport: React.FC = () => {
       setQueue(prev => {
         // ✅ 이미 큐에 있는 경우 업데이트 (재연결 요청 처리)
         const existingIndex = prev.findIndex(q => q.roomId === body.roomId);
-        
+
         const newItem: QueueItem = {
           roomId: body.roomId,
           userName: body.userName || "user",
@@ -210,12 +210,12 @@ const LiveSupport: React.FC = () => {
     const wsUrl = API_BASE_URL ? `${API_BASE_URL}/ws` : "/ws";
     const sock = new SockJS(wsUrl);
     const client = Stomp.over(sock);
-    client.debug = () => {};
+    client.debug = () => { };
 
-    const token = localStorage.getItem("adminAccessToken") || 
-                  localStorage.getItem("accessToken") || 
-                  localStorage.getItem("token");
-    
+    const token = localStorage.getItem("adminAccessToken") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("token");
+
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -229,9 +229,9 @@ const LiveSupport: React.FC = () => {
           try {
             const body = JSON.parse(frame.body);
             const messageId = `queue-${body.event}-${body.roomId}`;
-            
+
             if (isMessageProcessed(messageId)) return;
-            
+
             handleQueueMessage(body);
           } catch (e) {
             console.error("큐 메시지 파싱 오류:", e);
@@ -252,7 +252,7 @@ const LiveSupport: React.FC = () => {
 
     return () => {
       try {
-        client.disconnect(() => {});
+        client.disconnect(() => { });
       } catch (e) {
         console.error("연결 해제 오류:", e);
       }
@@ -274,12 +274,12 @@ const LiveSupport: React.FC = () => {
     );
 
     setActiveRoom(roomId);
-    setLogs(prev => [...prev, 
-      `[SYS] [${request.userName} (${request.userNickname})] 상담 연결 중...`
+    setLogs(prev => [...prev,
+    `[SYS] [${request.userName} (${request.userNickname})] 상담 연결 중...`
     ]);
     setIsUserConnected(true);
     setQueue(prev => prev.filter(q => q.roomId !== roomId));
-    
+
     subscribeRoom(roomId);
   }, [queue, subscribeRoom]);
 
@@ -292,11 +292,11 @@ const LiveSupport: React.FC = () => {
     stompRef.current.send(
       `/app/support.send/${activeRoom}`,
       {},
-      JSON.stringify({ 
-        type: "TEXT", 
-        role: "AGENT", 
+      JSON.stringify({
+        type: "TEXT",
+        role: "AGENT",
         text: input,
-        nickname: "상담사" 
+        nickname: "상담사"
       })
     );
 
@@ -386,11 +386,10 @@ const LiveSupport: React.FC = () => {
           </div>
 
           {activeRoom && (
-            <div className={`mb-2 px-3 py-2 rounded text-sm ${
-              isUserConnected
-                ? 'bg-green-100 text-green-800 border border-green-300'
-                : 'bg-red-100 text-red-800 border border-red-300'
-            }`}>
+            <div className={`mb-2 px-3 py-2 rounded text-sm ${isUserConnected
+              ? 'bg-green-100 text-green-800 border border-green-300'
+              : 'bg-red-100 text-red-800 border border-red-300'
+              }`}>
               {isUserConnected ? '✅ 유저 연결됨' : '❌ 유저 연결 해제됨'}
             </div>
           )}
@@ -422,11 +421,10 @@ const LiveSupport: React.FC = () => {
               <button
                 onClick={sendToRoom}
                 disabled={!activeRoom || !input.trim() || !isUserConnected}
-                className={`px-4 py-2 rounded text-sm ${
-                  activeRoom && input.trim() && isUserConnected
-                    ? "bg-black text-white hover:bg-gray-800"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`px-4 py-2 rounded text-sm ${activeRoom && input.trim() && isUserConnected
+                  ? "bg-black text-white hover:bg-gray-800"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 보내기
               </button>

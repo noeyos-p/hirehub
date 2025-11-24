@@ -85,6 +85,11 @@ export const myPageApi = {
         return data;
     },
 
+    getResumeSnapshot: async (applyId: string): Promise<ResumeDto> => {
+        const { data } = await api.get(`/api/mypage/applies/${applyId}/resume`);
+        return data;
+    },
+
     updateResume: async (id: number, payload: any): Promise<void> => {
         await api.put(`/api/mypage/resumes/${id}`, payload, {
             headers: { "Content-Type": "application/json" },

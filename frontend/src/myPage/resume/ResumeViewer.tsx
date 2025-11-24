@@ -1,18 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import api from "../../api/api";
+import { myPageApi } from "../../api/myPageApi";
+import type { ResumeDto } from "../../types/interface";
 
 /** ---------- Types ---------- */
-type ProfileMini = {
-  id: number;
-  nickname?: string | null;
-  name?: string | null;
-  phone?: string | null;
-  gender?: string | null;
-  birth?: string | null;     // yyyy-MM-dd
-  address?: string | null;
-  email?: string | null;
-};
 
 type ExtraState = {
   educations: Array<{ school: string; period: string; status: string; major: string }>;
@@ -28,37 +19,6 @@ const defaultExtra: ExtraState = {
   certs: [],
   skills: [],
   langs: [],
-};
-
-type ResumeDto = {
-  id: number;
-  title: string;
-  idPhoto?: string | null;
-  essayTitle?: string | null;
-  essayContent?: string | null;
-  htmlContent?: string | null;  // JSON 문자열
-  locked: boolean;
-  createAt: string;
-  updateAt: string;
-  profile?: ProfileMini | null;
-
-  // ✅ 스냅샷 메타(있을 수도, 없을 수도)
-  companyName?: string | null;
-  appliedAt?: string | null;
-
-  // ✅ 백에서 분해해 주는 경우를 대비
-  educationJson?: string | null;
-  careerJson?: string | null;
-  certJson?: string | null;
-  skillJson?: string | null;
-  langJson?: string | null;
-
-  // ✅ 혹시 키가 다른 경우에도 대비
-  educations?: any[];
-  careers?: any[];
-  certs?: any[];
-  skills?: any[];
-  langs?: any[];
 };
 
 /** ---------- Utils ---------- */
@@ -132,15 +92,15 @@ const normalizeToExtra = (source: any): ExtraState => {
     school: e?.name ?? e?.school ?? "",
     period: [e?.startAt, e?.endAt].filter(Boolean).join(" ~ "),
     status: e?.status ?? "",
-    major:  e?.major ?? "",
+    major: e?.major ?? "",
   }));
 
   const careers = (carA.length ? carA : carB).map((c: any) => ({
     company: c?.companyName ?? c?.company ?? "",
-    period:  [c?.startAt, c?.endAt].filter(Boolean).join(" ~ "),
-    role:    c?.position ?? c?.role ?? "",
-    job:     c?.job ?? "",
-    desc:    c?.content ?? c?.desc ?? "",
+    period: [c?.startAt, c?.endAt].filter(Boolean).join(" ~ "),
+    role: c?.position ?? c?.role ?? "",
+    job: c?.job ?? "",
+    desc: c?.content ?? c?.desc ?? "",
   }));
 
   const certs = (cerA.length ? cerA : cerB).map(pickName).filter(Boolean);
@@ -201,8 +161,7 @@ const ResumeViewer: React.FC = () => {
         // 1) applyId가 있으면 스냅샷 우선
         if (applyId) {
           try {
-            const r1 = await api.get<ResumeDto>(`/api/mypage/applies/${applyId}/resume`);
-            loaded = r1?.data ?? null;
+            loaded = await myPageApi.getResumeSnapshot(applyId);
             console.log("[ResumeViewer] snapshot loaded:", loaded);
           } catch (e) {
             console.warn("[ResumeViewer] snapshot not available, fallback to resume:", e);
@@ -211,8 +170,7 @@ const ResumeViewer: React.FC = () => {
 
         // 2) 폴백: 일반 이력서
         if (!loaded) {
-          const r2 = await api.get<ResumeDto>(`/api/mypage/resumes/${id}`);
-          loaded = r2?.data ?? null;
+          loaded = await myPageApi.getResumeDetail(Number(id));
           console.log("[ResumeViewer] resume loaded:", loaded);
         }
 
@@ -398,7 +356,7 @@ const ResumeViewer: React.FC = () => {
       )}
 
       {/* 👀 디버그 토글(개발 중 유용) */}
-    
+
     </div>
   );
 };

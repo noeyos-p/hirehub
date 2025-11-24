@@ -1,25 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import api from "../../api/api";
-
-interface User {
-  id: number;
-  name: string;
-  nickname: string;
-  email: string;
-  role: string;
-  createdAt: string;
-}
-
-interface PageInfo {
-  totalElements: number;
-  totalPages: number;
-  currentPage: number;
-}
+import { adminApi } from "../../api/adminApi";
+import type { AdminUser, AdminPageInfo } from "../../types/interface";
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [pageInfo, setPageInfo] = useState<PageInfo>({
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [pageInfo, setPageInfo] = useState<AdminPageInfo>({
     totalElements: 0,
     totalPages: 0,
     currentPage: 0,
@@ -41,7 +27,7 @@ const UserManagement: React.FC = () => {
 
   // 수정 모달
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<AdminUser | null>(null);
 
   const pageSize = 10;
 
@@ -51,21 +37,19 @@ const UserManagement: React.FC = () => {
     setError("");
 
     try {
-      const response = await api.get("/api/admin/user-management", {
-        params: {
-          page,
-          size: pageSize,
-          sortBy: "id",
-          direction: "DESC"
-        }
+      const response = await adminApi.getUsers({
+        page,
+        size: pageSize,
+        sortBy: "id",
+        direction: "DESC"
       });
 
-      if (response.data.success) {
-        setUsers(response.data.data);
+      if (response.success) {
+        setUsers(response.data);
         setPageInfo({
-          totalElements: response.data.totalElements,
-          totalPages: response.data.totalPages,
-          currentPage: response.data.currentPage,
+          totalElements: response.totalElements,
+          totalPages: response.totalPages,
+          currentPage: response.currentPage,
         });
         setCurrentPage(page);
       }
@@ -93,9 +77,9 @@ const UserManagement: React.FC = () => {
     e.preventDefault();
 
     try {
-      const response = await api.post("/api/admin/user-management", newUser);
+      const response = await adminApi.createUser(newUser);
 
-      if (response.data.success) {
+      if (response.success) {
         alert("유저 등록 완료!");
         setIsCreateModalOpen(false);
         setNewUser({
@@ -114,7 +98,7 @@ const UserManagement: React.FC = () => {
   };
 
   // ✅ 수정 모달 열기
-  const handleEditClick = (user: User) => {
+  const handleEditClick = (user: AdminUser) => {
     setEditUser({ ...user });
     setIsEditModalOpen(true);
   };
@@ -125,14 +109,14 @@ const UserManagement: React.FC = () => {
     if (!editUser) return;
 
     try {
-      const response = await api.put(`/api/admin/user-management/${editUser.id}`, {
+      const response = await adminApi.updateUser(editUser.id, {
         name: editUser.name,
         nickname: editUser.nickname,
         email: editUser.email,
         role: editUser.role
       });
 
-      if (response.data.success) {
+      if (response.success) {
         alert("수정 완료!");
         setIsEditModalOpen(false);
         fetchUsers(currentPage);
@@ -148,9 +132,9 @@ const UserManagement: React.FC = () => {
     if (!window.confirm("정말 이 유저를 삭제하시겠습니까?")) return;
 
     try {
-      const response = await api.delete(`/api/admin/user-management/${id}`);
+      const response = await adminApi.deleteUser(id);
 
-      if (response.data.success) {
+      if (response.success) {
         alert("삭제되었습니다.");
 
         // 현재 페이지에 데이터가 1개만 남았고, 첫 페이지가 아니면 이전 페이지로
@@ -191,8 +175,8 @@ const UserManagement: React.FC = () => {
             key={page}
             onClick={() => handlePageChange(page)}
             className={`px-4 py-2 rounded-lg border transition-colors ${currentPage === page
-                ? "bg-blue-600 text-white border-blue-600"
-                : "border-gray-300 text-gray-700 hover:bg-gray-50"
+              ? "bg-blue-600 text-white border-blue-600"
+              : "border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
           >
             {page + 1}

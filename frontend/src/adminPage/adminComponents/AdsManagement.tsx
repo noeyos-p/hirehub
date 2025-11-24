@@ -5,17 +5,12 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import api from "../../api/api"; // ✅ 공통 axios 인스턴스
-
-interface Ad {
-  id: number;
-  title: string;
-  imageUrl?: string;
-}
+import { adminApi } from "../../api/adminApi";
+import type { AdminAd } from "../../types/interface";
 
 const AdsManagement: React.FC = () => {
-  const [ads, setAds] = useState<Ad[]>([]);
-  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+  const [ads, setAds] = useState<AdminAd[]>([]);
+  const [selectedAd, setSelectedAd] = useState<AdminAd | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,9 +55,9 @@ const AdsManagement: React.FC = () => {
     const fetchAds = async () => {
       try {
         setIsLoading(true);
-        const res = await api.get("/api/admin/ads-management/ads");
-        if (res.data.success && Array.isArray(res.data.data)) {
-          const formatted = res.data.data.map((ad: any) => ({
+        const res = await adminApi.getAds();
+        if (res.success && Array.isArray(res.data)) {
+          const formatted: AdminAd[] = res.data.map((ad: any) => ({
             id: ad.id,
             title: ad.title || `광고 #${ad.id}`,
             imageUrl: ad.photo || "",
@@ -72,7 +67,7 @@ const AdsManagement: React.FC = () => {
           console.warn("⚠️ 광고 데이터 형식이 올바르지 않습니다.", res.data);
         }
       } catch (err: any) {
-        console.error("❌ 광고 조회 실패:", err.response?.data || err.message);
+        console.error("❌ 광고 조회 실패:", err.message);
         alert("광고 목록을 불러오는데 실패했습니다.");
       } finally {
         setIsLoading(false);
@@ -83,7 +78,7 @@ const AdsManagement: React.FC = () => {
   }, []);
 
   /** 광고 선택 */
-  const handleAdClick = (ad: Ad) => setSelectedAd(ad);
+  const handleAdClick = (ad: AdminAd) => setSelectedAd(ad);
 
   /** 이미지 업로드 */
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,13 +90,11 @@ const AdsManagement: React.FC = () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await api.post("/api/admin/ads-management/ad-image", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const data = await adminApi.uploadAdImage(formData);
 
-      if (res.data.success) {
-        const { adId, photo } = res.data;
-        const newAd: Ad = {
+      if (data.success) {
+        const { adId, photo } = data;
+        const newAd: AdminAd = {
           id: adId,
           title: `광고 #${adId}`,
           imageUrl: photo,
@@ -110,10 +103,10 @@ const AdsManagement: React.FC = () => {
         setSelectedAd(newAd);
         alert("광고가 성공적으로 등록되었습니다!");
       } else {
-        alert("업로드 실패: " + res.data.message);
+        alert("업로드 실패: " + data.message);
       }
     } catch (err: any) {
-      console.error("❌ 업로드 에러:", err.response?.data || err.message);
+      console.error("❌ 업로드 에러:", err.message);
       alert("파일 업로드 중 오류가 발생했습니다.");
     } finally {
       setIsUploading(false);
@@ -131,14 +124,12 @@ const AdsManagement: React.FC = () => {
 
     try {
       if (targetAd.imageUrl) {
-        const res = await api.delete("/api/admin/ads-management/file", {
-          params: { fileUrl: targetAd.imageUrl, adId }, // ✅ adId 포함
-        });
+        const res = await adminApi.deleteAd(adId, targetAd.imageUrl);
 
-        if (res.data.success) {
+        if (res.success) {
           console.log("🗑️ 파일 및 DB 초기화 완료:", targetAd.imageUrl);
         } else {
-          console.warn("⚠️ 삭제 실패:", res.data.message);
+          console.warn("⚠️ 삭제 실패:", res.message);
         }
       }
 
@@ -146,7 +137,7 @@ const AdsManagement: React.FC = () => {
       if (selectedAd?.id === adId) setSelectedAd(null);
       alert("광고 항목이 삭제되었습니다.");
     } catch (err: any) {
-      console.error("❌ 삭제 에러:", err.response?.data || err.message);
+      console.error("❌ 삭제 에러:", err.message);
       alert("삭제 중 오류가 발생했습니다.");
     }
   };
@@ -239,8 +230,8 @@ const AdsManagement: React.FC = () => {
                     key={ad.id}
                     onClick={() => handleAdClick(ad)}
                     className={`relative bg-gray-50 rounded-lg border-2 transition cursor-pointer overflow-hidden ${selectedAd?.id === ad.id
-                        ? "border-blue-500 shadow-lg"
-                        : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                      ? "border-blue-500 shadow-lg"
+                      : "border-gray-200 hover:border-gray-300 hover:shadow-md"
                       }`}
                   >
                     {/* ✅ 개별 선택 체크박스 — 카드 상단 좌측에 절대 위치 */}
@@ -303,8 +294,8 @@ const AdsManagement: React.FC = () => {
                   key={i + 1}
                   onClick={() => handlePageChange(i + 1)}
                   className={`px-3 py-1 rounded-md text-sm transition ${currentPage === i + 1
-                      ? "bg-blue-500 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-100"
+                    ? "bg-blue-500 text-white"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
                     }`}
                 >
                   {i + 1}

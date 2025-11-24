@@ -497,6 +497,17 @@ export interface ResumeItem {
   updateAt: string;
 }
 
+export interface ProfileMini {
+  id: number;
+  nickname?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  gender?: string | null;
+  birth?: string | null;     // yyyy-MM-dd
+  address?: string | null;
+  email?: string | null;
+}
+
 export interface ResumeDto {
   id: number;
   title: string;
@@ -508,6 +519,25 @@ export interface ResumeDto {
   locked: boolean;
   createAt: string;
   updateAt: string;
+  profile?: ProfileMini | null;
+
+  // 스냅샷 메타
+  companyName?: string | null;
+  appliedAt?: string | null;
+
+  // 백엔드 분해 필드
+  educationJson?: string | null;
+  careerJson?: string | null;
+  certJson?: string | null;
+  skillJson?: string | null;
+  langJson?: string | null;
+
+  // 호환성 필드
+  educations?: any[];
+  careers?: any[];
+  certs?: any[];
+  skills?: any[];
+  langs?: any[];
 }
 
 export interface MyProfileDto {
@@ -559,3 +589,141 @@ export interface Notice {
   careerLevel?: string;
   education?: string;
 }
+
+// Admin DTOs
+export interface AdminUser {
+  id: number;
+  name: string;
+  nickname: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+export interface AdminCompany {
+  id: number;
+  name: string;
+  content: string;
+  address: string;
+  since: string;
+  benefits: string;
+  website: string;
+  industry: string;
+  ceo: string;
+  photo?: string;
+}
+
+export interface AdminJob {
+  id: number;
+  title: string;
+  content: string;
+  startAt: string;
+  endAt: string;
+  location: string;
+  careerLevel: string;
+  education: string;
+  position: string;
+  type: string;
+  salary: string;
+  photo?: string;
+  company?: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface AdminReview {
+  id: number;
+  score: number;
+  content: string | null;
+  usersId: number;
+  nickname: string | null;
+  companyId: number;
+  companyName: string | null;
+}
+
+export interface AdminAd {
+  id: number;
+  title: string;
+  imageUrl?: string;
+}
+
+export interface AdminPost {
+  id: number;
+  title: string;
+  content: string;
+  usersId: number;
+  nickname: string;
+  authorEmail?: string;
+  views: number;
+  comments: number;
+  createAt: string;
+  updateAt?: string;
+}
+
+export interface AdminComment {
+  id: number;
+  content: string;
+  usersId: number | null;
+  nickname: string | null;
+  boardId: number | null;
+  boardTitle?: string | null;
+  parentCommentId: number | null;
+  parentCommentContent?: string | null;
+  createAt: string;
+  updateAt: string | null;
+}
+
+export interface AdminResumeDto {
+  id: number;
+  title: string;
+  idPhoto?: string | null;
+  essayTitle?: string | null;
+  essayTittle?: string | null;
+  essayContent?: string | null;
+  htmlContent?: string | null;
+  locked: boolean;
+  educationList?: Array<{
+    name?: string;
+    major?: string;
+    status?: string;
+    type?: string;
+    startAt?: string | null;
+    endAt?: string | null;
+  }>;
+  careerList?: Array<{
+    companyName?: string;
+    type?: string;
+    position?: string;
+    startAt?: string | null;
+    endAt?: string | null;
+    content?: string;
+  }>;
+  certificateList?: Array<any>;
+  skillList?: Array<any>;
+  languageList?: Array<any>;
+  languages?: Array<any>;
+  users?: {
+    userId?: number;
+    nickname?: string;
+    email?: string;
+  };
+  createAt: string;
+  updateAt: string;
+}
+
+export interface AdminPageInfo {
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
+}
+
+export interface AdminResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
+}
+

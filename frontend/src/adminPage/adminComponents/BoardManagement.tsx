@@ -1,25 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import api from '../../api/api';
-
-interface Post {
-  id: number;
-  title: string;
-  content: string;
-  usersId: number;
-  nickname: string;
-  authorEmail?: string;
-  views: number;
-  comments: number;
-  createAt: string;
-  updateAt?: string;
-}
+import { adminApi } from '../../api/adminApi';
+import type { AdminPost } from '../../types/interface';
 
 interface PostDetailModalProps {
-  post: Post | null;
+  post: AdminPost | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (updatedPost: Post) => void;
+  onUpdate: (updatedPost: AdminPost) => void;
   onDelete: (postId: number) => void;
 }
 
@@ -47,24 +35,24 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
   const handleUpdate = async () => {
     setIsLoading(true);
     try {
-      const response = await api.put(`/api/admin/board-management/${post.id}`, {
+      const res = await adminApi.updatePost(post.id, {
         title: editedTitle,
         content: editedContent,
       });
 
-      console.log('✅ 게시글 수정 성공:', response.data);
+      console.log('✅ 게시글 수정 성공:', res);
 
-      if (response.data.success) {
-        onUpdate(response.data.data);
+      if (res.success) {
+        onUpdate(res.data);
         setIsEditing(false);
         onClose();
         alert('게시글이 수정되었습니다.');
       } else {
-        throw new Error(response.data.message || '게시글 수정에 실패했습니다.');
+        throw new Error(res.message || '게시글 수정에 실패했습니다.');
       }
     } catch (err: any) {
-      console.error('❌ 게시글 수정 에러:', err.response?.data);
-      alert(err.response?.data?.message || err.message || '게시글 수정에 실패했습니다.');
+      console.error('❌ 게시글 수정 에러:', err.message);
+      alert(err.message || '게시글 수정에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -75,20 +63,20 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await api.delete(`/api/admin/board-management/${post.id}`);
+      const res = await adminApi.deletePost(post.id);
 
-      console.log('✅ 게시글 삭제 성공:', response.data);
+      console.log('✅ 게시글 삭제 성공:', res);
 
-      if (response.data.success) {
+      if (res.success) {
         onDelete(post.id);
         onClose();
         alert('게시글이 삭제되었습니다.');
       } else {
-        throw new Error(response.data.message || '게시글 삭제에 실패했습니다.');
+        throw new Error(res.message || '게시글 삭제에 실패했습니다.');
       }
     } catch (err: any) {
-      console.error('❌ 게시글 삭제 에러:', err.response?.data);
-      alert(err.response?.data?.message || err.message || '게시글 삭제에 실패했습니다.');
+      console.error('❌ 게시글 삭제 에러:', err.message);
+      alert(err.message || '게시글 삭제에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -220,7 +208,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
 };
 
 const BoardManagement: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<AdminPost[]>([]);
   // ✅ 선택 관련 상태
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const allSelected = posts.length > 0 && selectedIds.length === posts.length;
@@ -245,13 +233,13 @@ const BoardManagement: React.FC = () => {
 
     try {
       for (const id of selectedIds) {
-        await api.delete(`/api/admin/board-management/${id}`);
+        await adminApi.deletePost(id);
       }
       alert("선택된 게시글이 삭제되었습니다.");
       setSelectedIds([]);
       fetchPosts(currentPage, searchQuery);
     } catch (err: any) {
-      console.error("❌ 선택삭제 실패:", err.response?.data || err.message);
+      console.error("❌ 선택삭제 실패:", err.message);
       alert("선택삭제 중 오류가 발생했습니다.");
     }
   };
@@ -259,7 +247,7 @@ const BoardManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedPost, setSelectedPost] = useState<AdminPost | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -272,99 +260,36 @@ const BoardManagement: React.FC = () => {
     fetchPosts(currentPage, searchQuery);
   }, [currentPage, searchQuery]);
 
-  // const fetchPosts = async (page: number = 0, keyword: string = '') => {
-  //   setIsLoading(true);
-  //   try {
-  //     const params = {
-  //       page: page,
-  //       size: pageSize,
-  //       sortBy: 'createAt',
-  //       direction: 'DESC'
-  //     };
-
-  //     let response;
-
-  //     if (keyword.trim()) {
-  //       // 검색이 있을 때
-  //       response = await api.get('/api/admin/board-management/search', {
-  //         params: { ...params, keyword: keyword }
-  //       });
-  //     } else {
-  //       // 전체 목록 조회
-  //       response = await api.get('/api/admin/board-management', { params });
-  //     }
-
-  //     console.log('📦 게시글 목록:', response.data);
-
-  //     // 백엔드 응답 구조 처리
-  //     if (response.data.success) {
-  //       const postsData = response.data.data || [];
-  //       const total = response.data.totalElements || 0;
-  //       const pages = response.data.totalPages || 0;
-
-  //       setPosts(postsData);
-  //       setTotalElements(total);
-  //       setTotalPages(pages);
-  //       setCurrentPage(response.data.currentPage || page);
-  //     } else {
-  //       throw new Error(response.data.message || '게시글을 불러올 수 없습니다.');
-  //     }
-
-  //   } catch (err: any) {
-  //     console.error('❌ 게시글 목록 조회 에러:', err.response?.data);
-  //     console.error('❌ 에러 상세:', err);
-  //     alert(err.response?.data?.message || err.message || '게시글 목록을 불러오는데 실패했습니다.');
-  //     setPosts([]);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const fetchPosts = async (page: number = 0, keyword: string = '') => {
     setIsLoading(true);
     try {
-      const params = {
-        page: page,
+      const res = await adminApi.getPosts({
+        page,
         size: pageSize,
         sortBy: 'createAt',
-        direction: 'DESC'
-      };
+        direction: 'DESC',
+        keyword
+      });
 
-      let response;
-
-      if (keyword.trim()) {
-        // 검색이 있을 때
-        response = await api.get('/api/admin/board-management/search', {
-          params: { ...params, keyword: keyword }
-        });
-      } else {
-        // 전체 목록 조회
-        response = await api.get('/api/admin/board-management', { params });
-      }
-
-      console.log('📦 전체 응답 데이터:', response.data);
-      console.log('📦 게시글 배열:', response.data.data);
-      console.log('📦 첫 번째 게시글:', response.data.data?.[0]);
-      console.log('📦 첫 번째 게시글의 모든 키:', response.data.data?.[0] ? Object.keys(response.data.data[0]) : '데이터 없음');
+      console.log('📦 전체 응답 데이터:', res);
 
       // 백엔드 응답 구조 처리
-      if (response.data.success) {
-        const postsData = response.data.data || [];
-        const total = response.data.totalElements || 0;
-        const pages = response.data.totalPages || 0;
+      if (res.success) {
+        const postsData = res.data || [];
+        const total = res.totalElements || 0;
+        const pages = res.totalPages || 0;
 
         setPosts(postsData);
         setTotalElements(total);
         setTotalPages(pages);
-        setCurrentPage(response.data.currentPage || page);
+        setCurrentPage(res.currentPage || page);
       } else {
-        throw new Error(response.data.message || '게시글을 불러올 수 없습니다.');
+        throw new Error(res.message || '게시글을 불러올 수 없습니다.');
       }
 
     } catch (err: any) {
-      console.error('❌ 게시글 목록 조회 에러:', err.response?.data);
-      console.error('❌ 에러 상세:', err);
-      alert(err.response?.data?.message || err.message || '게시글 목록을 불러오는데 실패했습니다.');
+      console.error('❌ 게시글 목록 조회 에러:', err.message);
+      alert(err.message || '게시글 목록을 불러오는데 실패했습니다.');
       setPosts([]);
     } finally {
       setIsLoading(false);
@@ -402,7 +327,7 @@ const BoardManagement: React.FC = () => {
   };
 
   // 게시글 수정 후 목록 업데이트
-  const handleUpdatePost = (updatedPost: Post) => {
+  const handleUpdatePost = (updatedPost: AdminPost) => {
     setPosts(posts.map(post => post.id === updatedPost.id ? updatedPost : post));
     // 최신 목록 다시 불러오기
     fetchPosts(currentPage, searchQuery);
@@ -429,18 +354,18 @@ const BoardManagement: React.FC = () => {
 
     try {
       setIsLoading(true);
-      const response = await api.post('/api/admin/board-management', { title, content });
+      const res = await adminApi.createPost({ title, content });
 
-      if (response.data.success) {
+      if (res.success) {
         alert('게시글이 등록되었습니다.');
         closeModal();
         fetchPosts(currentPage, searchQuery);
       } else {
-        throw new Error(response.data.message);
+        throw new Error(res.message);
       }
     } catch (err: any) {
       console.error('❌ 게시글 등록 실패:', err);
-      alert(err.response?.data?.message || err.message);
+      alert(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -531,8 +456,6 @@ const BoardManagement: React.FC = () => {
       </div>
     );
   };
-
-
 
   return (
     <div className="p-8">
@@ -693,8 +616,8 @@ const BoardManagement: React.FC = () => {
                 key={pageNum}
                 onClick={() => handlePageChange(pageNum)}
                 className={`px-3 py-1 rounded-lg ${currentPage === pageNum
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
               >
                 {pageNum + 1}

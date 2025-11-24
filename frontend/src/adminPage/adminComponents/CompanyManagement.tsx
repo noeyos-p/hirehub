@@ -1,33 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { TrashIcon, PhotoIcon, PencilIcon, XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
-import api from "../../api/api";
-
-interface Company {
-  id: number;
-  name: string;
-  content: string;
-  address: string;
-  since: string;
-  benefits: string;
-  website: string;
-  industry: string;
-  ceo: string;
-  photo?: string;
-}
-
-interface PageInfo {
-  totalElements: number;
-  totalPages: number;
-  currentPage: number;
-}
-
+import { adminApi } from "../../api/adminApi";
+import type { AdminCompany, AdminPageInfo } from "../../types/interface";
 
 // 신규 등록용: id 제외
-type NewCompany = Omit<Company, "id">;
+type NewCompany = Omit<AdminCompany, "id">;
 
 const CompanyManagement: React.FC = () => {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [pageInfo, setPageInfo] = useState<PageInfo>({
+  const [companies, setCompanies] = useState<AdminCompany[]>([]);
+  const [pageInfo, setPageInfo] = useState<AdminPageInfo>({
     totalElements: 0,
     totalPages: 0,
     currentPage: 0,
@@ -49,10 +30,10 @@ const CompanyManagement: React.FC = () => {
     if (allSelected) setSelectedIds([]);
     else setSelectedIds(companies.map((c) => c.id));
   };
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<AdminCompany | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState<Company | null>(null);
+  const [editFormData, setEditFormData] = useState<AdminCompany | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newCompany, setNewCompany] = useState<NewCompany>({
@@ -74,7 +55,7 @@ const CompanyManagement: React.FC = () => {
 
     try {
       for (const id of selectedIds) {
-        await api.delete(`/api/admin/company-management/${id}`);
+        await adminApi.deleteCompany(id);
       }
       alert("선택된 기업이 삭제되었습니다.");
       setSelectedIds([]);
@@ -90,23 +71,26 @@ const CompanyManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get("/api/admin/company-management", {
-        params: { page, size: pageSize, sortBy: "id", direction: "DESC" },
+      const res = await adminApi.getCompanies({
+        page,
+        size: pageSize,
+        sortBy: "id",
+        direction: "DESC"
       });
-      if (res.data.success) {
-        setCompanies(res.data.data);
+      if (res.success) {
+        setCompanies(res.data);
         setPageInfo({
-          totalElements: res.data.totalElements,
-          totalPages: res.data.totalPages,
-          currentPage: res.data.currentPage,
+          totalElements: res.totalElements,
+          totalPages: res.totalPages,
+          currentPage: res.currentPage,
         });
         setCurrentPage(page);
       } else {
-        setError(res.data.message || "회사 목록을 불러올 수 없습니다.");
+        setError(res.message || "회사 목록을 불러올 수 없습니다.");
       }
     } catch (err: any) {
       console.error("회사 목록 불러오기 실패:", err);
-      setError(err.response?.data?.message || "서버 오류가 발생했습니다.");
+      setError(err.message || "서버 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -139,23 +123,22 @@ const CompanyManagement: React.FC = () => {
     e.preventDefault();
     try {
       // id 없이 전송 (insert 처리)
-      const res = await api.post("/api/admin/company-management", newCompany);
-      if (res.data.success) {
-        const createdCompany = res.data.data;
+      const res = await adminApi.createCompany(newCompany);
+      if (res.success) {
+        const createdCompany = res.data;
         // 이미지 업로드가 있다면 바로 업로드
         if (preview) {
           const formData = new FormData();
           const blob = await fetch(preview).then((r) => r.blob());
           formData.append("file", new File([blob], "company-photo.png", { type: "image/png" }));
-          await api.post(`/api/admin/company-management/${createdCompany.id}/image`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          formData.append("companyId", createdCompany.id.toString());
+          await adminApi.uploadCompanyImage(createdCompany.id, formData);
         }
         alert("기업 등록 완료!");
         setIsCreateModalOpen(false);
         fetchCompanies(0);
       } else {
-        alert("등록 실패: " + (res.data.message || "서버 오류"));
+        alert("등록 실패: " + (res.message || "서버 오류"));
       }
     } catch (err) {
       console.error("등록 실패:", err);
@@ -268,7 +251,7 @@ const CompanyManagement: React.FC = () => {
 
 
   /** ✅ 회사 수정 */
-  const handleEditClick = (e: React.MouseEvent, company: Company) => {
+  const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
     e.stopPropagation();
     setEditFormData({ ...company });
     setIsEditModalOpen(true);
@@ -279,11 +262,13 @@ const CompanyManagement: React.FC = () => {
     if (!editFormData) return;
 
     try {
-      const res = await api.put(`/api/admin/company-management/${editFormData.id}`, editFormData);
-      if (res.data.success) {
+      const res = await adminApi.updateCompany(editFormData.id, editFormData);
+      if (res.success) {
         alert("수정 완료");
         setIsEditModalOpen(false);
         fetchCompanies(currentPage);
+      } else {
+        alert("수정 실패: " + (res.message || "서버 오류"));
       }
     } catch (err) {
       console.error("수정 실패:", err);
@@ -297,8 +282,8 @@ const CompanyManagement: React.FC = () => {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
 
     try {
-      const res = await api.delete(`/api/admin/company-management/${companyId}`);
-      if (res.data.success) {
+      const res = await adminApi.deleteCompany(companyId);
+      if (res.success) {
         alert("삭제 완료");
         if (companies.length === 1 && currentPage > 0) {
           fetchCompanies(currentPage - 1);
@@ -306,6 +291,8 @@ const CompanyManagement: React.FC = () => {
           fetchCompanies(currentPage);
         }
         if (selectedCompany?.id === companyId) setSelectedCompany(null);
+      } else {
+        alert("삭제 실패: " + (res.message || "서버 오류"));
       }
     } catch (err) {
       console.error("삭제 실패:", err);
@@ -314,7 +301,7 @@ const CompanyManagement: React.FC = () => {
   };
 
   // ✅ 회사 이미지 삭제 함수
-  const handleImageDelete = async (e: React.MouseEvent, company: Company) => {
+  const handleImageDelete = async (e: React.MouseEvent, company: AdminCompany) => {
     e.stopPropagation();
 
     if (!company.photo) {
@@ -325,9 +312,9 @@ const CompanyManagement: React.FC = () => {
     if (!window.confirm("이미지를 삭제하시겠습니까?")) return;
 
     try {
-      const res = await api.delete(`/api/admin/company-management/${company.id}/image`);
+      const res = await adminApi.deleteCompanyImage(company.id);
 
-      if (res.data.success) {
+      if (res.success) {
         alert("이미지 삭제 완료!");
 
         // 목록 갱신
@@ -359,16 +346,15 @@ const CompanyManagement: React.FC = () => {
     formData.append("file", file);
 
     try {
-      const res = await api.post(
-        `/api/admin/company-management/${selectedCompany.id}/image`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      const res = await adminApi.uploadCompanyImage(selectedCompany.id, formData);
 
-      if (res.data.success) {
+      if (res.success) {
         alert("이미지 업로드 성공!");
-        setSelectedCompany({ ...selectedCompany, photo: res.data.fileUrl });
-        setCompanies(companies.map(c => c.id === selectedCompany.id ? { ...c, photo: res.data.fileUrl } : c));
+        const newUrl = `${res.fileUrl}?t=${Date.now()}`;
+        setSelectedCompany({ ...selectedCompany, photo: newUrl });
+        setCompanies(companies.map(c => c.id === selectedCompany.id ? { ...c, photo: newUrl } : c));
+      } else {
+        alert("이미지 업로드 실패: " + (res.message || "서버 오류"));
       }
     } catch (err) {
       console.error("이미지 업로드 실패:", err);
