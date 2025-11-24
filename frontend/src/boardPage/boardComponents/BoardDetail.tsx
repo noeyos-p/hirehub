@@ -1,19 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { EyeIcon, ArrowLeftIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
 import { boardApi, commentApi } from '../../api/boardApi';
 import type { BoardListResponse, CommentResponse } from '../../types/interface';
 import { useAuth } from '../../hooks/useAuth';
 import CommentSection from './CommentSection';
+import { EyeIcon, ArrowLeftIcon, EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
 
 const BoardDetail: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user, isAuthenticated } = useAuth();
   const [board, setBoard] = useState<BoardListResponse | null>(null);
-  const [comments, setComments] = useState<CommentResponse[]>([]);  // ← 여기
+  const [comments, setComments] = useState<CommentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // ✅ 드롭다운 메뉴 state
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -21,6 +25,18 @@ const BoardDetail: React.FC = () => {
       fetchComments(Number(id));
     }
   }, [id]);
+
+  // ✅ 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchBoardDetail = async (boardId: number) => {
     try {
@@ -42,12 +58,10 @@ const BoardDetail: React.FC = () => {
     } catch (err: any) {
       console.error('댓글 조회 실패:', err);
 
-      // 401/404 에러는 조용히 처리 (빈 댓글 목록 유지)
       if (err.response?.status === 401 || err.response?.status === 404) {
-        setComments([]); // 빈 배열로 설정
+        setComments([]);
         console.log('인증 필요 또는 댓글 없음 - 빈 목록 표시');
       } else {
-        // 다른 에러는 사용자에게 알림
         alert('댓글을 불러오는데 실패했습니다.');
       }
     }
@@ -97,7 +111,16 @@ const BoardDetail: React.FC = () => {
     }
   };
 
+  // ✅ 게시글 수정 핸들러
+  const handleBoardEdit = () => {
+    setShowDropdown(false);
+    navigate(`/board/edit/${id}`);
+  };
+
+  // ✅ 게시글 삭제 핸들러
   const handleBoardDelete = async () => {
+    setShowDropdown(false);
+    
     if (!window.confirm('게시글을 삭제하시겠습니까?')) return;
 
     try {
@@ -111,14 +134,18 @@ const BoardDetail: React.FC = () => {
   };
 
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).replace(/\. /g, '.');
+    if (!dateString) return '';
+
+    const isUTC = dateString.endsWith('Z');
+    const date = new Date(isUTC ? dateString : `${dateString}Z`);
+
+    const year = date.getFullYear().toString().slice(-2);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}.${month}.${day}. ${hours}:${minutes}`;
   };
 
   if (loading) {
@@ -150,7 +177,7 @@ const BoardDetail: React.FC = () => {
 
   const isOwner = user?.id === board.usersId;
   const isAdmin = user?.role === 'ROLE_ADMIN';
-  const canDeleteBoard = isAuthenticated && (isOwner || isAdmin);
+  const canManageBoard = isAuthenticated && (isOwner || isAdmin);
 
   return (
     <section className="mb-8">
@@ -162,19 +189,40 @@ const BoardDetail: React.FC = () => {
         목록으로
       </button>
 
+      {/* ✅ 제목과 드롭다운 메뉴 */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-gray-900">{board.title}</h2>
-        {canDeleteBoard && (
-          <button
-            onClick={handleBoardDelete}
-            className="text-sm text-red-500 hover:text-red-700 font-medium"
-          >
-            게시글 삭제
-          </button>
-        )}
+        
+        {canManageBoard && (
+  <div className="relative" ref={dropdownRef}>
+    <button
+      onClick={() => setShowDropdown(!showDropdown)}
+      className="p-2 cursor-pointer transition -mr-2"
+    >
+      <EllipsisHorizontalIcon className="w-5 h-5 text-gray-600" />  {/* ✅ 가로 점 3개 */}
+    </button>
+
+    {showDropdown && (
+      <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+        <button
+          onClick={handleBoardEdit}
+          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+        >
+          수정
+        </button>
+        <button
+          onClick={handleBoardDelete}
+          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition"
+        >
+          삭제
+        </button>
+      </div>
+    )}
+  </div>
+)}
       </div>
 
-      <div className="flex items-center text-sm text-gray-500 mb-6">
+      <div className="flex items-start text-sm text-gray-500 mb-6">
         <div className="w-10 h-10 rounded-full mr-3 overflow-hidden flex items-center justify-center bg-gray-300">
           {board.usersProfileImage ? (
             <img
@@ -189,19 +237,16 @@ const BoardDetail: React.FC = () => {
           )}
         </div>
         <div>
-          <p className="font-medium text-gray-800">
+          <p className="font-bold text-gray-800">
             {board.nickname || board.usersName || '익명'}
           </p>
           <p>{formatDateTime(board.createAt)}</p>
         </div>
-        <div className="flex items-center ml-4 space-x-3 text-gray-400">
+        
+        <div className="flex items-center ml-auto space-x-3 text-gray-400 mt-5">
           <div className="flex items-center space-x-1">
             <EyeIcon className="w-4 h-4" />
             <span>{board.views || 0}</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <ChatBubbleLeftIcon className="w-4 h-4" />
-            <span>{comments.length}</span>
           </div>
         </div>
       </div>

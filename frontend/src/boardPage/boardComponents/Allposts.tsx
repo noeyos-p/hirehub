@@ -8,8 +8,9 @@ import {
   ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from 'react-router-dom';
-import { boardApi } from '../../api/boardApi';
-import type { BoardListResponse } from '../../types/interface';
+import { boardApi, commentApi } from '../../api/boardApi';
+import type { BoardListResponse, CommentResponse } from '../../types/interface'; // ✅ CommentResponse 추가
+import { EyeIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
 const AllPosts: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +19,9 @@ const AllPosts: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+
+  // ✅ 각 게시글의 댓글 수를 저장하는 state 추가
+  const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
 
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 10;
@@ -33,12 +37,39 @@ const AllPosts: React.FC = () => {
       setIsSearching(false);
       const data = await boardApi.getAllBoards();
       setBoards(data);
+
+      // ✅ 각 게시글의 댓글 수를 가져오기
+      await fetchAllCommentCounts(data);
     } catch (err) {
       console.error('게시글 조회 실패:', err);
       setError('게시글을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ 모든 게시글의 댓글 수를 가져오는 함수
+  const fetchAllCommentCounts = async (boardList: BoardListResponse[]) => {
+    const counts: Record<number, number> = {};
+
+    await Promise.all(
+      boardList.map(async (board) => {
+        try {
+          const comments = await commentApi.getCommentsByBoardId(board.id);
+          counts[board.id] = comments.length;
+        } catch (err: any) {
+          // 401/404 에러는 조용히 처리
+          if (err.response?.status === 401 || err.response?.status === 404) {
+            counts[board.id] = 0;
+          } else {
+            console.error(`게시글 ${board.id}의 댓글 조회 실패:`, err);
+            counts[board.id] = 0;
+          }
+        }
+      })
+    );
+
+    setCommentCounts(counts);
   };
 
   const handleSearch = async () => {
@@ -53,6 +84,9 @@ const AllPosts: React.FC = () => {
       const data = await boardApi.searchBoards(searchKeyword);
       setBoards(data);
       setCurrentPage(1);
+
+      // ✅ 검색 결과의 댓글 수도 가져오기
+      await fetchAllCommentCounts(data);
     } catch (err) {
       console.error('❌ 검색 실패:', err);
       setError('검색에 실패했습니다.');
@@ -73,7 +107,6 @@ const AllPosts: React.FC = () => {
     }
   };
 
-  // ✅ 로그인 여부 확인 후 글쓰기 페이지 이동
   const handleWriteClick = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -157,7 +190,6 @@ const AllPosts: React.FC = () => {
         </div>
       </div>
 
-      {/* 🔽 검색 결과/전체 보기 표시 */}
       {isSearching && (
         <div className="flex items-center space-x-2 mb-6 ml-[4px]">
           <span className="text-sm text-gray-600">
@@ -221,12 +253,18 @@ const AllPosts: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-500">
-                      {formatDate(board.createAt)}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      조회수: {board.views || 0}
-                    </p>
+                    {/* 위치를 아래로 내리기 위해 mt-4 (top margin) 적용 */}
+                    <div className="flex items-center justify-end space-x-2 mt-6">
+                      <div className="text-sm text-gray-500 flex items-center space-x-1">
+                        <EyeIcon className="w-4 h-4" />
+                        <span>{board.views || 0}</span>
+                      </div>
+                      <div className="text-sm text-gray-500 flex items-center space-x-1">
+                        <ChatBubbleLeftIcon className="w-4 h-4" />
+                        {/* 게시글 객체에서 직접 댓글 수 사용 */}
+                        <span>{commentCounts[board.id] || 0}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -234,7 +272,7 @@ const AllPosts: React.FC = () => {
           </div>
         )}
 
-        {/* ✅ 페이지네이션 */}
+        {/* 페이지네이션 */}
         <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
           <button
             onClick={goToFirstPage}
@@ -264,8 +302,8 @@ const AllPosts: React.FC = () => {
                   key={i}
                   onClick={() => setCurrentPage(i)}
                   className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
-                      ? 'bg-white text-[#006AFF] border-[#006AFF]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
+                    ? 'bg-white text-[#006AFF] border-[#006AFF]'
+                    : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
                     }`}
                 >
                   {i}

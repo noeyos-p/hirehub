@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { boardApi } from '../../api/boardApi';
+import { boardApi, commentApi } from '../../api/boardApi';
 import type { BoardListResponse } from '../../types/interface';
+import { EyeIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline'; // ✅ 아이콘 import 추가
 
 const PopularPosts: React.FC = () => {
   const navigate = useNavigate();
   const [popularBoards, setPopularBoards] = useState<BoardListResponse[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ 각 게시글의 댓글 수를 저장하는 state 추가
+  const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
 
   useEffect(() => {
     fetchPopularBoards();
@@ -16,7 +20,11 @@ const PopularPosts: React.FC = () => {
     try {
       setLoading(true);
       const data = await boardApi.getPopularBoards();
-      setPopularBoards(data.slice(0, 6));
+      const topBoards = data.slice(0, 6);
+      setPopularBoards(topBoards);
+
+      // ✅ 각 게시글의 댓글 수를 가져오기
+      await fetchAllCommentCounts(topBoards);
     } catch (err) {
       console.error('인기 게시글 조회 실패:', err);
     } finally {
@@ -24,7 +32,30 @@ const PopularPosts: React.FC = () => {
     }
   };
 
-  // 추가: 게시물 클릭 시 상세 페이지 이동
+  // ✅ 모든 게시글의 댓글 수를 가져오는 함수
+  const fetchAllCommentCounts = async (boardList: BoardListResponse[]) => {
+    const counts: Record<number, number> = {};
+
+    await Promise.all(
+      boardList.map(async (board) => {
+        try {
+          const comments = await commentApi.getCommentsByBoardId(board.id);
+          counts[board.id] = comments.length;
+        } catch (err: any) {
+          // 401/404 에러는 조용히 처리
+          if (err.response?.status === 401 || err.response?.status === 404) {
+            counts[board.id] = 0;
+          } else {
+            console.error(`게시글 ${board.id}의 댓글 조회 실패:`, err);
+            counts[board.id] = 0;
+          }
+        }
+      })
+    );
+
+    setCommentCounts(counts);
+  };
+
   const handleBoardClick = (id: number) => {
     navigate(`/board/${id}`);
   };
@@ -51,15 +82,23 @@ const PopularPosts: React.FC = () => {
             {popularBoards.map((board) => (
               <div
                 key={board.id}
-                className="border-b border-gray-200 pb-4 last:border-b-0 cursor-pointer hover:bg-gray-100 transition"
+                className="border-b border-gray-200 pb-4 last:border-b-0 cursor-pointer hover:bg-gray-100 transition p-2 rounded"
                 onClick={() => handleBoardClick(board.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                      <span className="text-sm text-gray-600">
-                        {board.usersName?.charAt(0) || '?'}
-                      </span>
+                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
+                      {board.usersProfileImage ? (
+                        <img
+                          src={board.usersProfileImage}
+                          alt={board.usersName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm text-gray-600">
+                          {board.usersName?.charAt(0) || '?'}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <h3 className="text-md font-semibold text-gray-800">
@@ -71,10 +110,18 @@ const PopularPosts: React.FC = () => {
                       </p>
                     </div>
                   </div>
+
                   <div className="text-right">
-                    <p className="text-sm text-gray-500">
-                      조회수: {board.views || 0}
-                    </p>
+                    <div className="flex items-center justify-end space-x-2 mt-6">
+                      <div className="text-sm text-gray-500 flex items-center space-x-1">
+                        <EyeIcon className="w-4 h-4" />
+                        <span>{board.views || 0}</span>
+                      </div>
+                      <div className="text-sm text-gray-500 flex items-center space-x-1">
+                        <ChatBubbleLeftIcon className="w-4 h-4" />
+                        <span>{commentCounts[board.id] || 0}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -3,17 +3,21 @@ import React, { useState } from 'react';
 interface CommentInputProps {
   onSubmit: (content: string) => Promise<void>;
   placeholder?: string;
+  defaultValue?: string;
   autoFocus?: boolean;
   onCancel?: () => void;
+  submitButtonText?: string;
 }
 
 const CommentInput: React.FC<CommentInputProps> = ({ 
   onSubmit, 
   placeholder = "댓글을 남겨주세요",
+  defaultValue = '',
   autoFocus = false,
-  onCancel
+  onCancel,
+  submitButtonText = '등록'
 }) => {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(defaultValue);
   const [isComposing, setIsComposing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,7 +43,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
   };
 
   return (
-    <div className="flex items-center border border-gray-300 rounded-lg px-3 py-2 bg-gray-50">
+    <div className="relative">
       <input
         type="text"
         value={content}
@@ -48,25 +52,27 @@ const CommentInput: React.FC<CommentInputProps> = ({
         onCompositionEnd={() => setIsComposing(false)}
         onKeyPress={handleKeyPress}
         placeholder={placeholder}
-        className="flex-1 text-sm outline-none bg-transparent"
+        className="w-full h-[41px] border border-gray-300 rounded-[10px] px-4 py-1.5 pr-24 text-sm focus:outline-none focus:border-[#006AFF]"
         autoFocus={autoFocus}
         disabled={isSubmitting}
       />
-      <button
-        onClick={handleSubmit}
-        disabled={isSubmitting}
-        className="text-sm text-blue-600 hover:text-blue-800 ml-2 font-medium disabled:opacity-50"
-      >
-        {isSubmitting ? '등록중...' : '등록'}
-      </button>
-      {onCancel && (
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="text-sm text-gray-500 hover:text-gray-700 transition"
+          >
+            취소
+          </button>
+        )}
         <button
-          onClick={onCancel}
-          className="text-sm text-gray-500 hover:text-gray-700 ml-2"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50 transition"
         >
-          취소
+          {isSubmitting ? `${submitButtonText}중...` : submitButtonText}
         </button>
-      )}
+      </div>
     </div>
   );
 };
