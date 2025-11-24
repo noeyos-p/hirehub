@@ -1,6 +1,6 @@
 package com.we.hirehub.controller.admin;
 
-import com.we.hirehub.dto.support.CommentDto;
+import com.we.hirehub.dto.support.CommentsDto;
 import com.we.hirehub.entity.Comments;
 import com.we.hirehub.service.admin.CommentsAdminService;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class CommentsAdminController {
 
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-            Page<CommentDto> comments = commentsService.getAllComments(pageable);
+            Page<CommentsDto> comments = commentsService.getAllComments(pageable);
 
             Map<String, Object> response = Map.of(
                     "success", true,
@@ -73,7 +73,7 @@ public class CommentsAdminController {
 
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<CommentDto> comments = commentsService.getCommentsByUserId(userId, pageable);
+            Page<CommentsDto> comments = commentsService.getCommentsByUserId(userId, pageable);
 
             Map<String, Object> response = Map.of(
                     "success", true,
@@ -101,7 +101,7 @@ public class CommentsAdminController {
     @GetMapping("/{parentId}/replies")
     public ResponseEntity<?> getRepliesByParentId(@PathVariable Long parentId) {
         try {
-            List<CommentDto> replies = commentsService.getRepliesByParentId(parentId);
+            List<CommentsDto> replies = commentsService.getRepliesByParentId(parentId);
 
             Map<String, Object> response = Map.of(
                     "success", true,
@@ -133,7 +133,7 @@ public class CommentsAdminController {
                 return error(HttpStatus.BAD_REQUEST, "댓글 내용이 필요합니다");
             }
 
-            CommentDto created = commentsService.createComment(comment);
+            CommentsDto created = commentsService.createComment(comment);
             Map<String, Object> response = Map.of(
                     "success", true,
                     "message", "댓글 생성 성공",
@@ -170,7 +170,7 @@ public class CommentsAdminController {
                 reply.setParentComments(commentsService.getCommentEntityById(parentId));
             }
 
-            CommentDto created = commentsService.createReply(reply);
+            CommentsDto created = commentsService.createReply(reply);
             Map<String, Object> response = Map.of(
                     "success", true,
                     "message", "대댓글 생성 성공",
@@ -203,7 +203,7 @@ public class CommentsAdminController {
                 return error(HttpStatus.BAD_REQUEST, "유효한 댓글 ID가 필요합니다");
             }
 
-            CommentDto updated = commentsService.updateComment(commentId, updateData);
+            CommentsDto updated = commentsService.updateComment(commentId, updateData);
             Map<String, Object> response = Map.of(
                     "success", true,
                     "message", "댓글 수정 성공",
@@ -234,7 +234,7 @@ public class CommentsAdminController {
                 return error(HttpStatus.BAD_REQUEST, "유효한 댓글 ID가 필요합니다");
             }
 
-            List<CommentDto> replies = commentsService.getRepliesByParentId(commentId);
+            List<CommentsDto> replies = commentsService.getRepliesByParentId(commentId);
             int deletedReplies = replies.size();
 
             commentsService.deleteComment(commentId);

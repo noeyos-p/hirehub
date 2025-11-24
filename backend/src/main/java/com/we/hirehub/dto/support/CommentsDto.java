@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CommentDto {
+public class CommentsDto {
     private Long id;
     private String content;
     private Long usersId;
@@ -23,7 +23,7 @@ public class CommentDto {
     private LocalDateTime updateAt;
 
     /** 🔹 엔티티 → DTO 변환 */
-    public static CommentDto fromEntity(Comments comment) {
+    public static CommentsDto toDto(Comments comment) {
         if (comment == null) return null;
 
         String userNickname = null;
@@ -42,7 +42,7 @@ public class CommentDto {
             }
         }
 
-        return CommentDto.builder()
+        return CommentsDto.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
                 .usersId(comment.getUsers() != null ? comment.getUsers().getId() : null)

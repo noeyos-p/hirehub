@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.support.CommentDto;
+import com.we.hirehub.dto.support.CommentsDto;
 import com.we.hirehub.entity.Board;
 import com.we.hirehub.entity.Comments;
 import com.we.hirehub.entity.Users;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CommentService {
+public class CommentsService {
     private final CommentRepository commentRepository;
     private final UsersRepository usersRepository;
     private final BoardRepository boardRepository;
@@ -28,18 +28,18 @@ public class CommentService {
      * 댓글 생성 (로그인된 사용자)
      */
     @Transactional
-    public CommentDto createComment(CommentDto commentDto, Users user) {
-        Board board = boardRepository.findById(commentDto.getBoardId())
+    public CommentsDto createComment(CommentsDto commentsDto, Users user) {
+        Board board = boardRepository.findById(commentsDto.getBoardId())
                 .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
 
         Comments parentComment = null;
-        if (commentDto.getParentCommentId() != null) {
-            parentComment = commentRepository.findById(commentDto.getParentCommentId())
+        if (commentsDto.getParentCommentId() != null) {
+            parentComment = commentRepository.findById(commentsDto.getParentCommentId())
                     .orElseThrow(() -> new RuntimeException("부모 댓글을 찾을 수 없습니다."));
         }
 
         Comments comment = Comments.builder()
-                .content(commentDto.getContent())
+                .content(commentsDto.getContent())
                 .users(user)
                 .board(board)
                 .parentComments(parentComment)
@@ -54,7 +54,7 @@ public class CommentService {
      * 댓글 생성 (더미 사용자)
      */
     @Transactional
-    public CommentDto createCommentWithUserId(String content, Long boardId, Long parentCommentId, Long userId) {
+    public CommentsDto createCommentWithUserId(String content, Long boardId, Long parentCommentId, Long userId) {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
         Board board = boardRepository.findById(boardId)
@@ -94,7 +94,7 @@ public class CommentService {
      * 게시글 ID로 댓글 목록 조회 (대댓글 포함)
      */
     @Transactional(readOnly = true)
-    public List<CommentDto> getCommentsByBoardId(Long boardId) {
+    public List<CommentsDto> getCommentsByBoardId(Long boardId) {
         // 모든 댓글을 조회 (부모 댓글 + 대댓글)
         List<Comments> allComments = commentRepository.findByBoardId(boardId);
 
@@ -108,8 +108,8 @@ public class CommentService {
     /**
      * Comments → CommentDto 변환
      */
-    private CommentDto toDto(Comments comment) {
-        return CommentDto.builder()
+    private CommentsDto toDto(Comments comment) {
+        return CommentsDto.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
                 .usersId(comment.getUsers() != null ? comment.getUsers().getId() : null)

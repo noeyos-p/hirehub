@@ -1,6 +1,6 @@
 package com.we.hirehub.service.admin;
 
-import com.we.hirehub.dto.support.CommentDto;
+import com.we.hirehub.dto.support.CommentsDto;
 import com.we.hirehub.entity.Comments;
 import com.we.hirehub.repository.CommentRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class CommentsAdminService {
 
     // ============ 조회 ============
 
-    public Page<CommentDto> getAllComments(Pageable pageable) {
+    public Page<CommentsDto> getAllComments(Pageable pageable) {
         Page<Comments> commentsPage = commentRepository.findAllWithRelations(pageable);
 
         // 디버깅용 로그 (첫 댓글만)
@@ -37,18 +37,18 @@ public class CommentsAdminService {
             log.info("==========================");
         }
 
-        return commentsPage.map(CommentDto::fromEntity);
+        return commentsPage.map(CommentsDto::toDto);
     }
 
-    public Page<CommentDto> getCommentsByUserId(Long userId, Pageable pageable) {
+    public Page<CommentsDto> getCommentsByUserId(Long userId, Pageable pageable) {
         return commentRepository.findByUserId(userId, pageable)
-                .map(CommentDto::fromEntity);
+                .map(CommentsDto::toDto);
     }
 
-    public List<CommentDto> getRepliesByParentId(Long parentId) {
+    public List<CommentsDto> getRepliesByParentId(Long parentId) {
         return commentRepository.findRepliesByParentId(parentId)
                 .stream()
-                .map(CommentDto::fromEntity)
+                .map(CommentsDto::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -59,35 +59,35 @@ public class CommentsAdminService {
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다: " + commentId));
     }
 
-    public CommentDto getCommentById(Long commentId) {
-        return CommentDto.fromEntity(getCommentEntityById(commentId));
+    public CommentsDto getCommentById(Long commentId) {
+        return CommentsDto.toDto(getCommentEntityById(commentId));
     }
 
     // ============ 생성 ============
 
     @Transactional
-    public CommentDto createComment(Comments comment) {
+    public CommentsDto createComment(Comments comment) {
         validateComment(comment);
         comment.setCreateAt(LocalDateTime.now());
         Comments saved = commentRepository.save(comment);
-        return CommentDto.fromEntity(saved);
+        return CommentsDto.toDto(saved);
     }
 
     @Transactional
-    public CommentDto createReply(Comments reply) {
+    public CommentsDto createReply(Comments reply) {
         if (reply.getParentComments() == null) {
             throw new IllegalArgumentException("부모 댓글이 필요합니다");
         }
         validateComment(reply);
         reply.setCreateAt(LocalDateTime.now());
         Comments saved = commentRepository.save(reply);
-        return CommentDto.fromEntity(saved);
+        return CommentsDto.toDto(saved);
     }
 
     // ============ 수정 ============
 
     @Transactional
-    public CommentDto updateComment(Long commentId, Comments updateData) {
+    public CommentsDto updateComment(Long commentId, Comments updateData) {
         Comments comment = getCommentEntityById(commentId);
 
         if (updateData.getContent() != null && !updateData.getContent().trim().isEmpty()) {
@@ -96,7 +96,7 @@ public class CommentsAdminService {
         comment.setUpdateAt(LocalDateTime.now());
 
         Comments updated = commentRepository.save(comment);
-        return CommentDto.fromEntity(updated);
+        return CommentsDto.toDto(updated);
     }
 
     // ============ 삭제 ============

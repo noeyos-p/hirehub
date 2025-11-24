@@ -1,6 +1,6 @@
 package com.we.hirehub.controller;
 
-import com.we.hirehub.dto.common.CalendarSummaryDto;
+import com.we.hirehub.dto.common.CalendarDto;
 import com.we.hirehub.dto.common.PagedResponse;
 import com.we.hirehub.dto.company.FavoriteDto;
 import com.we.hirehub.dto.job.JobPostsDto;
@@ -81,7 +81,7 @@ public class JobPostController {
     }
 
     @GetMapping("/calendar")
-    public List<CalendarSummaryDto> getCalendar(
+    public List<CalendarDto.DayItems> getCalendar(
             @RequestParam LocalDate from,
             @RequestParam LocalDate to
     ) {
@@ -98,7 +98,7 @@ public class JobPostController {
     }
 
     @GetMapping("/calendar/counts")
-    public List<CalendarSummaryDto> getCalendarCounts(
+    public List<CalendarDto.DayCount> getCalendarCounts(
             @RequestParam LocalDate from,
             @RequestParam LocalDate to
     ) {

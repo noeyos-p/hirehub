@@ -23,7 +23,7 @@ public class BoardDto {
     private Long usersId;
     private String nickname;
     private Long views;
-    private List<CommentDto> comments;
+    private List<CommentsDto> comments;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createAt;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -43,10 +43,10 @@ public class BoardDto {
         }
 
         // 댓글 변환
-        List<CommentDto> commentDtos = new ArrayList<>();
+        List<CommentsDto> commentsDtos = new ArrayList<>();
         if (comments != null && !comments.isEmpty()) {
-            commentDtos = comments.stream()
-                    .map(CommentDto::fromEntity)
+            commentsDtos = comments.stream()
+                    .map(CommentsDto::toDto)
                     .collect(Collectors.toList());
         }
 
@@ -59,7 +59,7 @@ public class BoardDto {
                 .createAt(board.getCreateAt())
                 .updateAt(board.getUpdateAt())
                 .views(board.getViews() != null ? board.getViews() : 0L)
-                .comments(commentDtos)
+                .comments(commentsDtos)
                 .build();
     }
 

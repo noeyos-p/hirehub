@@ -1,11 +1,11 @@
 package com.we.hirehub.controller;
 
 import com.we.hirehub.config.JwtUserPrincipal;
-import com.we.hirehub.dto.support.CommentDto;
+import com.we.hirehub.dto.support.CommentsDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.CommentRepository;
 import com.we.hirehub.repository.UsersRepository;
-import com.we.hirehub.service.CommentService;
+import com.we.hirehub.service.CommentsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "http://localhost:3000")
 public class CommentRestController {
 
-    private final CommentService commentService;
+    private final CommentsService commentsService;
     private final CommentRepository commentRepository;
     private final UsersRepository usersRepository;
 
@@ -30,7 +30,7 @@ public class CommentRestController {
      */
     @PostMapping
     public ResponseEntity<?> createComment(
-            @RequestBody CommentDto commentDto,
+            @RequestBody CommentsDto commentsDto,
             @AuthenticationPrincipal JwtUserPrincipal userPrincipal
     ) {
         if (userPrincipal == null) {
@@ -45,15 +45,15 @@ public class CommentRestController {
                     .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
             // 🔹 데이터 유효성 검증
-            if (commentDto.getBoardId() == null) {
+            if (commentsDto.getBoardId() == null) {
                 return ResponseEntity.badRequest().body("게시글 ID가 누락되었습니다.");
             }
-            if (commentDto.getContent() == null || commentDto.getContent().trim().isEmpty()) {
+            if (commentsDto.getContent() == null || commentsDto.getContent().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("댓글 내용이 비어 있습니다.");
             }
 
             // 🔹 댓글 생성
-            CommentDto savedComment = commentService.createComment(commentDto, loggedInUser);
+            CommentsDto savedComment = commentsService.createComment(commentsDto, loggedInUser);
 
             return ResponseEntity.ok(savedComment);
 
@@ -72,7 +72,7 @@ public class CommentRestController {
     @DeleteMapping("/{commentId}")
     public ResponseEntity<?> deleteComment(@PathVariable Long commentId) {
         try {
-            commentService.deleteComment(commentId);
+            commentsService.deleteComment(commentId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             e.printStackTrace();
@@ -85,11 +85,11 @@ public class CommentRestController {
      * ✅ 게시글 ID로 댓글 목록 조회
      */
     @GetMapping("/board/{boardId}")
-    public ResponseEntity<List<CommentDto>> getCommentsByBoardId(@PathVariable Long boardId) {
+    public ResponseEntity<List<CommentsDto>> getCommentsByBoardId(@PathVariable Long boardId) {
         try {
-            List<CommentDto> comments = commentRepository.findByBoardId(boardId)
+            List<CommentsDto> comments = commentRepository.findByBoardId(boardId)
                     .stream()
-                    .map(comment -> CommentDto.builder()
+                    .map(comment -> CommentsDto.builder()
                             .id(comment.getId())
                             .content(comment.getContent())
                             .usersId(comment.getUsers() != null ? comment.getUsers().getId() : null)
