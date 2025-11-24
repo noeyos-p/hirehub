@@ -1,23 +1,8 @@
 // src/myPage/resume/Resume.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import api from "../../api/api";
-
-type ResumeItem = {
-  id: number;
-  title: string;
-  locked: boolean;
-  createAt: string; // ISO(LocalDate)
-  updateAt: string; // ISO(LocalDate)
-};
-
-type PagedResponse<T> = {
-  items: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-};
+import { myPageApi } from "../../api/myPageApi";
+import type { ResumeItem, PagedResponse } from "../../types/interface";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
 const prettyMDW = (iso?: string) => {
@@ -41,10 +26,7 @@ const Resume = () => {
   const fetchList = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get<PagedResponse<ResumeItem> | any>(
-        "/api/mypage/resumes",
-        { params: { page: 0, size: 50 } }
-      );
+      const data = await myPageApi.getResumes({ page: 0, size: 50 });
       const list: ResumeItem[] = data?.items ?? data?.content ?? [];
       setResumes(list);
       setSelectedIds([]);
@@ -81,10 +63,8 @@ const Resume = () => {
         // @NotBlank 우회: 의미 있는 기본 텍스트
         essayContent: "임시 자기소개서 내용",
       };
-      const res = await api.post("/api/mypage/resumes", payload, {
-        headers: { "Content-Type": "application/json" },
-      });
-      const newId = res?.data?.id;
+      const data = await myPageApi.createResume(payload);
+      const newId = data?.id;
       if (newId) {
         navigate(`/myPage/resume/ResumeDetail?id=${newId}`);
       } else {
@@ -146,11 +126,10 @@ const Resume = () => {
 
             <div className="flex flex-col items-end gap-2">
               <button
-                className={`text-sm px-4 py-1.5 rounded-md ${
-                  resume.locked
-                    ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                }`}
+                className={`text-sm px-4 py-1.5 rounded-md ${resume.locked
+                  ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  }`}
                 onClick={() => handleEdit(resume.id, resume.locked)}
                 disabled={loading}
               >

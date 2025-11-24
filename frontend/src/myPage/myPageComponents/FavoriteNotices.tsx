@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import api from "../../api/api";
-import type { ScrapPostResponse, PagedResponse } from "../../types/interface";
+import { myPageApi } from "../../api/myPageApi";
+import type { ScrapPostResponse, PagedResponse, ResumeItem } from "../../types/interface";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
 const prettyMDW = (iso?: string) => {
@@ -13,15 +13,6 @@ const prettyMDW = (iso?: string) => {
   const w = yoil[d.getDay()];
   return `${mm}.${dd}(${w})`;
 };
-
-type ResumeItem = {
-  id: number;
-  title: string;
-  locked: boolean;
-  createAt: string;
-  updateAt: string;
-};
-
 // --- 로컬스토리지 키(유저별 키를 쓰려면 로그인 이메일/ID를 뒤에 붙여도 됨)
 const LS_APPLIED = "hirehub_applied_job_ids";
 
@@ -52,7 +43,7 @@ const FavoriteNotices: React.FC = () => {
   const persistApplied = (ids: Set<number>) => {
     try {
       localStorage.setItem(LS_APPLIED, JSON.stringify(Array.from(ids)));
-    } catch {}
+    } catch { }
   };
 
   const firstArrayIn = (data: any): any[] => {
@@ -70,10 +61,7 @@ const FavoriteNotices: React.FC = () => {
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get<PagedResponse<ScrapPostResponse>>(
-        "/api/mypage/favorites/jobposts", 
-        { params: { page: 0, size: 100 } }
-      );
+      const data = await myPageApi.getScrapPosts({ page: 0, size: 100 });
       const list = firstArrayIn(data) as ScrapPostResponse[];
       setNotices(list);
       setSelectedIds([]);
@@ -123,7 +111,7 @@ const FavoriteNotices: React.FC = () => {
     if (!confirm(`선택한 ${selectedIds.length}개를 삭제할까요?`)) return;
     setLoading(true);
     try {
-      await Promise.all(selectedIds.map((id) => api.delete(`/api/mypage/favorites/jobposts/${id}`)));
+      await Promise.all(selectedIds.map((id) => myPageApi.deleteScrapPost(id)));
       await fetchList();
     } catch (e) {
       console.error("스크랩 공고 삭제 실패:", e);
@@ -136,7 +124,7 @@ const FavoriteNotices: React.FC = () => {
   // --- 지원 플로우 ---
   const fetchResumes = async () => {
     try {
-      const { data } = await api.get("/api/mypage/resumes", { params: { page: 0, size: 50 } });
+      const data = await myPageApi.getResumes({ page: 0, size: 50 });
       const list: ResumeItem[] = (data?.items ?? data?.content ?? []).filter((r: ResumeItem) => !r.locked);
       setResumes(list);
       setSelectedResumeId(list.length ? list[0].id : null);
@@ -176,7 +164,7 @@ const FavoriteNotices: React.FC = () => {
 
     try {
       setIsApplying(true);
-      await api.post("/api/mypage/applies", { jobPostId: applyTargetJobId, resumeId: selectedResumeId });
+      await myPageApi.applyJob({ jobPostId: applyTargetJobId, resumeId: selectedResumeId });
       alert("지원이 완료되었습니다!");
       markApplied(applyTargetJobId); // ✅ 바로 '지원 완료' 상태 반영
       setShowApplyModal(false);
@@ -228,9 +216,8 @@ const FavoriteNotices: React.FC = () => {
               {resumes.map((r) => (
                 <label
                   key={r.id}
-                  className={`block border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedResumeId === r.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
-                  }`}
+                  className={`block border rounded-lg p-4 cursor-pointer transition-all ${selectedResumeId === r.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <input
@@ -312,11 +299,10 @@ const FavoriteNotices: React.FC = () => {
                 <button
                   onClick={() => openApplyModal(n.jobPostId)}
                   disabled={applied}
-                  className={`text-sm px-4 py-1.5 rounded-md ${
-                    applied
-                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
+                  className={`text-sm px-4 py-1.5 rounded-md ${applied
+                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                    }`}
                 >
                   {applied ? "지원 완료" : "지원하기"}
                 </button>

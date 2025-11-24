@@ -2,19 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import api from '../../api/api';
+import { chatApi } from '../../api/chatApi';
+import type { ChatMessage } from '../../types/interface';
 
 if (typeof window !== 'undefined') {
   (window as any).global = window;
   (window as any).process = { env: { NODE_ENV: 'development' } };
-}
-
-interface ChatMessage {
-  id?: number;
-  content: string;
-  createAt: string;
-  sessionId: string;
-  nickname?: string;
-  userId?: number;
 }
 
 const RealTimeChat: React.FC = () => {
@@ -26,7 +19,7 @@ const RealTimeChat: React.FC = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stompClientRef = useRef<Client | null>(null);
   const isInitializing = useRef(false);
@@ -44,20 +37,8 @@ const RealTimeChat: React.FC = () => {
 
   const fetchUserInfo = useCallback(async (): Promise<boolean> => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.log('토큰 없음 - 비인증 사용자');
-        setUserNickname('');
-        setIsAuthenticated(false);
-        return false;
-      }
-
-      const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const user = await res.json();
+      const user = await chatApi.getUserInfo();
+      if (user) {
         const nick = user.nickname || user.name || '익명';
         console.log('사용자 정보 조회 성공:', user);
         setUserNickname(nick.trim() || '익명');
@@ -77,28 +58,18 @@ const RealTimeChat: React.FC = () => {
       setIsAuthenticated(false);
       return false;
     }
-  }, [API_BASE_URL]);
+  }, []);
 
   const fetchRecentMessages = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers: HeadersInit = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(`${API_BASE_URL}/api/chat/history/${sessionId}?limit=30`, { headers });
-      if (res.ok) {
-        const messages = await res.json();
-        console.log('이전 메시지 로드:', messages.length, '개');
-        setMessages(messages);
-      } else {
-        console.log('메시지 로드 실패');
-        setMessages([]);
-      }
+      const messages = await chatApi.getChatHistory(sessionId);
+      console.log('이전 메시지 로드:', messages.length, '개');
+      setMessages(messages);
     } catch (e) {
       console.error('메시지 로드 에러:', e);
       setMessages([]);
     }
-  }, [API_BASE_URL, sessionId]);
+  }, [sessionId]);
 
   const handleLeave = useCallback(() => {
     console.log('채팅방 퇴장');
@@ -306,29 +277,22 @@ const RealTimeChat: React.FC = () => {
     });
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chat/send`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          sessionId,
-          content: inputMessage,
-          nickname: userNickname || '익명',
-          userId,
-        }),
+      await chatApi.sendMessage({
+        sessionId,
+        content: inputMessage,
+        nickname: userNickname || '익명',
+        userId,
       });
 
-      if (res.ok) {
-        console.log('✅ 메시지 전송 성공');
-        setInputMessage('');
-      } else {
-        console.error('❌ 메시지 전송 실패:', res.status);
-        if (res.status === 401 || res.status === 403) {
-          setConnectionError('인증이 만료되었습니다. 다시 로그인해주세요.');
-        }
-      }
-    } catch (e) {
+      console.log('✅ 메시지 전송 성공');
+      setInputMessage('');
+    } catch (e: any) {
       console.error('❌ 메시지 전송 에러:', e);
-      setConnectionError('메시지 전송 실패. 다시 시도해주세요.');
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        setConnectionError('인증이 만료되었습니다. 다시 로그인해주세요.');
+      } else {
+        setConnectionError('메시지 전송 실패. 다시 시도해주세요.');
+      }
     }
   };
 
@@ -394,11 +358,10 @@ const RealTimeChat: React.FC = () => {
               <button
                 onClick={handleJoin}
                 disabled={!isAuthenticated}
-                className={`px-6 py-2.5 rounded-lg transition-colors text-md font-medium ${
-                  isAuthenticated
+                className={`px-6 py-2.5 rounded-lg transition-colors text-md font-medium ${isAuthenticated
                     ? 'bg-[#006AFF] text-white hover:bg-blue-600'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                  }`}
                 title={!isAuthenticated ? '로그인이 필요합니다' : ''}
               >
                 참여하기
@@ -419,9 +382,8 @@ const RealTimeChat: React.FC = () => {
                   return (
                     <div
                       key={msg.id || i}
-                      className={`flex items-start gap-2 ${
-                        isMyMessage ? "justify-end" : "justify-start"
-                      }`}
+                      className={`flex items-start gap-2 ${isMyMessage ? "justify-end" : "justify-start"
+                        }`}
                     >
                       {!isMyMessage && (
                         <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
@@ -441,9 +403,8 @@ const RealTimeChat: React.FC = () => {
                       )}
 
                       <div
-                        className={`flex flex-col max-w-[75%] ${
-                          isMyMessage ? "items-end" : "items-start"
-                        }`}
+                        className={`flex flex-col max-w-[75%] ${isMyMessage ? "items-end" : "items-start"
+                          }`}
                       >
                         {!isMyMessage && (
                           <span className="text-xs font-semibold text-gray-700 mb-1 ml-1">
@@ -452,16 +413,14 @@ const RealTimeChat: React.FC = () => {
                         )}
 
                         <div
-                          className={`flex items-end ${
-                            isMyMessage ? "flex-row-reverse gap-1" : "flex-row gap-1"
-                          }`}
+                          className={`flex items-end ${isMyMessage ? "flex-row-reverse gap-1" : "flex-row gap-1"
+                            }`}
                         >
                           <div
-                            className={`px-4 py-2.5 text-[15px] rounded-2xl break-words ${
-                              isMyMessage
+                            className={`px-4 py-2.5 text-[15px] rounded-2xl break-words ${isMyMessage
                                 ? "bg-blue-500 text-white rounded-tr-sm"
                                 : "bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm"
-                            }`}
+                              }`}
                           >
                             {msg.content}
                           </div>

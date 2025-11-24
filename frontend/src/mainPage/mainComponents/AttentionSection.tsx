@@ -1,26 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BookmarkIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
-import api from "../../api/api";
 import { useNavigate } from "react-router-dom";
-
-interface Job {
-  id: number;
-  title: string;
-  companyName: string;
-  companyId: number;
-  companyPhoto?: string;  // ✅ 백엔드에서 직접 받음
-  position: string;
-  careerLevel: string;
-  education: string;
-  type?: string;
-  views: number;
-  location: string;
-  endAt: string;
-}
+import { jobPostApi } from "../../api/jobPostApi";
+import type { JobPostResponse } from "../../types/interface";
 
 const AttentionSection: React.FC = () => {
-  const [popularJobs, setPopularJobs] = useState<Job[]>([]);
+  const [popularJobs, setPopularJobs] = useState<JobPostResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
   // ❌ companyPhotos 상태 제거 - 더 이상 필요 없음
@@ -34,8 +20,7 @@ const AttentionSection: React.FC = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const res = await api.get("/api/jobposts");
-        const jobs: Job[] = res.data;
+        const jobs = await jobPostApi.getJobPosts();
 
         console.log("✅ 받아온 공고 데이터:", jobs[0]); // 디버깅용
 
@@ -59,8 +44,7 @@ const AttentionSection: React.FC = () => {
   useEffect(() => {
     const fetchScrapStatus = async () => {
       try {
-        const res = await api.get(`/api/mypage/favorites/jobposts?page=0&size=1000`);
-        const scrappedItems = res.data.rows || res.data.content || [];
+        const scrappedItems = await jobPostApi.getScrappedJobs();
         const scrappedIds = new Set<number>(
           scrappedItems
             .map((item: any) => Number(item.jobPostId || item.id))
@@ -81,19 +65,15 @@ const AttentionSection: React.FC = () => {
     const isScrapped = scrappedJobs.has(targetJobId);
     try {
       if (isScrapped) {
-        const res = await api.delete(`/api/mypage/favorites/jobposts/${targetJobId}`);
-        if (res.status === 204 || res.status === 200) {
-          setScrappedJobs((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(targetJobId);
-            return newSet;
-          });
-        }
+        await jobPostApi.removeScrapJob(targetJobId);
+        setScrappedJobs((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(targetJobId);
+          return newSet;
+        });
       } else {
-        const res = await api.post(`/api/mypage/favorites/jobposts/${targetJobId}`);
-        if (res.status === 200 && res.data) {
-          setScrappedJobs((prev) => new Set(prev).add(targetJobId));
-        }
+        await jobPostApi.addScrapJob(targetJobId);
+        setScrappedJobs((prev) => new Set(prev).add(targetJobId));
       }
     } catch (err: any) {
       let errorMsg = "북마크 처리에 실패했습니다.";
@@ -109,7 +89,7 @@ const AttentionSection: React.FC = () => {
   // 카드 클릭 시 조회수 증가 후 상세 페이지로 이동
   const handleJobClick = async (jobId: number) => {
     try {
-      await api.post(`/api/jobposts/${jobId}/views`);
+      await jobPostApi.incrementJobView(jobId);
     } catch (err) {
       console.error("조회수 증가 실패:", err);
     }
@@ -167,13 +147,13 @@ const AttentionSection: React.FC = () => {
             >
               {/* ✅ 회사 이미지 - job.companyPhoto 직접 사용 */}
               <div className="w-full h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-4">
-                {job.companyPhoto ? (
+                {job.photo ? (
                   <img
-                    src={job.companyPhoto}
+                    src={job.photo}
                     alt={job.companyName}
                     className="max-w-[80%] max-h-[80%] object-contain"
                     onError={(e) => {
-                      console.error(`❌ 이미지 로드 실패: ${job.companyName}`, job.companyPhoto);
+                      console.error(`❌ 이미지 로드 실패: ${job.companyName}`, job.photo);
                       // 이미지 로드 실패 시 대체 UI 표시
                       const target = e.currentTarget as HTMLImageElement;
                       target.style.display = 'none';

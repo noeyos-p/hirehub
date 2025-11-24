@@ -1,15 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/api";
-
-type MyPostItem = {
-  id: number;
-  title: string;
-  content: string;
-  views?: number;
-  createAt?: string;
-  updateAt?: string;
-};
+import { myPageApi } from "../../api/myPageApi";
+import type { MyPostItem } from "../../types/interface";
 
 const MyPosts: React.FC = () => {
   const navigate = useNavigate();
@@ -20,9 +12,7 @@ const MyPosts: React.FC = () => {
   const fetchMine = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get<MyPostItem[]>("/api/board/mine", {
-        withCredentials: true,
-      });
+      const data = await myPageApi.getMyPosts();
       setPosts(Array.isArray(data) ? data : []);
       setSelectedIds([]);
     } catch (e) {
@@ -64,7 +54,7 @@ const MyPosts: React.FC = () => {
 
     try {
       setLoading(true);
-      await Promise.all(selectedIds.map((id) => api.delete(`/api/board/${id}`)));
+      await Promise.all(selectedIds.map((id) => myPageApi.deleteBoard(id)));
       await fetchMine();
     } catch (e) {
       console.error("삭제 실패:", e);

@@ -1,55 +1,9 @@
 // src/myPage/myPageComponents/SchedulePage.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/api";
+import { myPageApi } from "../../api/myPageApi";
+import { jobPostApi } from "../../api/jobPostApi";
 import JobDetail from "../../jobPostings/jopPostingComponents/JobDetail";
-
-type Notice = {
-  id?: number;
-  date: string;
-  title: string;
-  companyName?: string;
-  location?: string;
-  type?: string;
-  position?: string;
-  careerLevel?: string;
-  education?: string;
-};
-
-type ResumeItem = {
-  id: number;
-  title: string;
-  locked: boolean;
-  createAt: string;
-  updateAt: string;
-};
-
-const API_BASE = api.defaults.baseURL;
-const TOKEN_KEY = "accessToken";
-
-function resolveAccessToken(): string | null {
-  const primary = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-  if (primary) return primary.startsWith("Bearer ") ? primary.slice(7) : primary;
-
-  const keys = ["jwt", "jwtToken", "token", "Authorization"];
-  for (const k of keys) {
-    const v = localStorage.getItem(k) || sessionStorage.getItem(k);
-    if (v) return v.startsWith("Bearer ") ? v.slice(7) : v;
-  }
-  const m = document.cookie.match(/(?:^|;\s*)Authorization=([^;]+)/);
-  if (m) {
-    const decoded = decodeURIComponent(m[1]);
-    return decoded.startsWith("Bearer ") ? decoded.replace(/^Bearer\s+/i, "") : decoded;
-  }
-  return null;
-}
-
-const pick = (obj: any, keys: string[], fallback: any = "") => {
-  for (const path of keys) {
-    const v = path.split(".").reduce((acc: any, k) => (acc && acc[k] != null ? acc[k] : undefined), obj);
-    if (v !== undefined && v !== null && v !== "") return v;
-  }
-  return fallback;
-};
+import type { Notice, ResumeItem } from "../../types/interface";
 
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 
@@ -105,41 +59,24 @@ const SchedulePage: React.FC = () => {
   );
 
   useEffect(() => {
-    const controller = new AbortController();
-    const token = resolveAccessToken();
+    let isMounted = true;
 
     async function fetchFavorites() {
       try {
         setLoading(true);
         setError(null);
 
-        const url = `${API_BASE}/api/mypage/favorites/jobposts?page=0&size=1000`;
-        const res = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          credentials: "include",
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          throw new Error(`(${res.status}) ${text || "스크랩 공고 로드 실패"}`);
-        }
-
-        const raw = await res.json();
+        const data = await myPageApi.getScrapPosts({ page: 0, size: 1000 });
 
         let arr: any[] = [];
-        if (Array.isArray(raw)) arr = raw;
-        else if (Array.isArray(raw.items)) arr = raw.items;
-        else if (Array.isArray(raw.content)) arr = raw.content;
-        else if (Array.isArray(raw.rows)) arr = raw.rows;
-        else if (Array.isArray(raw.data)) arr = raw.data;
-        else if (Array.isArray(raw.list)) arr = raw.list;
+        if (Array.isArray(data)) arr = data;
+        else if (Array.isArray((data as any).items)) arr = (data as any).items;
+        else if (Array.isArray((data as any).content)) arr = (data as any).content;
+        else if (Array.isArray((data as any).rows)) arr = (data as any).rows;
+        else if (Array.isArray((data as any).data)) arr = (data as any).data;
+        else if (Array.isArray((data as any).list)) arr = (data as any).list;
         else {
-          const firstArray = Object.values(raw).find((v) => Array.isArray(v));
+          const firstArray = Object.values(data).find((v) => Array.isArray(v));
           arr = (firstArray as any[]) || [];
         }
 
@@ -153,32 +90,7 @@ const SchedulePage: React.FC = () => {
 
             try {
               // 개별 공고 상세 정보 조회
-              const detailRes = await fetch(`${API_BASE}/api/jobposts/${jobPostId}`, {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                credentials: "include",
-                signal: controller.signal,
-              });
-
-              if (!detailRes.ok) {
-                // 상세 정보 조회 실패 시 기본 정보만 사용
-                return {
-                  id: jobPostId,
-                  title: item.title || "",
-                  companyName: item.companyName || "",
-                  date: endAt.slice(0, 10),
-                  location: "",
-                  type: "",
-                  position: "",
-                  careerLevel: "",
-                  education: "",
-                };
-              }
-
-              const detail = await detailRes.json();
+              const detail = await jobPostApi.getJobPostById(jobPostId);
 
               return {
                 id: jobPostId,
@@ -208,17 +120,19 @@ const SchedulePage: React.FC = () => {
           })
         );
 
-        const mapped = detailedNotices.filter(Boolean) as Notice[];
-        setAllFavorites(mapped);
+        if (isMounted) {
+          const mapped = detailedNotices.filter(Boolean) as Notice[];
+          setAllFavorites(mapped);
+        }
       } catch (e: any) {
-        if (e?.name !== "AbortError") setError(e.message || "스크랩 로드 중 오류가 발생했습니다.");
+        if (isMounted) setError(e.message || "스크랩 로드 중 오류가 발생했습니다.");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
     fetchFavorites();
-    return () => controller.abort();
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
@@ -256,23 +170,8 @@ const SchedulePage: React.FC = () => {
     setCurrentJobId(jobPostId);
     setSelectedResumeId(null);
 
-    const controller = new AbortController();
-    const token = resolveAccessToken();
-
     try {
-      const res = await fetch(`${API_BASE}/api/mypage/resumes?page=0&size=50`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: "include",
-        signal: controller.signal,
-      });
-
-      if (!res.ok) throw new Error("이력서 목록을 불러올 수 없습니다.");
-
-      const data = await res.json();
+      const data = await myPageApi.getResumes({ page: 0, size: 50 });
       const list: ResumeItem[] = (data?.items ?? data?.content ?? []).filter((r: any) => !r.locked);
       setResumes(list);
       setShowApplyModal(true);
@@ -286,23 +185,9 @@ const SchedulePage: React.FC = () => {
     if (!selectedResumeId) return alert("이력서를 선택해주세요.");
     if (!confirm("선택한 이력서로 지원하시겠습니까? 제출 후에는 이력서를 수정할 수 없습니다.")) return;
 
-    const token = resolveAccessToken();
     try {
       setApplying(true);
-      const res = await fetch(`${API_BASE}/api/mypage/applies`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: "include",
-        body: JSON.stringify({ jobPostId: currentJobId, resumeId: selectedResumeId }),
-      });
-
-      if (!res.ok) {
-        const msg = await res.text().catch(() => "");
-        throw new Error(msg || "지원 중 오류가 발생했습니다.");
-      }
+      await myPageApi.applyJob({ jobPostId: currentJobId, resumeId: selectedResumeId });
 
       alert("지원이 완료되었습니다!");
       setShowApplyModal(false);

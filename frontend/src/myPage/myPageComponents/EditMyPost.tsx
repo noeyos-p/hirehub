@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../api/api";
+import { myPageApi } from "../../api/myPageApi";
 
 type BoardDto = { id: number; title: string; content: string; };
 
@@ -14,7 +14,7 @@ const EditMyPost: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get<BoardDto>(`/api/board/${id}`);
+        const data = await myPageApi.getBoardDetail(id);
         setForm(data);
       } catch (e) {
         console.error("게시글 조회 실패:", e);
@@ -29,7 +29,7 @@ const EditMyPost: React.FC = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await api.put(`/api/board/${id}`, {
+      await myPageApi.updateBoard(id, {
         title: form.title,
         content: form.content,
       });

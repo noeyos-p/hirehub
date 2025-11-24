@@ -1,14 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import api from "../../api/api";
-
-type ApplyItem = {
-  id: number;                 // apply id
-  resumeId: number | null;    // ✅ 백에서 추가된 필드
-  companyName: string;
-  resumeTitle: string;
-  appliedAt: string;          // ✅ 필드명 주의(백: appliedAt = LocalDate)
-};
+import { myPageApi } from "../../api/myPageApi";
+import type { ApplyItem } from "../../types/interface";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
 const prettyDateTime = (iso?: string) => {
@@ -32,7 +25,7 @@ const AppliedNotices: React.FC = () => {
   const fetchApplies = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get<ApplyItem[]>("/api/mypage/applies");
+      const data = await myPageApi.getApplies();
       setItems(Array.isArray(data) ? data : []);
       setSelectedIds([]);
     } catch (e) {

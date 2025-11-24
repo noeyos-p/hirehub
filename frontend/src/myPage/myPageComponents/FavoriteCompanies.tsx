@@ -1,7 +1,7 @@
 // src/myPage/favorite/FavoriteCompanies.tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/api";
+import { myPageApi } from "../../api/myPageApi";
 import type { FavoriteCompanyResponse, FavoriteCompanyGroup, JobPosts, PagedResponse } from "../../types/interface";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
@@ -31,12 +31,12 @@ const mapJobPost = (r: any): JobPosts | null => {
   const rawId = r?.id ?? r?.jobPostId ?? r?.postId;
   const id = Number(rawId);
   if (!id || Number.isNaN(id)) return null;
-  
+
   const companyId: number = (() => {
     const v = r?.companyId ?? r?.company?.id ?? r?.company_id;
     return v != null ? Number(v) : 0;
   })();
-  
+
   return {
     id,
     title: String(r?.title ?? r?.jobPostTitle ?? r?.name ?? ""),
@@ -76,31 +76,28 @@ const FavoriteCompanies: React.FC = () => {
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get<PagedResponse<FavoriteCompanyResponse>>(
-        "/api/mypage/favorites/companies",
-        { params: { page: 0, size: 300 } }
-      );
+      const data = await myPageApi.getFavoriteCompanies({ page: 0, size: 300 });
       const list = (firstArrayIn(data) as FavoriteCompanyResponse[]) || [];
-      
+
       console.log("API 응답 데이터:", list); // 디버깅용
-      
+
       // 같은 companyId 합치기
       const map = new Map<number, FavoriteCompanyGroup>();
       for (const r of list) {
         const cid = Number(r?.companyId);
         if (!cid || Number.isNaN(cid)) continue;
-        
+
         // postCount 필드명이 다를 수 있으니 여러 가능성 확인
         const count = Number(
-          r?.postCount ?? 
-          r?.postCount ?? 
-          (r as any)?.post_count ?? 
-          (r as any)?.open_post_count ?? 
+          r?.postCount ??
+          r?.postCount ??
+          (r as any)?.post_count ??
+          (r as any)?.open_post_count ??
           0
         );
-        
+
         console.log(`회사 ${r.companyName}: postCount=${count}`); // 디버깅용
-        
+
         const prev = map.get(cid);
         if (prev) {
           prev.postCount += count;
@@ -163,7 +160,7 @@ const FavoriteCompanies: React.FC = () => {
     if (!confirm(`선택한 ${selectedIds.length}개를 삭제할까요?`)) return;
     setLoading(true);
     try {
-      await Promise.all(selectedIds.map((cid) => api.delete(`/api/mypage/favorites/companies/${cid}`)));
+      await Promise.all(selectedIds.map((cid) => myPageApi.deleteFavoriteCompany(cid)));
       await fetchList();
     } catch (e) {
       console.error("관심기업 삭제 실패:", e);
@@ -176,25 +173,8 @@ const FavoriteCompanies: React.FC = () => {
   /** 특정 회사의 '채용중' 공고만 조회해서 캐시에 저장 */
   const fetchOpenPosts = async (companyId: number): Promise<JobPosts[]> => {
     const loadCandidates = async (): Promise<JobPosts[]> => {
-      try {
-        const { data } = await api.get(`/api/companies/${companyId}/jobposts`, {
-          params: { size: 200 },
-        });
-        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPosts[];
-      } catch {}
-      try {
-        const { data } = await api.get(`/api/jobposts`, {
-          params: { companyId, size: 200 },
-        });
-        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPosts[];
-      } catch {}
-      try {
-        const { data } = await api.get(`/api/jobposts/company/${companyId}`);
-        return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPosts[];
-      } catch (e) {
-        console.error("채용중 공고 조회 실패:", e);
-        return [];
-      }
+      const data = await myPageApi.getOpenPosts(companyId);
+      return firstArrayIn(data).map(mapJobPost).filter(Boolean) as JobPosts[];
     };
 
     const raw = await loadCandidates();

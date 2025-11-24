@@ -1,6 +1,6 @@
 // src/myPage/myPageComponents/MyInfo.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/api";
+import { myPageApi } from "../../api/myPageApi";
 import type { UsersRequest, UsersResponse } from "../../types/interface";
 
 /* 아이콘 (로컬) */
@@ -73,12 +73,10 @@ const GENDER_LABEL: Record<string, string> = { MALE: "남성", FEMALE: "여성",
 
 /* API */
 async function fetchMe(): Promise<UsersResponse> {
-  const { data } = await api.get(`${API_BASE}/me`);
-  return data;
+  return await myPageApi.getMyInfo();
 }
 async function updateMe(partial: Partial<UsersRequest>) {
-  const { data } = await api.put(`${API_BASE}/me`, partial);
-  return data;
+  return await myPageApi.updateMyInfo(partial);
 }
 
 /* 공용 행 */
@@ -130,33 +128,33 @@ const MyInfo: React.FC = () => {
     setDraft({ [key]: init ?? me?.[key] ?? "" });
   };
   const cancel = () => { setEditing(null); setDraft({}); };
-const commit = async (key: keyof UsersResponse) => {
-  try {
-    const payload: any = { [key]: draft[key] };
-    const updated = await updateMe(payload);
-    setMe(updated);
-    
-    // ✅ 닉네임 변경 시 Header에 알림
-    if (key === "nickname") {
-      window.dispatchEvent(new CustomEvent('userProfileUpdated', { 
-        detail: { nickname: updated.nickname } 
-      }));
+  const commit = async (key: keyof UsersResponse) => {
+    try {
+      const payload: any = { [key]: draft[key] };
+      const updated = await updateMe(payload);
+      setMe(updated);
+
+      // ✅ 닉네임 변경 시 Header에 알림
+      if (key === "nickname") {
+        window.dispatchEvent(new CustomEvent('userProfileUpdated', {
+          detail: { nickname: updated.nickname }
+        }));
+      }
+
+      cancel();
+    } catch (e) {
+      if (e.response?.data?.message) {
+        alert(e.response.data.message);
+      } else {
+        alert("저장 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
     }
-    
-    cancel();
-  } catch (e) {
-    if (e.response?.data?.message) {
-      alert(e.response.data.message);
-    } else {
-      alert("저장 중 오류가 발생했습니다. 다시 시도해주세요.");
-    }
-  }
-};
+  };
 
   const handleWithdraw = async () => {
     if (!window.confirm("정말 탈퇴하시겠습니까? 모든 데이터가 완전히 삭제됩니다.")) return;
     try {
-      await api.delete("/api/mypage/withdraw");
+      await myPageApi.withdraw();
       alert("회원 탈퇴가 완료되었습니다.");
       localStorage.clear();
       window.location.href = "/";
@@ -199,9 +197,9 @@ const commit = async (key: keyof UsersResponse) => {
                   value={draft.nickname ?? ""}
                   onChange={(e) => setDraft((d) => ({ ...d, nickname: e.target.value }))}
                   placeholder="닉네임"
-                        onKeyDown={(e) => {
-        if (e.key === "Enter") commit("nickname");
-      }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commit("nickname");
+                  }}
                 />
                 <button className="p-2" onClick={() => commit("nickname")} title="저장"><Check /></button>
                 <button className="p-2" onClick={cancel} title="취소"><X /></button>
@@ -343,22 +341,22 @@ const commit = async (key: keyof UsersResponse) => {
           </div>
         </section>
         {/* ✅ 회원탈퇴 버튼 - 반응형 대응 */}
-          <div className="
+        <div className="
               col-span-12 flex justify-start w-full mt-8 ml-[40px] mt-[-145px]
                       ">
-            <button
-              onClick={handleWithdraw}
-              className="
+          <button
+            onClick={handleWithdraw}
+            className="
                 text-red-500 font-semibold rounded-lg
     px-1 py-1 md:px-1 md:py-1
     hover:text-red-600 transition
     w-full md:w-auto
     shadow-none
                "
-            >
-              탈퇴하기
-            </button>
-          </div>
+          >
+            탈퇴하기
+          </button>
+        </div>
       </div>
     </div>
   );

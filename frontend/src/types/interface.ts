@@ -312,11 +312,11 @@ export interface FavoriteCompany {
 }
 
 export interface FavoriteCompanyResponse {
-  id: number;            
-  userId?: number;       
+  id: number;
+  userId?: number;
   companyId: number;
   companyName: string;
-  postCount: number;  
+  postCount: number;
 };
 
 export interface FavoriteCompanyGroup {
@@ -462,4 +462,100 @@ export interface PagedResponse<T> {
   size?: number;
   totalElements?: number;
   totalPages?: number;
+}
+
+export interface ChatMessage {
+  id?: number;
+  content: string;
+  createAt: string;
+  sessionId: string;
+  nickname?: string;
+  userId?: number;
+}
+export interface MyPostItem {
+  id: number;
+  title: string;
+  content: string;
+  views?: number;
+  createAt?: string;
+  updateAt?: string;
+}
+// My Page DTOs
+export interface ApplyItem {
+  id: number;
+  resumeId: number | null;
+  companyName: string;
+  resumeTitle: string;
+  appliedAt: string;
+}
+
+export interface ResumeItem {
+  id: number;
+  title: string;
+  locked: boolean;
+  createAt: string;
+  updateAt: string;
+}
+
+export interface ResumeDto {
+  id: number;
+  title: string;
+  idPhoto?: string | null;
+  essayTitle?: string | null;
+  essayTittle?: string | null;
+  essayContent?: string | null;
+  htmlContent?: string | null;
+  locked: boolean;
+  createAt: string;
+  updateAt: string;
+}
+
+export interface MyProfileDto {
+  id: number;
+  email?: string | null;
+  nickname?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  gender?: string | null;
+  address?: string | null;
+  position?: string | null;
+  education?: string | null;
+  birth?: string | null;
+  age?: number | null;
+  region?: string | null;
+  career?: string | null;
+}
+
+export interface EducationBE {
+  name: string;
+  major?: string;
+  status?: string;
+  type?: string;
+  startAt?: string;
+  endAt?: string;
+}
+
+export interface CareerBE {
+  companyName: string;
+  type?: string;
+  position?: string;
+  startAt?: string;
+  endAt?: string;
+  content?: string;
+}
+
+export interface NamedBE {
+  name: string;
+}
+
+export interface Notice {
+  id?: number;
+  date: string;
+  title: string;
+  companyName?: string;
+  location?: string;
+  type?: string;
+  position?: string;
+  careerLevel?: string;
+  education?: string;
 }

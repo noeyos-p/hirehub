@@ -1,40 +1,8 @@
 // src/myPage/myPageComponents/ResumeDetail.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import api from "../../api/api";
-import axios from "axios";
-
-
-/** ---------------- Types ---------------- */
-
-type ResumeDto = {
-  id: number;
-  title: string;
-  idPhoto?: string | null;
-  essayTitle?: string | null;
-  essayTittle?: string | null;
-  essayContent?: string | null;
-  htmlContent?: string | null;
-  locked: boolean;
-  createAt: string;
-  updateAt: string;
-};
-
-type MyProfileDto = {
-  id: number;
-  email?: string | null;
-  nickname?: string | null;
-  name?: string | null;
-  phone?: string | null;
-  gender?: string | null;
-  address?: string | null;
-  position?: string | null;
-  education?: string | null;
-  birth?: string | null;
-  age?: number | null;
-  region?: string | null;
-  career?: string | null;
-};
+import { myPageApi } from "../../api/myPageApi";
+import type { ResumeDto, MyProfileDto, EducationBE, CareerBE, NamedBE } from "../../types/interface";
 
 type ExtraState = {
   educations: Array<{ school: string; period: string; status: string; major: string }>;
@@ -128,9 +96,7 @@ const formatPeriod = (s?: string, e?: string) => {
 };
 
 // 백엔드 DTO
-type EducationBE = { name: string; major?: string; status?: string; type?: string; startAt?: string; endAt?: string };
-type CareerBE = { companyName: string; type?: string; position?: string; startAt?: string; endAt?: string; content?: string };
-type NamedBE = { name: string };
+// EducationBE, CareerBE, NamedBE are imported from interface.ts
 
 const mapExtraToBackend = (extra: ExtraState) => {
   const education: EducationBE[] = (extra.educations ?? []).map((e) => {
@@ -198,7 +164,7 @@ const ResumeDetail: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get<MyProfileDto>("/api/mypage/me");
+        const data = await myPageApi.getMyProfile();
         setProfile(data);
       } catch (e: any) {
         console.error("프로필 조회 실패:", e?.response?.status, e?.response?.data || e);
@@ -213,7 +179,7 @@ const ResumeDetail: React.FC = () => {
       if (!resumeId) return;
       try {
         setLoading(true);
-        const { data } = await api.get<ResumeDto>(`/api/mypage/resumes/${resumeId}`);
+        const data = await myPageApi.getResumeDetail(resumeId);
         setTitle(data?.title || "새 이력서");
         setEssayTitle(data?.essayTitle ?? data?.essayTittle ?? "자기소개서");
         setEssayContent(data?.essayContent ?? "");
@@ -272,11 +238,8 @@ const ResumeDetail: React.FC = () => {
     };
 
     try {
-      const res = await api.post("/api/mypage/resumes", payload, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
-      });
-      const id = res?.data?.id;
+      const data = await myPageApi.createResume(payload);
+      const id = data?.id;
       if (!id) throw new Error("이력서 생성 실패: ID 없음");
       setResumeId(id);
       return id;
@@ -311,18 +274,9 @@ const ResumeDetail: React.FC = () => {
       form.append("file", file);
 
       // ✅ 토큰 명시적으로 추가 (multipart는 인터셉터가 깨지기 쉬움)
-      const res = await api.post(
-  `/api/mypage/resumes/${id}/photo`,
-  form,
-  {
-    headers: {
-      "Content-Type": "multipart/form-data",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    withCredentials: true,
-  }
-);
-      const url = res?.data?.url || res?.data?.idPhoto;
+      // ✅ 토큰 명시적으로 추가 (multipart는 인터셉터가 깨지기 쉬움)
+      const data = await myPageApi.uploadResumePhoto(id, file);
+      const url = data?.url || data?.idPhoto;
       if (url) setPhotoPreview(url);
     } catch (err) {
       console.error(err);
@@ -446,16 +400,10 @@ const ResumeDetail: React.FC = () => {
       };
 
       if (resumeId) {
-        await api.put(`/api/mypage/resumes/${resumeId}`, payload, {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        });
+        await myPageApi.updateResume(resumeId, payload);
       } else {
-        const res = await api.post(`/api/mypage/resumes`, payload, {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        });
-        const id = res?.data?.id;
+        const data = await myPageApi.createResume(payload);
+        const id = data?.id;
         if (id) setResumeId(id);
       }
 
