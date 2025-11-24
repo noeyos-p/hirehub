@@ -22,6 +22,7 @@ const ReviewManagement: React.FC = () => {
     setError("");
 
     try {
+      console.log("📤 리뷰 목록 요청:", { page, size: pageSize });
       const res = await adminApi.getReviews({
         page,
         size: pageSize,
@@ -29,16 +30,29 @@ const ReviewManagement: React.FC = () => {
         direction: "DESC",
       });
 
-      if (res.success) {
+      console.log("📥 리뷰 API 응답:", res);
+
+      // 다양한 응답 형식 처리
+      if (res && res.success) {
+        const reviewData = res.data || [];
+        console.log("✅ 리뷰 데이터:", reviewData);
+        setReviews(Array.isArray(reviewData) ? reviewData : []);
+        setTotalPages(res.totalPages || 0);
+        setCurrentPage(res.currentPage !== undefined ? res.currentPage : page);
+      } else if (res && Array.isArray(res.data)) {
+        // success 필드 없이 data만 있는 경우
+        console.log("⚠️ success 필드 없음, data 직접 사용");
         setReviews(res.data);
-        setTotalPages(res.totalPages);
+        setTotalPages(res.totalPages || 0);
         setCurrentPage(page);
       } else {
-        setError(res.message || "리뷰 목록을 불러오지 못했습니다.");
+        console.error("❌ 예상치 못한 응답 형식:", res);
+        setError(res?.message || "리뷰 목록을 불러오지 못했습니다.");
       }
     } catch (err: any) {
       console.error("❌ 리뷰 목록 조회 실패:", err);
-      setError(err.message || "리뷰 목록을 불러오지 못했습니다.");
+      console.error("❌ 에러 상세:", err.response?.data);
+      setError(err.response?.data?.message || err.message || "리뷰 목록을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
     }
@@ -146,8 +160,8 @@ const ReviewManagement: React.FC = () => {
               key={page}
               onClick={() => fetchReviews(page)}
               className={`px-4 py-2 rounded-lg border ${currentPage === page
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
             >
               {page + 1}

@@ -55,20 +55,39 @@ const AdsManagement: React.FC = () => {
     const fetchAds = async () => {
       try {
         setIsLoading(true);
+        console.log("📤 광고 목록 요청");
         const res = await adminApi.getAds();
-        if (res.success && Array.isArray(res.data)) {
+        console.log("📥 광고 API 응답:", res);
+
+        if (res && res.success && Array.isArray(res.data)) {
+          console.log("✅ 광고 데이터:", res.data);
+          const formatted: AdminAd[] = res.data.map((ad: any) => {
+            const imageUrl = ad.photo || ad.imageUrl || "";
+            console.log(`광고 #${ad.id} 이미지 URL:`, imageUrl);
+            return {
+              id: ad.id,
+              title: ad.title || `광고 #${ad.id}`,
+              imageUrl: imageUrl,
+            };
+          });
+          setAds(formatted);
+        } else if (res && Array.isArray(res.data)) {
+          // success 필드 없이 data만 있는 경우
+          console.log("⚠️ success 필드 없음, data 직접 사용");
           const formatted: AdminAd[] = res.data.map((ad: any) => ({
             id: ad.id,
             title: ad.title || `광고 #${ad.id}`,
-            imageUrl: ad.photo || "",
+            imageUrl: ad.photo || ad.imageUrl || "",
           }));
           setAds(formatted);
         } else {
-          console.warn("⚠️ 광고 데이터 형식이 올바르지 않습니다.", res.data);
+          console.error("❌ 예상치 못한 광고 응답 형식:", res);
+          console.warn("⚠️ 광고 데이터 형식이 올바르지 않습니다.", res);
         }
       } catch (err: any) {
-        console.error("❌ 광고 조회 실패:", err.message);
-        alert("광고 목록을 불러오는데 실패했습니다.");
+        console.error("❌ 광고 조회 실패:", err);
+        console.error("❌ 에러 상세:", err.response?.data);
+        alert(err.response?.data?.message || err.message || "광고 목록을 불러오는데 실패했습니다.");
       } finally {
         setIsLoading(false);
       }
@@ -205,6 +224,36 @@ const AdsManagement: React.FC = () => {
                 src={selectedAd.imageUrl}
                 alt={selectedAd.title}
                 className="max-w-full max-h-full object-contain"
+                onError={(e) => {
+                  console.error(`❌ 메인 이미지 로딩 실패:`, selectedAd.imageUrl);
+                  console.warn("⚠️ 광고 차단기(AdBlock)가 활성화되어 있을 수 있습니다.");
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent && !parent.querySelector('.error-message')) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-message text-center p-8';
+                    errorDiv.innerHTML = `
+                      <svg class="w-20 h-20 mx-auto mb-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                      </svg>
+                      <p class="text-lg text-red-600 font-semibold mb-2">이미지를 불러올 수 없습니다</p>
+                      <p class="text-sm text-gray-600 mb-4">광고 차단기(AdBlock, uBlock 등)가 활성화되어 있을 수 있습니다.</p>
+                      <p class="text-xs text-gray-500">이 사이트에서 광고 차단기를 비활성화한 후 새로고침해주세요.</p>
+                      <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-left">
+                        <p class="font-medium text-yellow-800 mb-1">💡 해결 방법:</p>
+                        <ol class="list-decimal list-inside text-yellow-700 space-y-1">
+                          <li>브라우저 확장 프로그램에서 광고 차단기 찾기</li>
+                          <li>이 사이트(localhost 또는 현재 도메인)를 허용 목록에 추가</li>
+                          <li>페이지 새로고침 (F5 또는 Ctrl+R)</li>
+                        </ol>
+                      </div>
+                    `;
+                    parent.appendChild(errorDiv);
+                  }
+                }}
+                onLoad={() => {
+                  console.log(`✅ 메인 이미지 로딩 성공:`, selectedAd.imageUrl);
+                }}
               />
             ) : (
               <div className="text-center text-gray-400">
@@ -253,6 +302,28 @@ const AdsManagement: React.FC = () => {
                           src={ad.imageUrl}
                           alt={ad.title}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error(`❌ 이미지 로딩 실패 (광고 #${ad.id}):`, ad.imageUrl);
+                            console.warn("⚠️ 광고 차단기(AdBlock)가 활성화되어 있을 수 있습니다.");
+                            // 에러 발생 시 대체 이미지 표시
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent && !parent.querySelector('.error-message')) {
+                              const errorDiv = document.createElement('div');
+                              errorDiv.className = 'error-message text-center p-4';
+                              errorDiv.innerHTML = `
+                                <svg class="w-12 h-12 mx-auto mb-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                                <p class="text-sm text-red-600 font-medium">이미지 로딩 실패</p>
+                                <p class="text-xs text-gray-500 mt-1">광고 차단기를 비활성화해주세요</p>
+                              `;
+                              parent.appendChild(errorDiv);
+                            }
+                          }}
+                          onLoad={() => {
+                            console.log(`✅ 이미지 로딩 성공 (광고 #${ad.id}):`, ad.imageUrl);
+                          }}
                         />
                       ) : (
                         <PhotoIcon className="w-12 h-12 text-gray-300" />
