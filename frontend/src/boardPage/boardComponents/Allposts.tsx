@@ -163,27 +163,27 @@ const AllPosts: React.FC = () => {
   }
 
   return (
-    <section className="mb-8">
+    <section className="mb-6 md:mb-8">
       {/* 상단 영역 */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">전체 게시물</h2>
-        <div className="relative ml-[150px]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+        <h2 className="text-lg md:text-xl font-bold text-gray-800 whitespace-nowrap">전체 게시물</h2>
+        <div className="relative flex-1 max-w-full sm:max-w-[300px] md:max-w-[400px]">
           <input
             type="text"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="검색어를 입력하세요"
-            className="border border-gray-300 rounded-lg px-4 py-1.5 pr-9 text-[14px] focus:outline-none focus:border-blue-500 w-100"
+            className="w-full border border-gray-300 rounded-lg px-3 md:px-4 py-1.5 pr-9 text-xs md:text-[14px] focus:outline-none focus:border-blue-500"
           />
-          <button onClick={handleSearch} className="absolute right-3 top-2.5">
-            <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 cursor-pointer hover:text-gray-700" />
+          <button onClick={handleSearch} className="absolute right-2 md:right-3 top-2 md:top-2.5">
+            <MagnifyingGlassIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-500 cursor-pointer hover:text-gray-700" />
           </button>
         </div>
-        <div className="flex justify-end mr-[6px]">
+        <div className="flex justify-end w-full sm:w-auto">
           <button
             onClick={handleWriteClick}
-            className="bg-[#006AFF] hover:bg-blue-600 text-white text-[15px] font-medium px-4 py-1.5 rounded-md cursor-pointer"
+            className="bg-[#006AFF] hover:bg-blue-600 text-white text-sm md:text-[15px] font-medium px-3 md:px-4 py-1.5 rounded-md cursor-pointer whitespace-nowrap"
           >
             작성하기
           </button>
@@ -191,13 +191,13 @@ const AllPosts: React.FC = () => {
       </div>
 
       {isSearching && (
-        <div className="flex items-center space-x-2 mb-6 ml-[4px]">
-          <span className="text-sm text-gray-600">
+        <div className="flex items-center space-x-2 mb-4 md:mb-6">
+          <span className="text-xs sm:text-sm text-gray-600">
             검색 결과: {boards.length}개
           </span>
           <button
             onClick={handleResetSearch}
-            className="text-sm text-blue-600 hover:text-blue-800 underline"
+            className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 underline"
           >
             전체 보기
           </button>
@@ -220,16 +220,16 @@ const AllPosts: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {currentPosts.map((board) => (
               <div
                 key={board.id}
                 onClick={() => handlePostClick(board.id)}
-                className="border-b border-gray-200 pb-4 last:border-b-0 cursor-pointer hover:bg-gray-100 transition p-2 rounded"
+                className="border-b border-gray-200 pb-3 md:pb-4 last:border-b-0 cursor-pointer hover:bg-gray-100 transition-all duration-200 p-1.5 md:p-2 rounded"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-gray-300">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center overflow-hidden bg-gray-300 flex-shrink-0">
                       {board.usersProfileImage ? (
                         <img
                           src={board.usersProfileImage}
@@ -237,31 +237,29 @@ const AllPosts: React.FC = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-sm text-gray-600">
+                        <span className="text-xs md:text-sm text-gray-600">
                           {board.usersName?.charAt(0) || '?'}
                         </span>
                       )}
                     </div>
-                    <div>
-                      <h3 className="text-md font-semibold text-gray-800">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm md:text-md font-semibold text-gray-800 truncate">
                         {board.title}
                       </h3>
-                      <p className="text-sm text-gray-600 line-clamp-1">
+                      <p className="text-xs md:text-sm text-gray-600 line-clamp-1 truncate">
                         {board.content.replace(/<[^>]*>/g, '').substring(0, 50)}
                         {board.content.length > 50 ? '...' : ''}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    {/* 위치를 아래로 내리기 위해 mt-4 (top margin) 적용 */}
-                    <div className="flex items-center justify-end space-x-2 mt-6">
-                      <div className="text-sm text-gray-500 flex items-center space-x-1">
-                        <EyeIcon className="w-4 h-4" />
+                  <div className="text-right flex-shrink-0">
+                    <div className="flex items-center justify-end space-x-1.5 md:space-x-2 mt-4 md:mt-6">
+                      <div className="text-xs md:text-sm text-gray-500 flex items-center space-x-0.5 md:space-x-1">
+                        <EyeIcon className="w-3 h-3 md:w-4 md:h-4" />
                         <span>{board.views || 0}</span>
                       </div>
-                      <div className="text-sm text-gray-500 flex items-center space-x-1">
-                        <ChatBubbleLeftIcon className="w-4 h-4" />
-                        {/* 게시글 객체에서 직접 댓글 수 사용 */}
+                      <div className="text-xs md:text-sm text-gray-500 flex items-center space-x-0.5 md:space-x-1">
+                        <ChatBubbleLeftIcon className="w-3 h-3 md:w-4 md:h-4" />
                         <span>{commentCounts[board.id] || 0}</span>
                       </div>
                     </div>

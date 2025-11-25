@@ -38,14 +38,14 @@ const Ads: React.FC = () => {
   // 이미지가 없으면 로딩 또는 빈화면 처리
   if (ads.length === 0) {
     return (
-      <div className="rounded-lg p-4 text-center text-sm text-gray-600 mt-0 h-[360px] flex items-center justify-center">
+      <div className="rounded-lg p-2 sm:p-3 md:p-4 text-center text-xs sm:text-sm text-gray-600 mt-0 h-[300px] sm:h-[360px] md:h-[425px] flex items-center justify-center">
         로딩중...
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg p-4 text-center text-sm text-gray-600 mt-0 h-[425px] flex items-center justify-center">
+    <div className="rounded-lg p-2 sm:p-3 md:p-4 text-center text-sm text-gray-600 mt-0 h-[300px] sm:h-[360px] md:h-[425px] flex items-center justify-center">
       <img
         src={ads[currentAdIndex]}
         alt={`광고 배너 ${currentAdIndex + 1}`}
