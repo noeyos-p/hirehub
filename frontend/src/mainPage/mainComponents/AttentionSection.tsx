@@ -116,16 +116,20 @@ const AttentionSection: React.FC = () => {
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 0));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
 
-  // 각 페이지마다 이동할 거리 계산
+  // 각 페이지마다 이동할 거리 계산 (반응형)
   const getSlideDistance = (page: number) => {
-    return page * 1345;
+    // 태블릿: 900px, 데스크톱: 1345px
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      return page * 900; // 태블릿용 슬라이드 거리
+    }
+    return page * 1345; // 데스크톱용 슬라이드 거리
   };
 
   return (
-    <section className="relative mb-12 max-w-[1440px] mx-auto w-full">
+    <section className="relative mb-8 md:mb-12 max-w-[1440px] mx-auto w-full">
       {/* 제목 */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-800">모두가 주목하는 공고</h2>
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-bold text-gray-800">모두가 주목하는 공고</h2>
 
         {/* 페이지 버튼 - 제목 오른쪽 */}
         <div
@@ -134,14 +138,14 @@ const AttentionSection: React.FC = () => {
         >
           <button
             onClick={goToPreviousPage}
-            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-7 h-7 flex items-center justify-center text-white z-10 ${currentPage === 0 ? 'invisible' : ''
+            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-white text-sm md:text-base z-10 ${currentPage === 0 ? 'invisible' : ''
               }`}
           >
             ‹
           </button>
           <button
             onClick={goToNextPage}
-            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-7 h-7 flex items-center justify-center text-white z-10 ${currentPage === totalPages - 1 ? 'invisible' : ''
+            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-white text-sm md:text-base z-10 ${currentPage === totalPages - 1 ? 'invisible' : ''
               }`}
           >
             ›
@@ -159,16 +163,16 @@ const AttentionSection: React.FC = () => {
           {popularJobs.map((job) => (
             <div
               key={job.id}
-              className="relative w-[253px] h-[288px] bg-white border border-gray-200 rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
+              className="relative w-[170px] md:w-[253px] h-[240px] md:h-[288px] bg-white border border-gray-200 rounded-2xl md:rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleJobClick(job.id)}
             >
               {/* ✅ 회사 이미지 - companyPhotos 사용 */}
-              <div className="w-full h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-4">
+              <div className="w-full h-[100px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-2 md:p-4">
                 {companyPhotos[job.companyId] ? (
                   <img
                     src={companyPhotos[job.companyId]}
                     alt={job.companyName}
-                    className="max-w-[80%] max-h-[80%] object-contain"
+                    className="max-w-[70%] md:max-w-[80%] max-h-[70%] md:max-h-[80%] object-contain"
                     onError={(e) => {
                       console.error(`❌ 이미지 로드 실패: ${job.companyName}`, companyPhotos[job.companyId]);
                       // 이미지 로드 실패 시 대체 UI 표시
@@ -191,16 +195,16 @@ const AttentionSection: React.FC = () => {
               </div>
 
               {/* 텍스트 */}
-              <div className="pt-[16px] pb-[20px] px-[24px]">
-                <p className="font-semibold text-gray-800 text-[20px] ">{job.companyName}</p>
-                <p className="text-gray-900 font-normal text-[16px] mt-[4px] truncate">
+              <div className="pt-2 md:pt-[16px] pb-3 md:pb-[20px] px-3 md:px-[24px]">
+                <p className="font-semibold text-gray-800 text-sm md:text-[20px] truncate">{job.companyName}</p>
+                <p className="text-gray-900 font-normal text-xs md:text-[16px] mt-[2px] md:mt-[4px] truncate">
                   {job.title}
                 </p>
-                <p className="text-gray-500 text-[14px]">
+                <p className="text-gray-500 text-[10px] md:text-[14px] truncate">
                   {job.position} / {job.careerLevel} / {job.education} / {job.location}
                 </p>
 
-                <p className="text-gray-500 text-[16px] text-right mt-2">
+                <p className="text-gray-500 text-xs md:text-[16px] text-right mt-1 md:mt-2">
                   - {new Date(job.endAt).toLocaleDateString("ko-KR", {
                     year: "2-digit",
                     month: "2-digit",
@@ -212,13 +216,13 @@ const AttentionSection: React.FC = () => {
               {/* 북마크 버튼 */}
               <button
                 onClick={(e) => handleBookmarkClick(e, job.id)}
-                className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors z-10"
+                className="absolute top-2 right-2 md:top-3 md:right-3 p-1.5 md:p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors z-10"
                 aria-label={scrappedJobs.has(job.id) ? "북마크 제거" : "북마크 추가"}
               >
                 {scrappedJobs.has(job.id) ? (
-                  <BookmarkSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                  <BookmarkSolidIcon className="w-4 h-4 md:w-5 md:h-5 text-[#006AFF]" />
                 ) : (
-                  <BookmarkIcon className="w-5 h-5 text-gray-600" />
+                  <BookmarkIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
                 )}
               </button>
             </div>

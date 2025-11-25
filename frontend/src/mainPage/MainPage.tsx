@@ -6,11 +6,11 @@ import RealTimeChat from './mainComponents/RealTimeChat';
 const MainPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-2">
-      <div className="max-w-[1440px] px-[55px] mx-auto mt-10">
+      <div className="max-w-[1440px] px-4 md:px-8 lg:px-[55px] mx-auto mt-6 md:mt-10">
         {/* 모두가 주목하는 공고 섹션 */}
         <AttentionSection />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
           {/* 인기 있는 게시물 섹션 */}
           <PopularPosts />
 
