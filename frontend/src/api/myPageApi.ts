@@ -97,6 +97,10 @@ export const myPageApi = {
         });
     },
 
+    deleteResume: async (id: number): Promise<void> => {
+        await api.delete(`/api/mypage/resumes/${id}`);
+    },
+
     uploadResumePhoto: async (id: number, file: File): Promise<{ url?: string; idPhoto?: string }> => {
         const form = new FormData();
         form.append("file", file);

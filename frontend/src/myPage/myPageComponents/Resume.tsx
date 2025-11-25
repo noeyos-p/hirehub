@@ -49,8 +49,10 @@ const Resume = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.length === resumes.length) setSelectedIds([]);
-    else setSelectedIds(resumes.map((r) => r.id));
+    // 제출되지 않은 이력서만 선택
+    const unlocked = resumes.filter((r) => !r.locked);
+    if (selectedIds.length === unlocked.length) setSelectedIds([]);
+    else setSelectedIds(unlocked.map((r) => r.id));
   };
 
   const handleCreate = async () => {
@@ -93,18 +95,58 @@ const Resume = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedIds.length) return;
+
+    // 잠긴 이력서가 선택되었는지 확인
+    const hasLockedResumes = resumes.some(
+      (r) => selectedIds.includes(r.id) && r.locked
+    );
+
+    if (hasLockedResumes) {
+      alert("제출된 이력서는 삭제할 수 없습니다. 선택을 해제해주세요.");
+      return;
+    }
+
+    if (!confirm(`선택한 ${selectedIds.length}개의 이력서를 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await Promise.all(selectedIds.map((id) => myPageApi.deleteResume(id)));
+      alert("이력서가 삭제되었습니다.");
+      await fetchList();
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        "이력서 삭제 중 오류가 발생했습니다.";
+      console.error("이력서 삭제 실패:", e?.response || e);
+      alert(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const dateOf = (r: ResumeItem) => prettyMDW(r.updateAt || r.createAt);
 
-  const allSelected = useMemo(
-    () => resumes.length > 0 && selectedIds.length === resumes.length,
-    [resumes, selectedIds]
-  );
+  const allSelected = useMemo(() => {
+    const unlocked = resumes.filter((r) => !r.locked);
+    return unlocked.length > 0 && selectedIds.length === unlocked.length;
+  }, [resumes, selectedIds]);
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">이력서 관리</h2>
+        <button
+          onClick={handleCreate}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-500 text-sm font-medium px-4 py-1.5 rounded-md"
+          disabled={loading}
+        >
+          이력서 작성
+        </button>
       </div>
 
       <div className="space-y-5">
@@ -113,8 +155,15 @@ const Resume = () => {
             key={resume.id}
             className="flex items-center justify-between border-b border-gray-200 pb-4"
           >
-            <div className="flex items-start gap-3">
-              <div className="text-gray-700 mt-1">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                className="mt-[-2px] accent-blue-500"
+                checked={selectedIds.includes(resume.id)}
+                onChange={() => handleCheckboxChange(resume.id)}
+                disabled={loading || resume.locked}
+              />
+              <div className="text-gray-900 font-semibold text-[16px] py-[20px]">
                 {resume.title}
                 {resume.locked && (
                   <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 align-middle">
@@ -141,13 +190,19 @@ const Resume = () => {
         ))}
       </div>
 
-      <div className="flex justify-end mt-6 gap-6">
+      <div className="flex justify-between mt-6">
         <button
-          onClick={handleCreate}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-500 text-sm font-medium px-4 py-1.5 rounded-md"
-          disabled={loading}
+          onClick={handleSelectAll}
+          className="text-sm text-gray-600 hover:text-gray-800"
         >
-          이력서 작성
+          {allSelected ? "전체해제" : "전체선택"}
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={!selectedIds.length || loading}
+          className="text-red-500 hover:text-red-600 text-sm font-medium disabled:opacity-50"
+        >
+          삭제
         </button>
       </div>
     </div>
