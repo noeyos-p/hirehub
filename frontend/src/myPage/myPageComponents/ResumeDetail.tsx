@@ -3,6 +3,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { myPageApi } from "../../api/myPageApi";
 import type { ResumeDto, MyProfileDto, EducationBE, CareerBE, NamedBE } from "../../types/interface";
+import {
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
 
 type ExtraState = {
   educations: Array<{ school: string; period: string; status: string; major: string }>;
@@ -128,6 +131,7 @@ const mapExtraToBackend = (extra: ExtraState) => {
 /** ---------------- Component ---------------- */
 
 const ResumeDetail: React.FC = () => {
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -138,8 +142,8 @@ const ResumeDetail: React.FC = () => {
   }, [location.search]);
 
   const [resumeId, setResumeId] = useState<number | undefined>(resumeIdFromQS);
-  const [title, setTitle] = useState("새 이력서");
-  const [essayTitle, setEssayTitle] = useState("자기소개서");
+  const [title, setTitle] = useState("");
+  const [essayTitle, setEssayTitle] = useState("");
   const [essayContent, setEssayContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -152,6 +156,24 @@ const ResumeDetail: React.FC = () => {
 
   const [extra, setExtra] = useState<ExtraState>(defaultExtra);
   const extraRef = useRef(extra);
+  const [eduStart, setEduStart] = useState<string>("");
+  const [eduEnd, setEduEnd] = useState<string>("");
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [startPickerYear, setStartPickerYear] = useState(new Date().getFullYear());
+  const [endPickerYear, setEndPickerYear] = useState(new Date().getFullYear());
+  const [gradStatus, setGradStatus] = useState("");
+  const [openGrad, setOpenGrad] = useState(false);
+
+  // 경력 관련 state
+  const [carStart, setCarStart] = useState<string>("");
+  const [carEnd, setCarEnd] = useState<string>("");
+  const [showCarStartPicker, setShowCarStartPicker] = useState(false);
+  const [showCarEndPicker, setShowCarEndPicker] = useState(false);
+  const [carStartPickerYear, setCarStartPickerYear] = useState(new Date().getFullYear());
+  const [carEndPickerYear, setCarEndPickerYear] = useState(new Date().getFullYear());
+
+
   useEffect(() => {
     extraRef.current = extra;
   }, [extra]);
@@ -159,6 +181,13 @@ const ResumeDetail: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const handlePickPhoto = () => fileRef.current?.click();
+
+  const toPrettyYearMonth = (value: string) => {
+    if (!value) return "";
+    const [y, m] = value.split("-");
+    return `${y}.${m}`;
+  };
+
 
   /** 프로필 로드 */
   useEffect(() => {
@@ -180,8 +209,8 @@ const ResumeDetail: React.FC = () => {
       try {
         setLoading(true);
         const data = await myPageApi.getResumeDetail(resumeId);
-        setTitle(data?.title || "새 이력서");
-        setEssayTitle(data?.essayTitle ?? data?.essayTittle ?? "자기소개서");
+        setTitle(data?.title || "");
+        setEssayTitle(data?.essayTitle ?? data?.essayTittle ?? "");
         setEssayContent(data?.essayContent ?? "");
         if (data?.idPhoto) setPhotoPreview(data.idPhoto);
 
@@ -229,11 +258,11 @@ const ResumeDetail: React.FC = () => {
     const safePhoto = photoPreview && photoPreview.startsWith("http") ? photoPreview : null;
 
     const payload = {
-      title: (title || "새 이력서").trim() || "새 이력서",
+      title: title.trim() || "이력서",
       idPhoto: safePhoto ?? null,
-      essayTitle: (essayTitle || "자기소개서").trim() || "자기소개서",
-      essayTittle: (essayTitle || "자기소개서").trim() || "자기소개서",
-      essayContent: (essayContent && essayContent.trim()) || "임시 자기소개서 내용",
+      essayTitle: essayTitle.trim() || " ",
+      essayTittle: essayTitle.trim() || " ",
+      essayContent: essayContent.trim() || " ",
       ...mapped,
     };
 
@@ -250,7 +279,7 @@ const ResumeDetail: React.FC = () => {
         data?.message || data?.error || (typeof data === "string" ? data : JSON.stringify(data)) || e?.message;
       alert(
         status && String(status).startsWith("5")
-          ? "정확한 값을 입력해주세요. (예: 기간 2023-01 ~ 2024-05)"
+          ? "정확한 값을 입력해주세요. (예: 기간 2023.01 ~ 2024.05)"
           : `이력서 생성 중 오류가 발생했습니다.\n[${status ?? "ERR"}] ${serverMsg}`
       );
       throw e;
@@ -293,7 +322,6 @@ const ResumeDetail: React.FC = () => {
   const eduMajorRef = useRef<HTMLInputElement>(null);
 
   const carCompanyRef = useRef<HTMLInputElement>(null);
-  const carPeriodRef = useRef<HTMLInputElement>(null);
   const carRoleRef = useRef<HTMLInputElement>(null);
   const carJobRef = useRef<HTMLInputElement>(null);
   const carDescRef = useRef<HTMLInputElement>(null);
@@ -303,42 +331,73 @@ const ResumeDetail: React.FC = () => {
   const langRef = useRef<HTMLInputElement>(null);
 
   /** add 함수들 (기간 검증 포함) */
-  const INVALID_PERIOD_MSG = "정확한 값을 입력해주세요. (예: 2023-01 ~ 2024-05)";
+  const INVALID_PERIOD_MSG = "정확한 값을 입력해주세요. (예: 2023.01 ~ 2024.05)";
 
-  const addEducation = () => {
+  // const { eduStart, eduEnd, gradStatus, setEduStart, setEduEnd, setGradStatus, eduSchoolRef, eduMajorRef, setExtra, isValidPeriod, INVALID_PERIOD_MSG } = props/hooks;
+// 위 변수들이 함수 스코프 내에 존재한다고 가정합니다.
+const addEducation = () => {
+    // 1. Ref와 State에서 모든 값 가져오기
     const school = eduSchoolRef.current?.value?.trim() || "";
-    const period = eduPeriodRef.current?.value?.trim() || "";
-    const status = eduStatusRef.current?.value?.trim() || "";
+
+    // 기간을 YYYY.MM ~ YYYY.MM 형식으로 결합
+    const period =
+    (eduStart && eduEnd)
+    ? `${eduStart.replace('-', '.')} ~ ${eduEnd.replace('-', '.')}`
+    : "";
+        
+    const status = gradStatus || ""; 
     const major = eduMajorRef.current?.value?.trim() || "";
-    if (period && !isValidPeriod(period)) {
-      alert(INVALID_PERIOD_MSG);
-      return;
+    
+    // 모든 필드가 비어있으면 추가하지 않음
+    if (!school && !period && !status && !major) {
+        console.log("모든 필드가 비어있습니다."); // 디버깅용
+        return;
     }
-    if (!school && !period && !status && !major) return;
-    setExtra((p) => ({ ...p, educations: [...p.educations, { school, period, status, major }] }));
+    
+    // 2. 학력 리스트 업데이트
+    console.log("학력 추가:", { school, period, status, major }); // 디버깅용
+    setExtra((prev) => ({ 
+        ...prev, 
+        educations: [...prev.educations, { school, period, status, major }] 
+    }));
+    
+    // 3. 입력 필드 초기화 (Ref 초기화)
     if (eduSchoolRef.current) eduSchoolRef.current.value = "";
-    if (eduPeriodRef.current) eduPeriodRef.current.value = "";
-    if (eduStatusRef.current) eduStatusRef.current.value = "";
     if (eduMajorRef.current) eduMajorRef.current.value = "";
-  };
+
+    // 4. 입력 필드 초기화 (State 초기화) - 빈 문자열로 초기화
+    setEduStart("");
+    setEduEnd("");
+    setGradStatus("");
+    setShowStartPicker(false);
+    setShowEndPicker(false);
+    setOpenGrad(false);
+};
 
   const addCareer = () => {
     const company = carCompanyRef.current?.value?.trim() || "";
-    const period = carPeriodRef.current?.value?.trim() || "";
+    const period = (carStart && carEnd)
+      ? `${carStart.replace('-', '.')} ~ ${carEnd.replace('-', '.')}`
+      : "";
     const role = carRoleRef.current?.value?.trim() || "";
     const job = carJobRef.current?.value?.trim() || "";
     const desc = carDescRef.current?.value?.trim() || "";
-    if (period && !isValidPeriod(period)) {
-      alert(INVALID_PERIOD_MSG);
-      return;
-    }
+
     if (!company && !period && !role && !job && !desc) return;
+
     setExtra((p) => ({ ...p, careers: [...p.careers, { company, period, role, job, desc }] }));
+
+    // 입력 필드 초기화 (Ref)
     if (carCompanyRef.current) carCompanyRef.current.value = "";
-    if (carPeriodRef.current) carPeriodRef.current.value = "";
     if (carRoleRef.current) carRoleRef.current.value = "";
     if (carJobRef.current) carJobRef.current.value = "";
     if (carDescRef.current) carDescRef.current.value = "";
+
+    // 입력 필드 초기화 (State)
+    setCarStart("");
+    setCarEnd("");
+    setShowCarStartPicker(false);
+    setShowCarEndPicker(false);
   };
 
   const addCert = () => {
@@ -391,11 +450,11 @@ const ResumeDetail: React.FC = () => {
       const safePhoto = photoPreview && photoPreview.startsWith("http") ? photoPreview : null;
 
       const payload = {
-        title: (title || "새 이력서").trim() || "새 이력서",
+        title: title.trim() || "이력서",
         idPhoto: safePhoto ?? null,
-        essayTitle: (essayTitle || "자기소개서").trim() || "자기소개서",
-        essayTittle: (essayTitle || "자기소개서").trim() || "자기소개서",
-        essayContent: (essayContent && essayContent.trim()) || "임시 자기소개서 내용",
+        essayTitle: essayTitle.trim() || " ",
+        essayTittle: essayTitle.trim() || " ",
+        essayContent: essayContent.trim() || " ",
         ...mapped,
       };
 
@@ -417,7 +476,7 @@ const ResumeDetail: React.FC = () => {
 
       // 5xx → 사용자가 고칠 수 있는 안내로 치환
       if (status && String(status).startsWith("5")) {
-        alert("정확한 값을 입력해주세요. (예: 기간 2023-01 ~ 2024-05)");
+        alert("정확한 값을 입력해주세요. (예: 기간 2023.01 ~ 2024.05)");
       } else {
         alert(`저장 중 오류가 발생했습니다.\n[${status ?? "ERR"}] ${serverMsg}`);
       }
@@ -430,14 +489,8 @@ const ResumeDetail: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto py-10 px-8 bg-white">
-      <div className="flex items-center justify-between mb-10">
+      <div className="mb-10">
         <h2 className="text-2xl font-bold text-gray-900">이력서 작성</h2>
-        <input
-          className="ml-4 flex-1 max-w-xs border-b border-gray-300 focus:border-black focus:outline-none text-sm py-1"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="이력서 제목"
-        />
       </div>
 
       {/* 프로필 */}
@@ -467,143 +520,516 @@ const ResumeDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* 학력 */}
-      <div className="mb-12">
-        <div className="flex items-end justify-between">
-          <h3 className="text-lg font-semibold mb-3">학력</h3>
-          <p className="text-xs text-gray-400 mb-3">기간 예: <b>2023-01 ~ 2024-05</b> / 2020.03~2022.02 / 2020~2022</p>
-        </div>
-        <div className="grid grid-cols-5 gap-4 mb-2 text-xs text-gray-400">
-          <span>학교명</span>
-          <span>재학기간</span>
-          <span>졸업상태</span>
-          <span>전공</span>
-        </div>
-        <div className="grid grid-cols-5 gap-4 mb-3">
-          <input ref={eduSchoolRef} placeholder="학교명" className="border p-1 rounded" />
-          <input ref={eduPeriodRef} placeholder="예: 2020-03 ~ 2024-02" className="border p-1 rounded" />
-          <input ref={eduStatusRef} placeholder="상태" className="border p-1 rounded" />
-          <input
-            ref={eduMajorRef}
-            placeholder="전공 (Enter 추가)"
-            className="border p-1 rounded"
-            onKeyDown={(e) => { if (e.key === "Enter") addEducation(); }}
-          />
-          <button onClick={addEducation} className="text-sm bg-gray-100 rounded px-2">추가</button>
-        </div>
-        <ul className="text-sm text-gray-700 space-y-1">
-          {extra.educations.map((ed, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <span className="flex-1">{ed.school} · {ed.period || "-"} · {ed.status} · {ed.major}</span>
-              <button
-                onClick={() => removeEducation(i)}
-                className="text-xs px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200"
-                aria-label="remove education"
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
+      {/* 이력서 제목 */}
+      <div className="mb-8">
+        <input
+          className="text-lg font-semibold focus:outline-none w-full border-b border-gray-200 pb-2"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="이력서 제목"
+        />
       </div>
 
+      {/* 학력 */}
+      <div className="mb-12">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"> {/* flex items-center gap-2 추가 */}
+          학력
+          {/* 작은 원형 플러스 버튼 (Tailwind CSS 스타일링) */}
+  <button
+  type="button"  // 이 부분 추가
+  onClick={addEducation}
+  className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+  aria-label="학력 추가"
+>
+  +
+</button>
+          </h3>
+
+        {/* 추가된 학력 리스트 */}
+        {extra.educations.map((ed, i) => (
+          <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+            <button
+              onClick={() => removeEducation(i)}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+              aria-label="remove education"
+            >
+              ×
+            </button>
+            <div className="space-y-2">
+              <p className="font-medium text-gray-900">{ed.school}</p>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>{ed.period || "-"}</p>
+                <p>{ed.status} {ed.major && `· ${ed.major}`}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* 새 학력 추가 폼 */}
+        <div className="border border-gray-100 rounded-lg p-4 bg-white">
+          <div className="space-y-3">
+
+            <div>
+              <input
+                ref={eduSchoolRef}
+                placeholder="학교명"
+                className="w-full bg-transparent py-1 focus:outline-none text-14"
+              />
+            </div>
+
+            {/* 입학/졸업 연월, 졸업상태, 전공을 한 줄에 배치 - 레이아웃 수정: grid-cols-[auto_auto_1fr] */}
+            <div className="grid grid-cols-[auto_auto_1fr] gap-2">
+              {/* 입학/졸업연월 통합 */}
+              <div className="relative flex items-center gap-1 border-r border-gray-200 pr-5">
+                {/* 입학연월 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowStartPicker(!showStartPicker);
+                    setShowEndPicker(false);
+                  }}
+                  className="py-1 text-14 text-left focus:outline-none flex-0"
+                >
+                  {eduStart ? <span className="text-gray-900">{eduStart.replace('-', '.')}</span> : <span className="text-gray-500">YYYY.MM</span>}
+                </button>
+
+                <span className="text-gray-400 text-sm">-</span>
+
+                {/* 졸업연월 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEndPicker(!showEndPicker);
+                    setShowStartPicker(false);
+                  }}
+                  className="py-1 text-14 text-left focus:outline-none flex-0"
+                >
+                  {eduEnd ? <span className="text-gray-900">{eduEnd.replace('-', '.')}</span> : <span className="text-gray-500">YYYY.MM</span>}
+                </button>
+
+                {/* 입학연월 달력 */}
+                {showStartPicker && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 w-64">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setStartPickerYear(startPickerYear - 1)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        ‹
+                      </button>
+                      <div className="font-medium">{startPickerYear}년</div>
+                      <button
+                        type="button"
+                        onClick={() => setStartPickerYear(startPickerYear + 1)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        ›
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                        <button
+                          key={month}
+                          type="button"
+                          onClick={() => {
+                            const value = `${startPickerYear}-${String(month).padStart(2, '0')}`;
+                            setEduStart(value);
+                            setShowStartPicker(false);
+                          }}
+                          className="py-2 px-3 text-sm hover:bg-blue-50 rounded transition-colors"
+                        >
+                          {month}월
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 졸업연월 달력 */}
+                {showEndPicker && (
+                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 w-64">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setEndPickerYear(endPickerYear - 1)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        ‹
+                      </button>
+                      <div className="font-medium">{endPickerYear}년</div>
+                      <button
+                        type="button"
+                        onClick={() => setEndPickerYear(endPickerYear + 1)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        ›
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                        <button
+                          key={month}
+                          type="button"
+                          onClick={() => {
+                            const value = `${endPickerYear}-${String(month).padStart(2, '0')}`;
+                            setEduEnd(value);
+                            setShowEndPicker(false);
+                          }}
+                          className="py-2 px-3 text-sm hover:bg-blue-50 rounded transition-colors"
+                        >
+                          {month}월
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 졸업 상태 드롭다운 */}
+              <div className="relative border-r border-gray-200 pr-2">
+                <button
+                  onClick={() => setOpenGrad(!openGrad)}
+                  className="flex items-center justify-between w-21 px-3 py-1 bg-white text-14 text-gray-800 hover:bg-gray-50"
+                >
+                  <span className={gradStatus ? "text-gray-900" : "text-gray-500"}>
+                    {gradStatus ? gradStatus : "졸업 상태"}
+                  </span>
+                </button>
+
+                {openGrad && (
+                  <div className="absolute left-0 w-21 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    {["재학중", "졸업"].map((status) => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => {
+                          setGradStatus(status);
+                          setOpenGrad(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700"
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+
+              {/* 전공 및 학위 입력란 */}
+              <input
+                ref={eduMajorRef}
+                placeholder="전공 및 학위"
+                className="bg-transparent py-1 focus:outline-none text-14 pl-2" // <- pl-2 추가
+                onKeyDown={(e) => { if (e.key === "Enter") addEducation(); }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
       {/* 경력 */}
       <div className="mb-12">
-        <div className="flex items-end justify-between">
-          <h3 className="text-lg font-semibold mb-3">경력</h3>
-          <p className="text-xs text-gray-400 mb-3">기간 예: <b>2023-01 ~ 2024-05</b></p>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          경력
+          <button
+            type="button"
+            onClick={addCareer}
+            className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+            aria-label="경력 추가"
+          >
+            +
+          </button>
+        </h3>
+
+        {/* 추가된 경력 리스트 */}
+        {extra.careers.map((c, i) => (
+          <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+            <button
+              onClick={() => removeCareer(i)}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+              aria-label="remove career"
+            >
+              ×
+            </button>
+            <div className="space-y-2">
+              <p className="font-medium text-gray-900">{c.company}</p>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>{c.period || "-"} {c.role && `· ${c.role}`} {c.job && `· ${c.job}`}</p>
+                {c.desc && <p className="text-gray-700">{c.desc}</p>}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* 새 경력 추가 폼 */}
+        <div className="border border-gray-100 rounded-lg p-4 bg-white">
+          <div className="space-y-3">
+            <div>
+              <input
+                ref={carCompanyRef}
+                placeholder="회사명"
+                className="w-full bg-transparent py-1 focus:outline-none text-14"
+              />
+            </div>
+
+            {/* 입사/퇴사연월, 직책, 직무를 한 줄에 배치 */}
+            <div className="grid grid-cols-[auto_auto_1fr] gap-2">
+              {/* 입사/퇴사연월 통합 */}
+              <div className="relative flex items-center gap-1 border-r border-gray-200 pr-5">
+                {/* 입사연월 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCarStartPicker(!showCarStartPicker);
+                    setShowCarEndPicker(false);
+                  }}
+                  className="py-1 text-14 text-left focus:outline-none flex-0"
+                >
+                  {carStart ? <span className="text-gray-900">{carStart.replace('-', '.')}</span> : <span className="text-gray-500">YYYY.MM</span>}
+                </button>
+
+                <span className="text-gray-400 text-sm">-</span>
+
+                {/* 퇴사연월 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCarEndPicker(!showCarEndPicker);
+                    setShowCarStartPicker(false);
+                  }}
+                  className="py-1 text-14 text-left focus:outline-none flex-0"
+                >
+                  {carEnd ? <span className="text-gray-900">{carEnd.replace('-', '.')}</span> : <span className="text-gray-500">YYYY.MM</span>}
+                </button>
+
+                {/* 입사연월 달력 */}
+                {showCarStartPicker && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 w-64">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setCarStartPickerYear(carStartPickerYear - 1)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        ‹
+                      </button>
+                      <div className="font-medium">{carStartPickerYear}년</div>
+                      <button
+                        type="button"
+                        onClick={() => setCarStartPickerYear(carStartPickerYear + 1)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        ›
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                        <button
+                          key={month}
+                          type="button"
+                          onClick={() => {
+                            const value = `${carStartPickerYear}-${String(month).padStart(2, '0')}`;
+                            setCarStart(value);
+                            setShowCarStartPicker(false);
+                          }}
+                          className="py-2 px-3 text-sm hover:bg-blue-50 rounded transition-colors"
+                        >
+                          {month}월
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 퇴사연월 달력 */}
+                {showCarEndPicker && (
+                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 w-64">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setCarEndPickerYear(carEndPickerYear - 1)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        ‹
+                      </button>
+                      <div className="font-medium">{carEndPickerYear}년</div>
+                      <button
+                        type="button"
+                        onClick={() => setCarEndPickerYear(carEndPickerYear + 1)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        ›
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                        <button
+                          key={month}
+                          type="button"
+                          onClick={() => {
+                            const value = `${carEndPickerYear}-${String(month).padStart(2, '0')}`;
+                            setCarEnd(value);
+                            setShowCarEndPicker(false);
+                          }}
+                          className="py-2 px-3 text-sm hover:bg-blue-50 rounded transition-colors"
+                        >
+                          {month}월
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 직책 */}
+              <input
+                ref={carRoleRef}
+                placeholder="직책"
+                className="bg-transparent py-1 focus:outline-none text-14 border-r border-gray-200 pr-2 pl-2"
+              />
+
+              {/* 직무 */}
+              <input
+                ref={carJobRef}
+                placeholder="직무"
+                className="bg-transparent py-1 focus:outline-none text-14 pl-2"
+              />
+            </div>
+
+            <div>
+              <input
+                ref={carDescRef}
+                placeholder="내용 (Enter 추가)"
+                className="w-full bg-transparent py-1 focus:outline-none text-14"
+                onKeyDown={(e) => { if (e.key === "Enter") addCareer(); }}
+              />
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-5 gap-4 mb-2 text-xs text-gray-400">
-          <span>회사명</span><span>근무기간</span><span>직책</span><span>직무</span><span>내용</span>
-        </div>
-        <div className="grid grid-cols-5 gap-4 mb-3">
-          <input ref={carCompanyRef} placeholder="회사명" className="border p-1 rounded" />
-          <input ref={carPeriodRef} placeholder="예: 2023-01 ~ 2024-05" className="border p-1 rounded" />
-          <input ref={carRoleRef} placeholder="직책" className="border p-1 rounded" />
-          <input ref={carJobRef} placeholder="직무" className="border p-1 rounded" />
-          <input
-            ref={carDescRef}
-            placeholder="내용 (Enter 추가)"
-            className="border p-1 rounded"
-            onKeyDown={(e) => { if (e.key === "Enter") addCareer(); }}
-          />
-        </div>
-        <div className="mb-2">
-          <button onClick={addCareer} className="text-sm bg-gray-100 rounded px-2">추가</button>
-        </div>
-        <ul className="text-sm text-gray-700 space-y-1">
-          {extra.careers.map((c, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <span className="flex-1">{c.company} · {c.period || "-"} · {c.role} · {c.job} · {c.desc}</span>
-              <button
-                onClick={() => removeCareer(i)}
-                className="text-xs px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200"
-                aria-label="remove career"
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
       </div>
 
       {/* 자격증/스킬/언어 */}
       <div className="grid grid-cols-3 gap-6 mb-10">
+        {/* 자격증 */}
         <div>
-          <h3 className="text-lg font-semibold mb-2">자격증</h3>
-          <input
-            ref={certRef}
-            placeholder="자격증 (Enter 추가)"
-            className="border p-1 rounded w-full mb-2"
-            onKeyDown={(e) => { if (e.key === "Enter") addCert(); }}
-          />
-          <button onClick={addCert} className="text-sm bg-gray-100 rounded px-2 mb-2">추가</button>
-          <ul className="space-y-1">
-            {extra.certs.map((c, i) => (
-              <li key={i} className="flex items-center justify-between">
-                <span>{c}</span>
-                <button onClick={() => removeCert(i)} className="text-xs px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200">×</button>
-              </li>
-            ))}
-          </ul>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            자격증
+            <button
+              type="button"
+              onClick={addCert}
+              className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+              aria-label="자격증 추가"
+            >
+              +
+            </button>
+          </h3>
+
+          {/* 추가된 자격증 리스트 */}
+          {extra.certs.map((c, i) => (
+            <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+              <button
+                onClick={() => removeCert(i)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+                aria-label="remove certificate"
+              >
+                ×
+              </button>
+              <p className="font-medium text-gray-900 pr-6">{c}</p>
+            </div>
+          ))}
+
+          {/* 새 자격증 추가 폼 */}
+          <div className="border border-gray-100 rounded-lg p-4 bg-white">
+            <input
+              ref={certRef}
+              placeholder="자격증 (Enter 추가)"
+              className="w-full bg-transparent py-1 focus:outline-none text-14"
+              onKeyDown={(e) => { if (e.key === "Enter") addCert(); }}
+            />
+          </div>
         </div>
 
+        {/* 스킬 */}
         <div>
-          <h3 className="text-lg font-semibold mb-2">스킬</h3>
-          <input
-            ref={skillRef}
-            placeholder="스킬 (Enter 추가)"
-            className="border p-1 rounded w-full mb-2"
-            onKeyDown={(e) => { if (e.key === "Enter") addSkill(); }}
-          />
-          <button onClick={addSkill} className="text-sm bg-gray-100 rounded px-2 mb-2">추가</button>
-          <ul className="space-y-1">
-            {extra.skills.map((s, i) => (
-              <li key={i} className="flex items-center justify-between">
-                <span>{s}</span>
-                <button onClick={() => removeSkill(i)} className="text-xs px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200">×</button>
-              </li>
-            ))}
-          </ul>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            스킬
+            <button
+              type="button"
+              onClick={addSkill}
+              className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+              aria-label="스킬 추가"
+            >
+              +
+            </button>
+          </h3>
+
+          {/* 추가된 스킬 리스트 */}
+          {extra.skills.map((s, i) => (
+            <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+              <button
+                onClick={() => removeSkill(i)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+                aria-label="remove skill"
+              >
+                ×
+              </button>
+              <p className="font-medium text-gray-900 pr-6">{s}</p>
+            </div>
+          ))}
+
+          {/* 새 스킬 추가 폼 */}
+          <div className="border border-gray-100 rounded-lg p-4 bg-white">
+            <input
+              ref={skillRef}
+              placeholder="스킬 (Enter 추가)"
+              className="w-full bg-transparent py-1 focus:outline-none text-14"
+              onKeyDown={(e) => { if (e.key === "Enter") addSkill(); }}
+            />
+          </div>
         </div>
 
+        {/* 언어 */}
         <div>
-          <h3 className="text-lg font-semibold mb-2">언어</h3>
-          <input
-            ref={langRef}
-            placeholder="언어 (Enter 추가)"
-            className="border p-1 rounded w-full mb-2"
-            onKeyDown={(e) => { if (e.key === "Enter") addLang(); }}
-          />
-          <button onClick={addLang} className="text-sm bg-gray-100 rounded px-2 mb-2">추가</button>
-          <ul className="space-y-1">
-            {extra.langs.map((l, i) => (
-              <li key={i} className="flex items-center justify-between">
-                <span>{l}</span>
-                <button onClick={() => removeLang(i)} className="text-xs px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200">×</button>
-              </li>
-            ))}
-          </ul>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            언어
+            <button
+              type="button"
+              onClick={addLang}
+              className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+              aria-label="언어 추가"
+            >
+              +
+            </button>
+          </h3>
+
+          {/* 추가된 언어 리스트 */}
+          {extra.langs.map((l, i) => (
+            <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+              <button
+                onClick={() => removeLang(i)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+                aria-label="remove language"
+              >
+                ×
+              </button>
+              <p className="font-medium text-gray-900 pr-6">{l}</p>
+            </div>
+          ))}
+
+          {/* 새 언어 추가 폼 */}
+          <div className="border border-gray-100 rounded-lg p-4 bg-white">
+            <input
+              ref={langRef}
+              placeholder="언어 (Enter 추가)"
+              className="w-full bg-transparent py-1 focus:outline-none text-14"
+              onKeyDown={(e) => { if (e.key === "Enter") addLang(); }}
+            />
+          </div>
         </div>
       </div>
 
@@ -614,21 +1040,27 @@ const ResumeDetail: React.FC = () => {
           type="text"
           value={essayTitle}
           onChange={(e) => setEssayTitle(e.target.value)}
-          className="w-full border-b p-1 mb-3"
-          placeholder="자기소개서 제목"
+          className="w-full border-b border-gray-200 p-1 mb-3 focus:outline-none focus:border-gray-400"
+          placeholder="제목을 입력하세요."
         />
-        <textarea
-          rows={5}
-          value={essayContent}
-          onChange={(e) => setEssayContent(e.target.value)}
-          className="w-full border p-2 rounded"
-          placeholder="자기소개서 내용"
-        />
+        <div className="relative">
+          <textarea
+            rows={5}
+            value={essayContent}
+            onChange={(e) => setEssayContent(e.target.value)}
+            className="w-full border border-gray-200 p-2 rounded focus:outline-none focus:border-gray-400"
+            placeholder="내용을 입력하세요."
+            maxLength={5000}
+          />
+          <div className="text-right text-sm text-gray-500 mt-1">
+            {essayContent.length}/5000
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-end gap-4">
-        <button onClick={() => navigate(-1)} className="border px-4 py-2 rounded">다음에 하기</button>
-        <button onClick={handleSave} className="bg-gray-200 px-5 py-2 rounded" disabled={saving}>
+        <button onClick={() => navigate(-1)} className="border border-gray-200 px-4 py-2 rounded hover:bg-gray-50 transition-colors">다음에 하기</button>
+        <button onClick={handleSave} className="bg-gray-200 px-5 py-2 rounded hover:bg-[#006AFF] hover:text-white transition-colors disabled:hover:bg-gray-200 disabled:hover:text-black" disabled={saving}>
           {saving ? "저장 중..." : "저장하기"}
         </button>
       </div>
