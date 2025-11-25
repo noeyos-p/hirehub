@@ -1,4 +1,4 @@
-package com.we.hirehub.controller;
+package com.we.hirehub.controller.common;
 
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.SessionRepository;
@@ -12,7 +12,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 

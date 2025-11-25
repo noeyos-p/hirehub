@@ -1,4 +1,4 @@
-package com.we.hirehub.controller;
+package com.we.hirehub.controller.company;
 
 import com.we.hirehub.dto.company.CompanyDto;
 import com.we.hirehub.dto.common.PagedResponse;

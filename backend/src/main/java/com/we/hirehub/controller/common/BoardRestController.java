@@ -1,4 +1,4 @@
-package com.we.hirehub.controller;
+package com.we.hirehub.controller.common;
 
 import com.we.hirehub.config.JwtUserPrincipal;
 import com.we.hirehub.dto.support.BoardDto;

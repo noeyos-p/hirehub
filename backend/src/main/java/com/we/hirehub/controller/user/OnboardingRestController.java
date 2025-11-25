@@ -1,9 +1,8 @@
 // src/main/java/com/we/hirehub/controller/OnboardingRestController.java
-package com.we.hirehub.controller;
+package com.we.hirehub.controller.user;
 
 import com.we.hirehub.config.JwtTokenProvider;
 import com.we.hirehub.config.JwtUserPrincipal;
-import com.we.hirehub.dto.user.UsersDto;
 import com.we.hirehub.dto.user.UsersRequestDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;

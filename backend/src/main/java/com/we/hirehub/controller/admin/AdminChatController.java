@@ -1,5 +1,5 @@
 // src/main/java/com/example/hirehub/admin/AdminChatController.java
-package com.we.hirehub.controller;
+package com.we.hirehub.controller.admin;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

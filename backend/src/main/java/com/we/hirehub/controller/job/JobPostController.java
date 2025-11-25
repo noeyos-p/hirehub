@@ -1,4 +1,4 @@
-package com.we.hirehub.controller;
+package com.we.hirehub.controller.job;
 
 import com.we.hirehub.dto.common.CalendarDto;
 import com.we.hirehub.dto.common.PagedResponse;
