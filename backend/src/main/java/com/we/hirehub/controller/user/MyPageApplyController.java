@@ -1,6 +1,6 @@
 package com.we.hirehub.controller.user;
 
-import com.we.hirehub.dto.job.ApplyDto;
+import com.we.hirehub.dto.user.ApplyDto;
 import com.we.hirehub.service.MyPageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

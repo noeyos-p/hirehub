@@ -1,9 +1,9 @@
 package com.we.hirehub.kakaoauth;
 
 import com.we.hirehub.config.JwtTokenProvider;
-import com.we.hirehub.dto.login.AuthResult;
-import com.we.hirehub.dto.login.KakaoTokenResponse;
-import com.we.hirehub.dto.login.KakaoUserResponse;
+import com.we.hirehub.dto.common.AuthResult;
+import com.we.hirehub.dto.common.KakaoTokenResponse;
+import com.we.hirehub.dto.common.KakaoUserResponse;
 import com.we.hirehub.entity.Role;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;

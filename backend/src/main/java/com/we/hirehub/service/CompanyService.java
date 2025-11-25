@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.company.CompanyDto;
+import com.we.hirehub.dto.support.CompanyDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.repository.CompanyRepository;
 import lombok.RequiredArgsConstructor;

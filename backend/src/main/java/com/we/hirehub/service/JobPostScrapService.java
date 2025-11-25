@@ -1,7 +1,7 @@
 package com.we.hirehub.service;
 
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.company.FavoriteDto;
+import com.we.hirehub.dto.user.FavoriteDto;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.entity.ScrapPosts;
 import com.we.hirehub.entity.Users;
@@ -14,13 +14,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PostConstruct;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+
 import java.util.List;
 
 @Service

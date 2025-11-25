@@ -1,5 +1,5 @@
 // src/main/java/com/we/hirehub/naverauth/dto/NaverUserResponse.java
-package com.we.hirehub.dto.login;
+package com.we.hirehub.dto.common;
 
 import lombok.Data;
 

@@ -1,8 +1,8 @@
 // src/main/java/com/we/hirehub/naverauth/NaverOAuthClient.java
 package com.we.hirehub.naverauth;
 
-import com.we.hirehub.dto.login.NaverTokenResponse;
-import com.we.hirehub.dto.login.NaverUserResponse;
+import com.we.hirehub.dto.common.NaverTokenResponse;
+import com.we.hirehub.dto.common.NaverUserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;

@@ -1,7 +1,7 @@
 // src/main/java/com/we/hirehub/kakaoauth/KakaoAuthController.java
 package com.we.hirehub.kakaoauth;
 
-import com.we.hirehub.dto.login.AuthResult;
+import com.we.hirehub.dto.common.AuthResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

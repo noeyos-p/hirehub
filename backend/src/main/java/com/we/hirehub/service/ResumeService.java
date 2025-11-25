@@ -2,7 +2,7 @@ package com.we.hirehub.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.we.hirehub.dto.resume.ResumeDto;
+import com.we.hirehub.dto.user.ResumeDto;
 import com.we.hirehub.entity.*;
 import com.we.hirehub.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

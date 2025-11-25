@@ -1,4 +1,4 @@
-package com.we.hirehub.dto.job;
+package com.we.hirehub.dto.user;
 
 import com.we.hirehub.entity.Apply;
 import com.we.hirehub.entity.JobPosts;

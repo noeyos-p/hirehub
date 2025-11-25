@@ -1,9 +1,9 @@
-package com.we.hirehub.controller.job;
+package com.we.hirehub.controller.common;
 
-import com.we.hirehub.dto.common.CalendarDto;
+import com.we.hirehub.dto.user.CalendarDto;
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.company.FavoriteDto;
-import com.we.hirehub.dto.job.JobPostsDto;
+import com.we.hirehub.dto.user.FavoriteDto;
+import com.we.hirehub.dto.support.JobPostsDto;
 import com.we.hirehub.service.JobPostScrapService;
 import com.we.hirehub.service.JobPostService;
 import com.we.hirehub.service.JobPostsCalendarService;

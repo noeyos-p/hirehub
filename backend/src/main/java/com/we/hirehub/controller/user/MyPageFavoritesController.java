@@ -1,7 +1,7 @@
 package com.we.hirehub.controller.user;
 
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.company.FavoriteDto;
+import com.we.hirehub.dto.user.FavoriteDto;
 import com.we.hirehub.service.JobPostScrapService;
 import com.we.hirehub.service.MyPageService;
 import lombok.RequiredArgsConstructor;

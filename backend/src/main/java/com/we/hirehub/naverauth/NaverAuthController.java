@@ -1,7 +1,7 @@
 // src/main/java/com/we/hirehub/naverauth/NaverAuthController.java
 package com.we.hirehub.naverauth;
 
-import com.we.hirehub.dto.login.AuthResult;
+import com.we.hirehub.dto.common.AuthResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;

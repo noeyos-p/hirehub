@@ -1,5 +1,5 @@
 // src/main/java/com/we/hirehub/naverauth/dto/NaverTokenResponse.java
-package com.we.hirehub.dto.login;
+package com.we.hirehub.dto.common;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

@@ -1,9 +1,9 @@
 // JobPostsCalendarService.java
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.common.CalendarDto;
+import com.we.hirehub.dto.user.CalendarDto;
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.job.JobPostsDto;
+import com.we.hirehub.dto.support.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.repository.JobPostsRepository;
 import lombok.RequiredArgsConstructor;

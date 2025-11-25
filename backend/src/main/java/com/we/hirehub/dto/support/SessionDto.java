@@ -1,5 +1,5 @@
 
-package com.we.hirehub.dto.login;
+package com.we.hirehub.dto.support;
 
 import lombok.*;
 

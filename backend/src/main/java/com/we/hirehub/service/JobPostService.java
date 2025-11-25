@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.job.JobPostsDto;
+import com.we.hirehub.dto.support.JobPostsDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.repository.CompanyRepository;

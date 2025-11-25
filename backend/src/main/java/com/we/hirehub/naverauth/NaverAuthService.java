@@ -2,11 +2,11 @@
 package com.we.hirehub.naverauth;
 
 import com.we.hirehub.config.JwtTokenProvider;
-import com.we.hirehub.dto.login.AuthResult;
+import com.we.hirehub.dto.common.AuthResult;
 import com.we.hirehub.entity.Role;
 import com.we.hirehub.entity.Users;
-import com.we.hirehub.dto.login.NaverTokenResponse;
-import com.we.hirehub.dto.login.NaverUserResponse;
+import com.we.hirehub.dto.common.NaverTokenResponse;
+import com.we.hirehub.dto.common.NaverUserResponse;
 import com.we.hirehub.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

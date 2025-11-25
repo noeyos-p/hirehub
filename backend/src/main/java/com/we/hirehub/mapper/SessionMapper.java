@@ -1,6 +1,6 @@
 package com.we.hirehub.mapper;
 
-import com.we.hirehub.dto.login.SessionDto;
+import com.we.hirehub.dto.support.SessionDto;
 import com.we.hirehub.entity.ChatBot;
 import com.we.hirehub.entity.Session;
 

@@ -1,6 +1,5 @@
-package com.we.hirehub.dto.resume;
+package com.we.hirehub.dto.user;
 
-import com.we.hirehub.dto.user.UsersDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

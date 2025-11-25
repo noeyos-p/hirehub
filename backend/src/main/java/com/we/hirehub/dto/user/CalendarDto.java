@@ -1,7 +1,7 @@
 // 날짜별로 묶어 내려주기
-package com.we.hirehub.dto.common;
+package com.we.hirehub.dto.user;
 
-import com.we.hirehub.dto.job.JobPostsDto;
+import com.we.hirehub.dto.support.JobPostsDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

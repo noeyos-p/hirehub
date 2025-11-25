@@ -1,8 +1,8 @@
 package com.we.hirehub.controller.user;
 
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.resume.ResumeDto;
-import com.we.hirehub.dto.resume.ResumeUpsertRequest;
+import com.we.hirehub.dto.user.ResumeDto;
+import com.we.hirehub.dto.user.ResumeUpsertRequest;
 import com.we.hirehub.service.MyPageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController

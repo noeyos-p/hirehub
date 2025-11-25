@@ -2,7 +2,7 @@
 package com.we.hirehub.mapper;
 
 import com.we.hirehub.entity.LiveChat;
-import com.we.hirehub.dto.chat.LiveChatDto;
+import com.we.hirehub.dto.support.LiveChatDto;
 
 public class LiveChatMapper {
     public static LiveChatDto toDto(LiveChat e){

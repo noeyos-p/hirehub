@@ -1,6 +1,5 @@
-package com.we.hirehub.dto.job;
+package com.we.hirehub.dto.support;
 
-import com.we.hirehub.dto.company.CompanyDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.entity.JobPosts;
 import lombok.*;

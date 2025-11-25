@@ -1,7 +1,7 @@
 package com.we.hirehub.controller.common;
 
 import com.we.hirehub.config.JwtTokenProvider;
-import com.we.hirehub.dto.login.SignupAndLoginDto;
+import com.we.hirehub.dto.common.SignupAndLoginDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
 import com.we.hirehub.service.AuthService;

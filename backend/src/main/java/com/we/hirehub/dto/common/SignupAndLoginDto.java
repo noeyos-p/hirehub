@@ -1,4 +1,4 @@
-package com.we.hirehub.dto.login;
+package com.we.hirehub.dto.common;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

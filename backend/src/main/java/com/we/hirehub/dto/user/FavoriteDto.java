@@ -1,4 +1,4 @@
-package com.we.hirehub.dto.company;
+package com.we.hirehub.dto.user;
 
 import com.we.hirehub.entity.*;
 import lombok.Builder;

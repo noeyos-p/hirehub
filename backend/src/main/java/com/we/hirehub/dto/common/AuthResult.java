@@ -1,4 +1,4 @@
-package com.we.hirehub.dto.login;
+package com.we.hirehub.dto.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

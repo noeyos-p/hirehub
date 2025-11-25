@@ -1,4 +1,4 @@
-package com.we.hirehub.dto.resume;
+package com.we.hirehub.dto.user;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

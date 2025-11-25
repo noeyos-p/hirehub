@@ -1,6 +1,6 @@
 package com.we.hirehub.service;
 
-import com.we.hirehub.dto.chat.HelpDto;
+import com.we.hirehub.dto.support.HelpDto;
 import com.we.hirehub.entity.Help;
 import com.we.hirehub.entity.Session;
 import com.we.hirehub.entity.Users;

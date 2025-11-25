@@ -1,6 +1,6 @@
 package com.we.hirehub.handoff;
 
-import com.we.hirehub.dto.chat.HandoffDto;
+import com.we.hirehub.dto.support.HandoffDto;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;

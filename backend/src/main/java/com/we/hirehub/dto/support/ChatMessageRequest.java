@@ -1,4 +1,4 @@
-package com.we.hirehub.dto.chat;
+package com.we.hirehub.dto.support;
 
 import lombok.*;
 
