@@ -12,9 +12,9 @@ export default function Header() {
 
 
   useEffect(() => {
-  console.log("🧩 Header 렌더링됨, 현재 user:", user);
-  if (user) console.log("🧩 user 내부 구조:", JSON.stringify(user, null, 2));
-}, [user]);
+    console.log("🧩 Header 렌더링됨, 현재 user:", user);
+    if (user) console.log("🧩 user 내부 구조:", JSON.stringify(user, null, 2));
+  }, [user]);
 
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -52,66 +52,66 @@ export default function Header() {
 
   return (
     <header className="bg-white border-b border-gray-200 flex justify-center">
-      <div className="w-[1440px] px-[55px] flex items-center justify-between py-3 px-4">
-        <div className="flex items-center space-x-10">
+      <div className="w-full max-w-[1440px] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] flex items-center justify-between py-3">
+        <div className="flex items-center space-x-4 sm:space-x-6 md:space-x-8 lg:space-x-10 min-w-0">
           {/* 로고 */}
-          <Link to="/">
+          <Link to="/" className="flex-shrink-0">
             <img
               src="/HIREHUB_LOGO.PNG"
               alt="HireHub Logo"
-              className="w-[117px] h-[33px] object-contain"
+              className="w-[90px] sm:w-[100px] md:w-[110px] lg:w-[117px] h-auto object-contain"
             />
           </Link>
 
           {/* 네비게이션 메뉴 */}
-          <nav className="hidden md:flex space-x-8 text-gray-800 font-medium text-sm">
+          <nav className="hidden md:flex space-x-4 lg:space-x-6 xl:space-x-8 text-gray-800 font-medium">
             <Link
               to="/jobPostings"
-              className="inline-block font-bord text-[16px] text-black hover:text-[#006AFF] transition"
+              className="inline-block whitespace-nowrap font-bord text-sm lg:text-[15px] xl:text-[16px] text-black hover:text-[#006AFF] transition"
             >
               채용정보
             </Link>
 
             <Link to="/board"
-              className="inline-block mr-[405px] font-bord text-[16px] text-black hover:text-[#006AFF] transition">
+              className="inline-block whitespace-nowrap font-bord text-sm lg:text-[15px] xl:text-[16px] text-black hover:text-[#006AFF] transition">
               자유게시판
             </Link>
           </nav>
         </div>
 
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 lg:space-x-6 min-w-0">
           {/* 검색창 */}
-          <div className="relative">
+          <div className="relative hidden sm:block min-w-0">
             <input
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="어떤 공고를 찾으세요?"
-              className="w-[400px] h-[41px] border border-gray-400 rounded-[10px] px-4 py-1.5 pr-9 text-sm focus:outline-none focus:border-[#006AFF]"
+              className="w-[180px] sm:w-[220px] md:w-[280px] lg:w-[350px] xl:w-[400px] h-[38px] md:h-[41px] border border-gray-400 rounded-[10px] px-3 md:px-4 py-1.5 pr-9 text-xs md:text-sm focus:outline-none focus:border-[#006AFF] transition-all"
             />
             <button onClick={handleSearch}>
-              <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 absolute right-3 top-2.5 cursor-pointer hover:text-blue-500 transition translate-y-[3px]" />
+              <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 absolute right-3 top-2 md:top-2.5 cursor-pointer hover:text-blue-500 transition" />
             </button>
           </div>
 
           {/* 로그인/프로필 영역 */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0">
             {loading ? (
-              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+              <div className="w-7 h-7 md:w-8 md:h-8 bg-gray-200 rounded-full animate-pulse"></div>
             ) : isAuthenticated && user ? (
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-3 py-2 transition"
+                  className="flex items-center space-x-1 md:space-x-2 hover:bg-gray-50 rounded-lg px-2 md:px-3 py-1.5 md:py-2 transition"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
-                    <UserCircleIcon className="w-6 h-6 text-white" />
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <UserCircleIcon className="w-5 h-5 md:w-6 md:h-6 text-white" />
                   </div>
-                  <span className="font-medium text-[16px] text-black hover:text-[#006AFF] transition">
+                  <span className="hidden sm:inline-block font-medium text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition truncate max-w-[80px] md:max-w-[120px]">
                     {user.nickname || user.name || user.email.split('@')[0]}
                   </span>
-                  <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+                  <ChevronDownIcon className="hidden sm:block w-3 h-3 md:w-4 md:h-4 text-gray-500 flex-shrink-0" />
                 </button>
 
                 {showDropdown && (
@@ -155,12 +155,12 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-2 text-sm text-gray-700">
-                <Link to="/login" className="font-light text-[16px] text-black hover:text-[#006AFF] transition">
+              <div className="flex items-center space-x-1.5 md:space-x-2 text-sm text-gray-700">
+                <Link to="/login" className="font-light text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition whitespace-nowrap">
                   로그인
                 </Link>
                 <span className="text-gray-300 mb-[3px]">|</span>
-                <Link to="/signup" className="font-light text-[16px] text-black hover:text-[#006AFF] transition">
+                <Link to="/signup" className="font-light text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition whitespace-nowrap">
                   회원가입
                 </Link>
               </div>

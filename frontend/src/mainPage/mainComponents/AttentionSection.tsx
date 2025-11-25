@@ -116,14 +116,32 @@ const AttentionSection: React.FC = () => {
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 0));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
 
-  // 각 페이지마다 이동할 거리 계산 (반응형)
+  // 각 페이지마다 이동할 거리 계산 (반응형 + 동적)
   const getSlideDistance = (page: number) => {
-    // 태블릿: 900px, 데스크톱: 1345px
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      return page * 900; // 태블릿용 슬라이드 거리
-    }
-    return page * 1345; // 데스크톱용 슬라이드 거리
+    if (typeof window === 'undefined') return page * 1345;
+
+    const width = window.innerWidth;
+    // 부드러운 전환을 위한 동적 계산
+    if (width < 640) return page * 550;        // 모바일
+    if (width < 768) return page * 700;        // 큰 모바일
+    if (width < 1024) return page * 900;       // 태블릿
+    if (width < 1280) return page * 1100;      // 작은 데스크톱
+    return page * 1345;                         // 데스크톱
   };
+
+  // 윈도우 리사이즈 시 슬라이드 거리 재계산
+  useEffect(() => {
+    const handleResize = () => {
+      // 현재 페이지 유지하면서 거리만 재계산
+      if (cardsContainerRef.current) {
+        const distance = getSlideDistance(currentPage);
+        cardsContainerRef.current.style.transform = `translateX(-${distance}px)`;
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [currentPage]);
 
   return (
     <section className="relative mb-8 md:mb-12 max-w-[1440px] mx-auto w-full">
@@ -163,11 +181,11 @@ const AttentionSection: React.FC = () => {
           {popularJobs.map((job) => (
             <div
               key={job.id}
-              className="relative w-[170px] md:w-[253px] h-[240px] md:h-[288px] bg-white border border-gray-200 rounded-2xl md:rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
+              className="relative w-[170px] sm:w-[200px] md:w-[253px] h-[240px] sm:h-[260px] md:h-[288px] bg-white border border-gray-200 rounded-2xl md:rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleJobClick(job.id)}
             >
               {/* ✅ 회사 이미지 - companyPhotos 사용 */}
-              <div className="w-full h-[100px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-2 md:p-4">
+              <div className="w-full h-[100px] sm:h-[120px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-2 md:p-4">
                 {companyPhotos[job.companyId] ? (
                   <img
                     src={companyPhotos[job.companyId]}
