@@ -1,7 +1,7 @@
 package com.we.hirehub.controller.user;
 
 import com.we.hirehub.dto.user.ApplyDto;
-import com.we.hirehub.service.MyPageService;
+import com.we.hirehub.service.user.MyPageApplyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -19,7 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/mypage")
 public class MyPageApplyController extends BaseUserController {
 
-    private final MyPageService myPageService;
+    private final MyPageApplyService myPageApplyService;
 
 
     /**
@@ -27,7 +27,7 @@ public class MyPageApplyController extends BaseUserController {
      */
     @GetMapping("/applies")
     public ResponseEntity<List<ApplyDto>> getMyApplies(Authentication auth) {
-        return ResponseEntity.ok(myPageService.getMyApplyList(userId(auth)));
+        return ResponseEntity.ok(myPageApplyService.getMyApplyList(userId(auth)));
     }
 
     /**
@@ -38,7 +38,7 @@ public class MyPageApplyController extends BaseUserController {
             Authentication auth,
             @RequestBody ApplyRequest request
     ) {
-        ApplyDto response = myPageService.applyToJob(
+        ApplyDto response = myPageApplyService.applyToJob(
                 userId(auth),
                 request.jobPostId(),
                 request.resumeId()
@@ -61,7 +61,7 @@ public class MyPageApplyController extends BaseUserController {
             @RequestBody List<Long> applyIds
     ) {
         try {
-            myPageService.deleteMyApplies(userId(auth), applyIds);
+            myPageApplyService.deleteMyApplies(userId(auth), applyIds);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             log.error("❌ 지원 내역 삭제 중 오류 발생", e);
@@ -75,7 +75,7 @@ public class MyPageApplyController extends BaseUserController {
                                                @RequestParam("file") MultipartFile file) {
         try {
             log.info("🔥 uploadResumePhoto 호출됨 - resumeId={}, file={}", id, file.getOriginalFilename());
-            String photoUrl = myPageService.uploadResumePhotoToS3(id, file);
+            String photoUrl = myPageApplyService.uploadResumePhotoToS3(id, file);
             return ResponseEntity.ok(Map.of("url", photoUrl, "idPhoto", photoUrl));
         } catch (Exception e) {
             log.error("❌ 업로드 예외: {}", e.getMessage(), e);

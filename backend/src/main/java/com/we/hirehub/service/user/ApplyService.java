@@ -1,4 +1,4 @@
-package com.we.hirehub.service;
+package com.we.hirehub.service.user;
 
 import com.we.hirehub.dto.user.ApplyDto;
 import com.we.hirehub.entity.Apply;

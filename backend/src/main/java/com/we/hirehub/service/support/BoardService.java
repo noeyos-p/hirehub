@@ -1,4 +1,4 @@
-package com.we.hirehub.service;
+package com.we.hirehub.service.support;
 
 import com.we.hirehub.dto.support.BoardDto;
 import com.we.hirehub.entity.Board;

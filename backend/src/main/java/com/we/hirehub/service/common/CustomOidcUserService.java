@@ -1,4 +1,4 @@
-package com.we.hirehub.service;
+package com.we.hirehub.service.common;
 
 import com.we.hirehub.entity.Role;
 import com.we.hirehub.entity.Users;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 @Service

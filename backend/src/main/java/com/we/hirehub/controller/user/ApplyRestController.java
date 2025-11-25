@@ -1,7 +1,7 @@
 package com.we.hirehub.controller.user;
 
 import com.we.hirehub.dto.user.ApplyDto;
-import com.we.hirehub.service.ApplyService;
+import com.we.hirehub.service.user.ApplyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

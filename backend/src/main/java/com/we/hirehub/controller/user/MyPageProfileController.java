@@ -2,7 +2,7 @@ package com.we.hirehub.controller.user;
 
 import com.we.hirehub.dto.user.UsersDto;
 import com.we.hirehub.dto.user.UsersRequestDto;
-import com.we.hirehub.service.MyPageService;
+import com.we.hirehub.service.user.MyPageProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,14 +18,14 @@ import java.util.Map;
 @RequestMapping("/api/mypage")
 public class MyPageProfileController extends BaseUserController  {
 
-    private final MyPageService myPageService;
+    private final MyPageProfileService myPageProfileService;
 
     /**
      * ✅ 내 프로필 조회 (온보딩 데이터)
      */
     @GetMapping("/me")
     public ResponseEntity<UsersDto.Profile> getMe(Authentication auth) {
-        return ResponseEntity.ok(myPageService.getProfile(userId(auth)));
+        return ResponseEntity.ok(myPageProfileService.getProfile(userId(auth)));
     }
 
     /**
@@ -34,7 +34,7 @@ public class MyPageProfileController extends BaseUserController  {
     @PutMapping("/me")
     public ResponseEntity<UsersDto.Profile> updateMe(Authentication auth,
                                                      @Valid @RequestBody UsersRequestDto req) {
-        return ResponseEntity.ok(myPageService.updateProfile(userId(auth), req));
+        return ResponseEntity.ok(myPageProfileService.updateProfile(userId(auth), req));
     }
 
     /**
@@ -52,7 +52,7 @@ public class MyPageProfileController extends BaseUserController  {
         log.info("🧹 회원 탈퇴 요청: {}", email);
 
         try {
-            boolean result = myPageService.softWithdrawUser(email);
+            boolean result = myPageProfileService.softWithdrawUser(email);
             if (result) {
                 return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
             } else {

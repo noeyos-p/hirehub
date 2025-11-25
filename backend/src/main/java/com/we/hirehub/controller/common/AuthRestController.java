@@ -4,7 +4,7 @@ import com.we.hirehub.config.JwtTokenProvider;
 import com.we.hirehub.dto.common.SignupAndLoginDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
-import com.we.hirehub.service.AuthService;
+import com.we.hirehub.service.common.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

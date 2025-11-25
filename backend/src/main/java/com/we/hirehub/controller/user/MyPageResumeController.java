@@ -3,7 +3,7 @@ package com.we.hirehub.controller.user;
 import com.we.hirehub.dto.common.PagedResponse;
 import com.we.hirehub.dto.user.ResumeDto;
 import com.we.hirehub.dto.user.ResumeUpsertRequest;
-import com.we.hirehub.service.MyPageService;
+import com.we.hirehub.service.user.MyPageResumeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/mypage")
 public class MyPageResumeController extends BaseUserController {
 
-    private final MyPageService myPageService;
+    private final MyPageResumeService myPageResumeService;
 
 
     /**
@@ -27,7 +27,7 @@ public class MyPageResumeController extends BaseUserController {
     public PagedResponse<ResumeDto> list(Authentication auth,
                                          @RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "10") int size) {
-        return myPageService.list(userId(auth), page, size);
+        return myPageResumeService.list(userId(auth), page, size);
     }
 
     /**
@@ -35,7 +35,7 @@ public class MyPageResumeController extends BaseUserController {
      */
     @GetMapping("/resumes/{resumeId}")
     public ResumeDto get(Authentication auth, @PathVariable Long resumeId) {
-        return myPageService.get(userId(auth), resumeId);
+        return myPageResumeService.get(userId(auth), resumeId);
     }
 
     /**
@@ -43,7 +43,7 @@ public class MyPageResumeController extends BaseUserController {
      */
     @PostMapping("/resumes")
     public ResumeDto create(Authentication auth, @Valid @RequestBody ResumeUpsertRequest req) {
-        return myPageService.create(userId(auth), req);
+        return myPageResumeService.create(userId(auth), req);
     }
 
     /**
@@ -53,7 +53,7 @@ public class MyPageResumeController extends BaseUserController {
     public ResumeDto update(Authentication auth,
                             @PathVariable Long resumeId,
                             @Valid @RequestBody ResumeUpsertRequest req) {
-        return myPageService.update(userId(auth), resumeId, req);
+        return myPageResumeService.update(userId(auth), resumeId, req);
     }
 
     /**
@@ -61,7 +61,7 @@ public class MyPageResumeController extends BaseUserController {
      */
     @DeleteMapping("/resumes/{resumeId}")
     public ResponseEntity<Void> delete(Authentication auth, @PathVariable Long resumeId) {
-        myPageService.delete(userId(auth), resumeId);
+        myPageResumeService.delete(userId(auth), resumeId);
         return ResponseEntity.noContent().build();
     }
 }

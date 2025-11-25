@@ -3,7 +3,7 @@ package com.we.hirehub.controller.common;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.SessionRepository;
 import com.we.hirehub.repository.UsersRepository;
-import com.we.hirehub.service.HelpService;
+import com.we.hirehub.service.support.HelpService;
 import com.we.hirehub.ws.SupportQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

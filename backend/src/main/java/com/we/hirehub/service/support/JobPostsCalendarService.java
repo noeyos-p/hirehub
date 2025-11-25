@@ -1,5 +1,5 @@
 // JobPostsCalendarService.java
-package com.we.hirehub.service;
+package com.we.hirehub.service.support;
 
 import com.we.hirehub.dto.user.CalendarDto;
 import com.we.hirehub.dto.common.PagedResponse;

@@ -4,9 +4,9 @@ import com.we.hirehub.dto.user.CalendarDto;
 import com.we.hirehub.dto.common.PagedResponse;
 import com.we.hirehub.dto.user.FavoriteDto;
 import com.we.hirehub.dto.support.JobPostsDto;
-import com.we.hirehub.service.JobPostScrapService;
-import com.we.hirehub.service.JobPostService;
-import com.we.hirehub.service.JobPostsCalendarService;
+import com.we.hirehub.service.support.JobPostScrapService;
+import com.we.hirehub.service.support.JobPostService;
+import com.we.hirehub.service.support.JobPostsCalendarService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;  // ✅ 추가
 import org.springframework.http.ResponseEntity;

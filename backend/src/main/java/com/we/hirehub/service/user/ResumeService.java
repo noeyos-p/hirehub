@@ -1,4 +1,4 @@
-package com.we.hirehub.service;
+package com.we.hirehub.service.user;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
