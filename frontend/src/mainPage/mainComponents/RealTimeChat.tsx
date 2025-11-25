@@ -260,23 +260,31 @@ const RealTimeChat: React.FC = () => {
       return;
     }
 
+    if (!stompClientRef.current || !isConnected) {
+      setConnectionError('채팅 서버에 연결되어 있지 않습니다.');
+      return;
+    }
+
     try {
-      await chatApi.sendMessage({
+      const messagePayload = {
         sessionId,
         content: inputMessage,
         nickname: userNickname || '익명',
         userId,
+      };
+
+      console.log('📤 STOMP 메시지 전송 시도:', messagePayload);
+
+      stompClientRef.current.publish({
+        destination: `/app/chat.send/${sessionId}`,
+        body: JSON.stringify(messagePayload),
       });
 
-      console.log('✅ 메시지 전송 성공');
+      console.log('✅ STOMP 메시지 전송 완료');
       setInputMessage('');
     } catch (e: any) {
       console.error('❌ 메시지 전송 에러:', e);
-      if (e.response?.status === 401 || e.response?.status === 403) {
-        setConnectionError('인증이 만료되었습니다. 다시 로그인해주세요.');
-      } else {
-        setConnectionError('메시지 전송 실패. 다시 시도해주세요.');
-      }
+      setConnectionError('메시지 전송 실패. 다시 시도해주세요.');
     }
   };
 
