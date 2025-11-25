@@ -1,5 +1,5 @@
 // src/main/java/com/we/hirehub/service/AuthService.java
-package com.we.hirehub.service;
+package com.we.hirehub.service.common;
 
 import com.we.hirehub.dto.common.SignupAndLoginDto;
 import com.we.hirehub.entity.Role;

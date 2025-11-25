@@ -1,14 +1,11 @@
-package com.we.hirehub.service;
+package com.we.hirehub.service.user;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.we.hirehub.dto.common.PagedResponse;
-import com.we.hirehub.dto.user.FavoriteDto;
-import com.we.hirehub.dto.user.ApplyDto;
 import com.we.hirehub.dto.user.ResumeDto;
 import com.we.hirehub.dto.user.ResumeUpsertRequest;
-import com.we.hirehub.dto.user.UsersRequestDto;
 import com.we.hirehub.dto.user.UsersDto;
 import com.we.hirehub.entity.*;
 import com.we.hirehub.exception.ForbiddenEditException;
@@ -33,22 +30,15 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class MyPageService {
+public class MyPageResumeService {
 
-    // ===== Repositories =====
     private final ResumeRepository resumeRepository;
     private final UsersRepository userRepository;
-    private final ApplyRepository applyRepository;
-    private final FavoriteCompanyRepository favoriteCompanyRepository;
-    private final JobPostsRepository jobPostsRepository;
-    private final CompanyRepository companyRepository;
-
     private final EducationRepository educationRepo;
     private final CareerLevelRepository careerRepo;
     private final CertificateRepository certRepo;
     private final SkillRepository skillRepo;
     private final LanguageRepository languageRepo;
-    private final UsersRepository usersRepository; // ✅ 이거 추가
     private final S3Client s3Client;
 
     @Value("${aws.s3.bucket}")
@@ -56,7 +46,6 @@ public class MyPageService {
 
     @Value("${aws.region}")
     private String region;
-
 
     private final ObjectMapper om = new ObjectMapper();
 
@@ -442,208 +431,4 @@ public class MyPageService {
             return null;
         }
     }
-
-    /* ==========================================================
-     *                [2] 내 프로필 (온보딩)
-     * ========================================================== */
-
-    public UsersDto.Profile getProfile(Long userId) {
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
-
-        return UsersDto.toProfile(user);
-    }
-
-    @Transactional
-    public UsersDto.Profile updateProfile(Long userId, UsersRequestDto dto) {
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
-        // 닉네임 중복 체크
-        if (dto.getNickname() != null && !dto.getNickname().equals(user.getNickname())) {
-            boolean exists = userRepository.existsByNickname(dto.getNickname());
-            if (exists) {
-                throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
-            }
-        }
-        dto.toEntity(user);
-        usersRepository.save(user);
-        return UsersDto.toProfile(user);
-    }
-
-    /* ==========================================================
-     *                [3] 지원/즐겨찾기
-     * ========================================================== */
-
-    public List<ApplyDto> getMyApplyList(Long userId) {
-        List<Apply> applies = applyRepository.findByResume_Users_Id(userId);
-        return applies.stream()
-                .map (ApplyDto::toDto)
-                .collect(Collectors.toList());
-    }
-
-    // --- 즐겨찾기 기업: 컨트롤러 시그니처 그대로 ---
-    @Transactional
-    public FavoriteDto.FavoriteCompanyDto addFavoriteCompany(Long userId, Long companyId) {
-
-        var user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("회원 정보를 찾을 수 없습니다."));
-
-        var company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("회사를 찾을 수 없습니다. id=" + companyId));
-
-        var existed = favoriteCompanyRepository
-                .findByUsers_IdAndCompany_Id(userId, companyId)
-                .orElse(null);
-
-        if (existed != null) {
-            var dto = FavoriteDto.FavoriteCompanyDto.toDto(existed);
-            dto.setPostCount(jobPostsRepository.countByCompany_Id(dto.getCompanyId()));
-            return dto;
-        }
-
-        var fav = new FavoriteCompany();
-        fav.setUsers(user);
-        fav.setCompany(company);
-
-        var saved = favoriteCompanyRepository.save(fav);
-
-        var dto = FavoriteDto.FavoriteCompanyDto.toDto(saved);
-        dto.setPostCount(jobPostsRepository.countByCompany_Id(dto.getCompanyId()));
-
-        return dto;
-    }
-
-
-    public PagedResponse<FavoriteDto.FavoriteCompanyDto> listFavoriteCompanies(Long userId, int page, int size) {
-
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        var p = favoriteCompanyRepository.findByUsers_Id(userId, pageable);
-
-        var items = p.getContent().stream()
-                .map(entity -> {
-                    var dto = FavoriteDto.FavoriteCompanyDto.toDto(entity);
-                    dto.setPostCount(jobPostsRepository.countByCompany_Id(dto.getCompanyId()));
-                    return dto;
-                })
-                .toList();
-
-        return new PagedResponse<>(
-                items,
-                p.getNumber(),
-                p.getSize(),
-                p.getTotalElements(),
-                p.getTotalPages()
-        );
-    }
-
-
-    @Transactional
-    public void removeFavoriteCompany(Long userId, Long companyId) {
-        favoriteCompanyRepository.deleteByUsers_IdAndCompany_Id(userId, companyId);
-    }
-
-    @Transactional
-    public ApplyDto applyToJob(Long userId, Long jobPostId, Long resumeId) {
-        Resume resume = resumeRepository.findByIdAndUsers_Id(resumeId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("이력서를 찾을 수 없습니다."));
-        JobPosts jobPost = jobPostsRepository.findById(jobPostId)
-                .orElseThrow(() -> new ResourceNotFoundException("공고를 찾을 수 없습니다."));
-
-        resume.setLocked(true);
-        resumeRepository.save(resume);
-
-        Apply apply = Apply.builder()
-                .resume(resume)
-                .jobPosts(jobPost)
-                .applyAt(LocalDate.now())
-                .build();
-
-        Apply saved = applyRepository.save(apply);
-        return ApplyDto.toDto(saved);
-    }
-
-    /** ✅ 소프트 삭제(논리 탈퇴): 실제 삭제 대신 식별자 변경 */
-    @Transactional
-    public boolean softWithdrawUser(String email) {
-        Optional<Users> optUser = usersRepository.findByEmail(email);
-
-        if (optUser.isEmpty()) {
-            log.warn("⚠️ 탈퇴 시도 실패 - 이메일 없음: {}", email);
-            return false;
-        }
-
-        Users user = optUser.get();
-
-        // 이미 탈퇴 처리된 사용자 방지
-        if ("(탈퇴한 회원)".equals(user.getNickname()) || user.getEmail().contains("_deleted_")) {
-            log.info("⚠️ 이미 탈퇴된 회원: {}", email);
-            return false;
-        }
-
-        // ✅ 탈퇴 마킹 처리
-        String newEmail = user.getEmail() + "_deleted_" + System.currentTimeMillis();
-        user.setEmail(newEmail);
-        user.setNickname("(탈퇴한 회원)");
-
-        // 개인 식별 정보 초기화 (선택적)
-        user.setPhone(null);
-        user.setAddress(null);
-        user.setGender(null);
-        user.setPosition(null);
-        user.setCareerLevel(null);
-        user.setEducation(null);
-        user.setLocation(null);
-
-        usersRepository.save(user);
-        log.info("✅ 회원 소프트삭제 완료: {} → {}", email, newEmail);
-        return true;
-    }
-
-    @Transactional
-    public void deleteMyApplies(Long userId, List<Long> applyIds) {
-        applyRepository.deleteAllByUserIdAndApplyIds(userId, applyIds);
-    }
-
-    @Transactional
-    public String uploadResumePhotoToS3(Long resumeId, MultipartFile file) throws IOException {
-        log.info("📸 S3 업로드 시도 - resumeId={}, file={}", resumeId, file.getOriginalFilename());
-
-        Resume r = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new IllegalArgumentException("이력서를 찾을 수 없습니다."));
-
-        String key = "photos/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String photoUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
-
-        try {
-            log.info("➡️ bucket={}, region={}, key={}", bucketName, region, key);
-            log.info("➡️ file size={} bytes, contentType={}", file.getSize(), file.getContentType());
-
-            s3Client.putObject(
-                    PutObjectRequest.builder()
-                            .bucket(bucketName)
-                            .key(key)
-                            .contentType(file.getContentType())
-                            .build(),
-                    software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
-                            file.getInputStream(), file.getSize()
-                    )
-            );
-
-            r.setIdPhoto(photoUrl);
-            r.setUpdateAt(LocalDate.now());
-            resumeRepository.save(r);
-
-            log.info("✅ 업로드 성공: {}", photoUrl);
-            return photoUrl;
-
-        } catch (Exception e) {
-            log.error("🚨 업로드 실패: {}", e.getMessage(), e);
-
-            // ✅ 로그 못 볼 때, 원인을 직접 응답으로 반환
-            throw new RuntimeException(
-                    "UPLOAD_ERROR: " + e.getClass().getSimpleName() + " - " + e.getMessage()
-            );
-        }
-    }
-
 }

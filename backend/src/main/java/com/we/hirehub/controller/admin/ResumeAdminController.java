@@ -2,7 +2,7 @@ package com.we.hirehub.controller.admin;
 
 import com.we.hirehub.dto.user.ResumeDto;
 import com.we.hirehub.entity.Resume;
-import com.we.hirehub.service.S3Service;
+import com.we.hirehub.service.common.S3Service;
 import com.we.hirehub.service.admin.ResumeAdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

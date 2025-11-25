@@ -6,7 +6,7 @@ import com.we.hirehub.config.JwtUserPrincipal;
 import com.we.hirehub.dto.user.UsersRequestDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;
-import com.we.hirehub.service.OnboardingService;
+import com.we.hirehub.service.user.OnboardingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

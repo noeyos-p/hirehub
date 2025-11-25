@@ -5,8 +5,8 @@ import com.we.hirehub.dto.common.PagedResponse;
 import com.we.hirehub.dto.user.FavoriteDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.repository.CompanyRepository;
-import com.we.hirehub.service.CompanyService;
-import com.we.hirehub.service.MyPageService;
+import com.we.hirehub.service.support.CompanyService;
+import com.we.hirehub.service.user.MyPageFavoritesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,7 +25,7 @@ import java.util.List;
 public class CompanyRestController {
 
     // ✅ 누락됐던 서비스 주입
-    private final MyPageService myPageService;
+    private final MyPageFavoritesService myPageFavoritesService;
     private final CompanyRepository companyRepository;
     private final CompanyService companyService;
 
@@ -39,7 +39,7 @@ public class CompanyRestController {
     public ResponseEntity<FavoriteDto.FavoriteCompanyDto> addFavorite(Authentication auth,
                                                    @PathVariable Long companyId) {
         Long uid = userId(auth);
-        FavoriteDto.FavoriteCompanyDto body = myPageService.addFavoriteCompany(uid, companyId);
+        FavoriteDto.FavoriteCompanyDto body = myPageFavoritesService.addFavoriteCompany(uid, companyId);
         return ResponseEntity.ok(body);
     }
 

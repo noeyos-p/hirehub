@@ -1,5 +1,5 @@
 // src/main/java/com/we/hirehub/security/DbUserDetailsService.java
-package com.we.hirehub.service;
+package com.we.hirehub.service.common;
 
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.UsersRepository;

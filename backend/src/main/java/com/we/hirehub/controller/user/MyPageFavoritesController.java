@@ -2,8 +2,8 @@ package com.we.hirehub.controller.user;
 
 import com.we.hirehub.dto.common.PagedResponse;
 import com.we.hirehub.dto.user.FavoriteDto;
-import com.we.hirehub.service.JobPostScrapService;
-import com.we.hirehub.service.MyPageService;
+import com.we.hirehub.service.support.JobPostScrapService;
+import com.we.hirehub.service.user.MyPageFavoritesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/mypage")
 public class MyPageFavoritesController extends BaseUserController {
 
-    private final MyPageService myPageService;
+    private final MyPageFavoritesService myPageFavoritesService;
     private final JobPostScrapService jobPostScrapService;
 
 
@@ -26,7 +26,7 @@ public class MyPageFavoritesController extends BaseUserController {
             Authentication auth,
             @PathVariable Long companyId
     ) {
-        FavoriteDto.FavoriteCompanyDto dto = myPageService.addFavoriteCompany(userId(auth), companyId);
+        FavoriteDto.FavoriteCompanyDto dto = myPageFavoritesService.addFavoriteCompany(userId(auth), companyId);
         return ResponseEntity.ok(dto);
     }
 
@@ -37,7 +37,7 @@ public class MyPageFavoritesController extends BaseUserController {
     public PagedResponse<FavoriteDto.FavoriteCompanyDto> favoriteCompanies(Authentication auth,
                                                                            @RequestParam(defaultValue = "0") int page,
                                                                            @RequestParam(defaultValue = "10") int size) {
-        return myPageService.listFavoriteCompanies(userId(auth), page, size);
+        return myPageFavoritesService.listFavoriteCompanies(userId(auth), page, size);
     }
 
     /**
@@ -45,7 +45,7 @@ public class MyPageFavoritesController extends BaseUserController {
      */
     @DeleteMapping("/favorites/companies/{companyId}")
     public ResponseEntity<Void> removeFavoriteCompany(Authentication auth, @PathVariable Long companyId) {
-        myPageService.removeFavoriteCompany(userId(auth), companyId);
+        myPageFavoritesService.removeFavoriteCompany(userId(auth), companyId);
         return ResponseEntity.noContent().build();
     }
 

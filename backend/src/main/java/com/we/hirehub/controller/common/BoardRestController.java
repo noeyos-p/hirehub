@@ -3,7 +3,7 @@ package com.we.hirehub.controller.common;
 import com.we.hirehub.config.JwtUserPrincipal;
 import com.we.hirehub.dto.support.BoardDto;
 import com.we.hirehub.entity.Board;
-import com.we.hirehub.service.BoardService;
+import com.we.hirehub.service.support.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -5,7 +5,7 @@ import com.we.hirehub.dto.support.CommentsDto;
 import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.CommentRepository;
 import com.we.hirehub.repository.UsersRepository;
-import com.we.hirehub.service.CommentsService;
+import com.we.hirehub.service.support.CommentsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

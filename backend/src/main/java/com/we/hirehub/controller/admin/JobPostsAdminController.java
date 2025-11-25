@@ -3,7 +3,7 @@ package com.we.hirehub.controller.admin;
 import com.we.hirehub.dto.support.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.repository.JobPostsRepository; // ✅ [추가]
-import com.we.hirehub.service.S3Service;
+import com.we.hirehub.service.common.S3Service;
 import com.we.hirehub.service.admin.JobPostsAdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
