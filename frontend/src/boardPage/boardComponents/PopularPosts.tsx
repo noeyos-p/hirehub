@@ -71,34 +71,54 @@ const PopularPosts: React.FC = () => {
 
   return (
     <section className="mb-8">
-      <h2 className="text-xl font-bold text-gray-800 mb-8">인기 게시물</h2>
-      <div>
+      <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4 md:mb-8">인기 게시물</h2>
+      <div className="-ml-2 md:ml-0">
         {popularBoards.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             인기 게시글이 없습니다.
           </div>
         ) : (
-          <div className="space-y-4 mb-0">
-            {popularBoards.map((board) => (
+          <div className="space-y-2 mb-0 -mt-2">
+            {popularBoards.map((board, index) => (
               <div
                 key={board.id}
-                className="border-b border-gray-200 pb-4 last:border-b-0 cursor-pointer hover:bg-gray-100 transition p-2 rounded"
+                className="border-b border-gray-200 pb-4 last:border-b-0 cursor-pointer hover:bg-gray-50 transition p-3 rounded"
                 onClick={() => handleBoardClick(board.id)}
               >
-                <div className="flex items-center justify-between">
+                {/* 모바일 레이아웃 */}
+                <div className="md:hidden flex items-start gap-3">
+                  {/* 순서 번호 */}
+                  <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs font-semibold text-gray-700">{index + 1}</span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-gray-800 line-clamp-2 mb-2">
+                      {board.title}
+                    </h3>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <span className="truncate">{board.nickname || board.usersName}</span>
+                      <span className="mx-2">|</span>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-1">
+                          <EyeIcon className="w-3.5 h-3.5" />
+                          <span>{board.views || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
+                          <span>{commentCounts[board.id] || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 데스크톱 레이아웃 */}
+                <div className="hidden md:flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
-                      {board.usersProfileImage ? (
-                        <img
-                          src={board.usersProfileImage}
-                          alt={board.usersName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm text-gray-600">
-                          {board.usersName?.charAt(0) || '?'}
-                        </span>
-                      )}
+                    {/* 순서 번호 */}
+                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-gray-700">{index + 1}</span>
                     </div>
                     <div>
                       <h3 className="text-md font-semibold text-gray-800">

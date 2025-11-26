@@ -193,7 +193,7 @@ const AttentionSection: React.FC = () => {
   }, [currentPage, cardsPerPage]);
 
   return (
-    <section className="relative mb-8 md:mb-12 max-w-[1440px] mx-auto w-full">
+    <section className="relative max-w-[1440px] mx-auto w-full">
       {/* 제목 */}
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className="text-lg md:text-xl font-bold text-gray-800">모두가 주목하는 공고</h2>
