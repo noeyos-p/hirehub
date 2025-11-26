@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CompatClient, Stomp } from '@stomp/stompjs';
+import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import api from '../../api/api';
 import { chatApi } from '../../api/chatApi';
 import type { ChatMessage } from '../../types/interface';
 
@@ -20,11 +21,11 @@ const RealTimeChat: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const stompClientRef = useRef<CompatClient | null>(null);
+  const stompClientRef = useRef<Client | null>(null);
   const isInitializing = useRef(false);
   const sessionId = 'main-chat-room';
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://noeyos.store';
+  const API_BASE_URL = api.defaults.baseURL;
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -78,13 +79,7 @@ const RealTimeChat: React.FC = () => {
     setIsConnected(false);
 
     if (stompClientRef.current) {
-      try {
-        stompClientRef.current.disconnect(() => {
-          console.log('STOMP 연결 해제 완료');
-        });
-      } catch (e) {
-        console.error('STOMP 연결 해제 중 에러:', e);
-      }
+      stompClientRef.current.deactivate();
       stompClientRef.current = null;
     }
   }, []);
@@ -103,53 +98,67 @@ const RealTimeChat: React.FC = () => {
       setIsJoined(true);
       localStorage.setItem('chatRoomJoined', 'true');
 
-      console.log('WebSocket 연결 시도, URL:', `${API_BASE_URL}/ws`);
+      console.log('WebSocket 연결 시도, 토큰 존재:', !!token);
 
-      const socket = new SockJS(`${API_BASE_URL}/ws`);
-      const client = Stomp.over(socket);
+      const client = new Client({
+        webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws`),
+        connectHeaders: {
+          Authorization: `Bearer ${token}`
+        },
+        debug: (str) => console.log('STOMP:', str),
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+      });
 
-      // 디버그 로그 끄기 (필요시 켜기)
-      client.debug = (str) => console.log('STOMP:', str);
+      client.onConnect = (frame) => {
+        console.log('✅ STOMP 연결 성공', frame);
+        setIsConnected(true);
+        setConnectionError('');
 
-      const headers = {
-        Authorization: `Bearer ${token}`
+        console.log(`📢 구독 시작: /topic/rooms/${sessionId}`);
+
+        client.subscribe(`/topic/rooms/${sessionId}`, (message) => {
+          console.log('📨 새 메시지 수신 (raw):', message);
+          console.log('📨 메시지 body:', message.body);
+
+          try {
+            const newMsg: ChatMessage = JSON.parse(message.body);
+            console.log('✅ 파싱된 메시지:', newMsg);
+
+            setMessages((prev) => {
+              if (newMsg.id && prev.some(m => m.id === newMsg.id)) {
+                console.log('⚠️ 중복 메시지 무시:', newMsg.id);
+                return prev;
+              }
+              console.log('✅ 메시지 추가:', newMsg);
+              return [...prev, newMsg];
+            });
+          } catch (e) {
+            console.error('❌ 메시지 파싱 실패:', e, message.body);
+          }
+        });
       };
 
-      client.connect(
-        headers,
-        (frame: any) => {
-          console.log('✅ STOMP 연결 성공', frame);
-          setIsConnected(true);
-          setConnectionError('');
-          stompClientRef.current = client;
+      client.onStompError = (frame) => {
+        console.error('❌ STOMP 에러:', frame);
+        setConnectionError('연결 실패. 다시 로그인해주세요.');
+        setIsConnected(false);
+        handleLeave();
+      };
 
-          console.log(`📢 구독 시작: /topic/rooms/${sessionId}`);
+      client.onWebSocketClose = (event) => {
+        console.log('WebSocket 연결 종료:', event);
+        setIsConnected(false);
+      };
 
-          client.subscribe(`/topic/rooms/${sessionId}`, (message) => {
-            console.log('📨 새 메시지 수신:', message.body);
+      client.onDisconnect = () => {
+        console.log('STOMP 연결 해제');
+        setIsConnected(false);
+      };
 
-            try {
-              const newMsg: ChatMessage = JSON.parse(message.body);
-
-              setMessages((prev) => {
-                if (newMsg.id && prev.some(m => m.id === newMsg.id)) {
-                  console.log('⚠️ 중복 메시지 무시:', newMsg.id);
-                  return prev;
-                }
-                return [...prev, newMsg];
-              });
-            } catch (e) {
-              console.error('❌ 메시지 파싱 실패:', e, message.body);
-            }
-          });
-        },
-        (error: any) => {
-          console.error('❌ STOMP 에러:', error);
-          setConnectionError('연결 실패. 다시 로그인해주세요.');
-          setIsConnected(false);
-          handleLeave();
-        }
-      );
+      client.activate();
+      stompClientRef.current = client;
 
       console.log('=== 채팅방 입장 완료 ===');
     } catch (e) {
@@ -177,7 +186,7 @@ const RealTimeChat: React.FC = () => {
 
     window.addEventListener('storage', handleStorageChange);
 
-    // 5초마다 체크
+    // 5초마다 체크 (1초 → 5초로 변경하여 부하 감소)
     const checkToken = setInterval(() => {
       const token = localStorage.getItem('token');
       if (!token && isJoined) {
@@ -218,13 +227,9 @@ const RealTimeChat: React.FC = () => {
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
-      if (stompClientRef.current && stompClientRef.current.connected) {
+      if (stompClientRef.current) {
         console.log('컴포넌트 언마운트: WebSocket 연결 해제');
-        try {
-          stompClientRef.current.disconnect(() => { });
-        } catch (e) {
-          console.error('언마운트 시 연결 해제 에러:', e);
-        }
+        stompClientRef.current.deactivate();
       }
     };
   }, []);
@@ -251,6 +256,7 @@ const RealTimeChat: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) {
+      console.log('빈 메시지 전송 시도 차단');
       return;
     }
 
@@ -260,31 +266,33 @@ const RealTimeChat: React.FC = () => {
       return;
     }
 
-    if (!stompClientRef.current || !isConnected) {
-      setConnectionError('채팅 서버에 연결되어 있지 않습니다.');
-      return;
-    }
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    console.log('메시지 전송 시도:', {
+      sessionId,
+      content: inputMessage,
+      nickname: userNickname,
+      hasToken: !!token,
+    });
 
     try {
-      const messagePayload = {
+      await chatApi.sendMessage({
         sessionId,
         content: inputMessage,
         nickname: userNickname || '익명',
         userId,
-      };
-
-      console.log('📤 STOMP 메시지 전송 시도:', messagePayload);
-
-      stompClientRef.current.publish({
-        destination: `/app/chat.send/${sessionId}`,
-        body: JSON.stringify(messagePayload),
       });
 
-      console.log('✅ STOMP 메시지 전송 완료');
+      console.log('✅ 메시지 전송 성공');
       setInputMessage('');
     } catch (e: any) {
       console.error('❌ 메시지 전송 에러:', e);
-      setConnectionError('메시지 전송 실패. 다시 시도해주세요.');
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        setConnectionError('인증이 만료되었습니다. 다시 로그인해주세요.');
+      } else {
+        setConnectionError('메시지 전송 실패. 다시 시도해주세요.');
+      }
     }
   };
 
@@ -351,8 +359,8 @@ const RealTimeChat: React.FC = () => {
                 onClick={handleJoin}
                 disabled={!isAuthenticated}
                 className={`px-6 py-2.5 rounded-lg transition-colors text-md font-medium ${isAuthenticated
-                  ? 'bg-[#006AFF] text-white hover:bg-blue-600'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? 'bg-[#006AFF] text-white hover:bg-blue-600'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 title={!isAuthenticated ? '로그인이 필요합니다' : ''}
               >
@@ -410,8 +418,8 @@ const RealTimeChat: React.FC = () => {
                         >
                           <div
                             className={`px-4 py-2.5 text-[15px] rounded-2xl break-words ${isMyMessage
-                              ? "bg-blue-500 text-white rounded-tr-sm"
-                              : "bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm"
+                                ? "bg-blue-500 text-white rounded-tr-sm"
+                                : "bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm"
                               }`}
                           >
                             {msg.content}
