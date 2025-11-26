@@ -7,15 +7,17 @@ interface CommentInputProps {
   autoFocus?: boolean;
   onCancel?: () => void;
   submitButtonText?: string;
+  clearOnSubmit?: boolean;
 }
 
-const CommentInput: React.FC<CommentInputProps> = ({ 
-  onSubmit, 
+const CommentInput: React.FC<CommentInputProps> = ({
+  onSubmit,
   placeholder = "댓글을 남겨주세요",
   defaultValue = '',
   autoFocus = false,
   onCancel,
-  submitButtonText = '등록'
+  submitButtonText = '등록',
+  clearOnSubmit = true
 }) => {
   const [content, setContent] = useState(defaultValue);
   const [isComposing, setIsComposing] = useState(false);
@@ -23,11 +25,13 @@ const CommentInput: React.FC<CommentInputProps> = ({
 
   const handleSubmit = async () => {
     if (!content.trim() || isComposing || isSubmitting) return;
-    
+
     setIsSubmitting(true);
     try {
       await onSubmit(content);
-      setContent('');
+      if (clearOnSubmit) {
+        setContent('');
+      }
     } catch (err) {
       console.error('댓글 작성 실패:', err);
     } finally {

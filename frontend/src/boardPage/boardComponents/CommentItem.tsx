@@ -66,20 +66,12 @@ const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   const renderProfileImage = () => {
-    const displayName = comment.nickname || comment.usersName || '익명';
+    const displayName = comment.nickname || '익명';
     return (
       <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-gray-300 flex-shrink-0">
-        {comment.usersProfileImage ? (
-          <img
-            src={comment.usersProfileImage}
-            alt={`${displayName}'s profile`}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className="text-xs text-gray-600 font-medium">
-            {displayName.charAt(0).toUpperCase()}
-          </span>
-        )}
+        <span className="text-xs text-gray-600 font-medium">
+          {displayName.charAt(0).toUpperCase()}
+        </span>
       </div>
     );
   };
@@ -122,7 +114,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             {/* ✅ 이름과 드롭다운 메뉴 */}
             <div className="flex items-center justify-between mb-1">
               <p className="text-sm font-bold text-gray-700">
-                {comment.nickname || comment.usersName}
+                {comment.nickname || '익명'}
               </p>
 
               {(canEdit || canDelete) && !isEditing && (
@@ -199,7 +191,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               <div className="mt-3">
                 <CommentInput
                   onSubmit={handleReplySubmit}
-                  placeholder={`@${comment.nickname || comment.usersName}에게 답글 작성`}
+                  placeholder={`@${comment.nickname || '익명'}에게 답글 작성`}
                   autoFocus
                   onCancel={() => setShowReplyInput(false)}
                 />

@@ -111,6 +111,13 @@ const BoardDetail: React.FC = () => {
     }
   };
 
+  const handleCommentEdit = async (commentId: number, content: string) => {
+    await commentApi.updateComment(commentId, content);
+    if (id) {
+      await fetchComments(Number(id));
+    }
+  };
+
   // ✅ 게시글 수정 핸들러
   const handleBoardEdit = () => {
     setShowDropdown(false);
@@ -263,6 +270,7 @@ const BoardDetail: React.FC = () => {
         onCommentSubmit={handleCommentSubmit}
         onReplySubmit={handleReplySubmit}
         onCommentDelete={handleCommentDelete}
+        onCommentEdit={handleCommentEdit}
       />
     </section>
   );

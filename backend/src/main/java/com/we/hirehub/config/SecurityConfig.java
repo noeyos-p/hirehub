@@ -64,6 +64,7 @@ public class SecurityConfig {
                         // ✅ 댓글: 조회만 허용, 나머지는 인증 필요
                         .requestMatchers(HttpMethod.GET, "/api/comment/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/comment/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/comment/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/comment/**").authenticated()
 
                         // ✅ 그 외 모든 요청은 인증 필요

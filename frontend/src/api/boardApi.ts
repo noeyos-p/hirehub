@@ -33,6 +33,11 @@ export const boardApi = {
     return response.data;
   },
 
+  updateBoard: async (id: number, data: CreateBoardRequest): Promise<BoardListResponse> => {
+    const response = await api.put(`/api/board/${id}`, data);
+    return response.data;
+  },
+
   deleteBoard: async (id: number): Promise<void> => {
     await api.delete(`/api/board/${id}`);
   },
@@ -70,6 +75,11 @@ export const commentApi = {
 
   createComment: async (data: CreateCommentRequest): Promise<CommentResponse> => {
     const response = await api.post('/api/comment', data);
+    return response.data;
+  },
+
+  updateComment: async (commentId: number, content: string): Promise<CommentResponse> => {
+    const response = await api.put(`/api/comment/${commentId}`, { content });
     return response.data;
   },
 

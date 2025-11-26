@@ -15,6 +15,7 @@ interface CommentSectionProps {
   onCommentSubmit: (content: string) => Promise<void>;
   onReplySubmit: (parentId: number, content: string) => Promise<void>;
   onCommentDelete: (commentId: number) => Promise<void>;
+  onCommentEdit: (commentId: number, content: string) => Promise<void>;
 }
 
 const CommentSection: React.FC<CommentSectionProps> = ({
@@ -24,7 +25,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({
   currentUserRole,
   onCommentSubmit,
   onReplySubmit,
-  onCommentDelete
+  onCommentDelete,
+  onCommentEdit
 }) => {
   const buildCommentTree = (comments: CommentResponse[]): CommentWithChildren[] => {
     const commentMap = new Map<number, CommentWithChildren>();
@@ -87,6 +89,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                 isAuthenticated={isAuthenticated}
                 onReply={onReplySubmit}
                 onDelete={onCommentDelete}
+                onEdit={onCommentEdit}
               />
               {/* 대댓글들 (들여쓰기) - children이 있을 때만 */}
               {comment.children.length > 0 && (
@@ -101,6 +104,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                       isAuthenticated={isAuthenticated}
                       onReply={onReplySubmit}
                       onDelete={onCommentDelete}
+                      onEdit={onCommentEdit}
                     />
                   ))}
                 </div>

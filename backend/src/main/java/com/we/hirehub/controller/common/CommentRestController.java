@@ -67,6 +67,51 @@ public class CommentRestController {
     }
 
     /**
+     * ✅ 댓글 수정
+     */
+    @PutMapping("/{commentId}")
+    public ResponseEntity<?> updateComment(
+            @PathVariable Long commentId,
+            @RequestBody CommentsDto commentsDto,
+            @AuthenticationPrincipal JwtUserPrincipal userPrincipal
+    ) {
+        if (userPrincipal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("로그인이 필요합니다.");
+        }
+
+        try {
+            // 댓글 존재 확인
+            var comment = commentRepository.findById(commentId)
+                    .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+            // 작성자 본인 확인
+            Long userId = userPrincipal.getUserId();
+            if (comment.getUsers() == null || !comment.getUsers().getId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("본인의 댓글만 수정할 수 있습니다.");
+            }
+
+            // 내용 유효성 검증
+            if (commentsDto.getContent() == null || commentsDto.getContent().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("댓글 내용이 비어 있습니다.");
+            }
+
+            // 댓글 수정
+            CommentsDto updatedComment = commentsService.updateComment(commentId, commentsDto.getContent());
+
+            return ResponseEntity.ok(updatedComment);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("댓글 수정 실패: " + e.getMessage());
+        }
+    }
+
+    /**
      * ✅ 댓글 삭제
      */
     @DeleteMapping("/{commentId}")

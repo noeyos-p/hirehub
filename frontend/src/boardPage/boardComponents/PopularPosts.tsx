@@ -70,24 +70,24 @@ const PopularPosts: React.FC = () => {
   }
 
   return (
-    <section className="mb-6 md:mb-8">
-      <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-8">인기 게시물</h2>
+    <section className="mb-8">
+      <h2 className="text-xl font-bold text-gray-800 mb-8">인기 게시물</h2>
       <div>
         {popularBoards.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             인기 게시글이 없습니다.
           </div>
         ) : (
-          <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-0">
+          <div className="space-y-4 mb-0">
             {popularBoards.map((board) => (
               <div
                 key={board.id}
-                className="border-b border-gray-200 pb-2 sm:pb-3 md:pb-4 last:border-b-0 cursor-pointer hover:bg-gray-100 transition-all duration-200 p-1 sm:p-1.5 md:p-2 rounded"
+                className="border-b border-gray-200 pb-4 last:border-b-0 cursor-pointer hover:bg-gray-100 transition p-2 rounded"
                 onClick={() => handleBoardClick(board.id)}
               >
-                <div className="flex items-center justify-between gap-1.5 sm:gap-2">
-                  <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 min-w-0 flex-1">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
                       {board.usersProfileImage ? (
                         <img
                           src={board.usersProfileImage}
@@ -95,30 +95,30 @@ const PopularPosts: React.FC = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-xs md:text-sm text-gray-600">
+                        <span className="text-sm text-gray-600">
                           {board.usersName?.charAt(0) || '?'}
                         </span>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-xs sm:text-sm md:text-md font-semibold text-gray-800 truncate leading-tight">
+                    <div>
+                      <h3 className="text-md font-semibold text-gray-800">
                         {board.title}
                       </h3>
-                      <p className="text-[10px] sm:text-xs md:text-sm text-gray-600 line-clamp-1 truncate mt-0.5">
+                      <p className="text-sm text-gray-600 line-clamp-1">
                         {board.content.replace(/<[^>]*>/g, '').substring(0, 30)}
                         {board.content.replace(/<[^>]*>/g, '').length > 30 ? '...' : ''}
                       </p>
                     </div>
                   </div>
 
-                  <div className="text-right flex-shrink-0">
-                    <div className="flex items-center justify-end space-x-1 sm:space-x-1.5 md:space-x-2 mt-3 sm:mt-4 md:mt-6">
-                      <div className="text-[10px] sm:text-xs md:text-sm text-gray-500 flex items-center space-x-0.5">
-                        <EyeIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
+                  <div className="text-right">
+                    <div className="flex items-center justify-end space-x-2 mt-6">
+                      <div className="text-sm text-gray-500 flex items-center space-x-1">
+                        <EyeIcon className="w-4 h-4" />
                         <span>{board.views || 0}</span>
                       </div>
-                      <div className="text-[10px] sm:text-xs md:text-sm text-gray-500 flex items-center space-x-0.5">
-                        <ChatBubbleLeftIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
+                      <div className="text-sm text-gray-500 flex items-center space-x-1">
+                        <ChatBubbleLeftIcon className="w-4 h-4" />
                         <span>{commentCounts[board.id] || 0}</span>
                       </div>
                     </div>
