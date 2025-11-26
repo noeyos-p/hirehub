@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/ws/**",
                                 "/api/chatbot/faq", "/api/chatbot/faq/**",
+                                "/api/faq", "/api/faq/**",  // ✅ FAQ API 접근 허용 추가
                                 "/api/ads",  // ✅ 일반 사용자 광고 조회 추가
                                 "/api/auth/**",
                                 "/api/public/**",
