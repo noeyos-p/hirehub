@@ -21,6 +21,9 @@ jobs:
           - name: frontend
             context: frontend
             imagename: hirehub-frontend
+          - name: fastapi
+            context: fastapi
+            imagename: hirehub-fastapi
     steps:
       - uses: actions/checkout@v4
 
