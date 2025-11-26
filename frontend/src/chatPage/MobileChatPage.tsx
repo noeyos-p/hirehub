@@ -324,8 +324,8 @@ const MobileChatPage: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-white">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+      {/* 헤더 - 고정 위치 */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold text-gray-800">실시간 채팅</h1>
           {isJoined && (
@@ -346,13 +346,13 @@ const MobileChatPage: React.FC = () => {
 
       {/* 에러 메시지 */}
       {connectionError && (
-        <div className="mx-4 mt-2 p-2 bg-yellow-100 text-yellow-800 text-xs rounded">
+        <div className="fixed top-[57px] left-0 right-0 z-40 mx-4 mt-2 p-2 bg-yellow-100 text-yellow-800 text-xs rounded">
           {connectionError}
         </div>
       )}
 
       {/* 메인 채팅 영역 */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-[#DFE7EF]">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#DFE7EF] pt-[57px]">
         {!isJoined ? (
           <div className="flex-1 flex flex-col items-center justify-center px-6">
             <div className="text-center space-y-4">
