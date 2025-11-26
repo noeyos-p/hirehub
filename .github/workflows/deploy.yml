@@ -82,6 +82,7 @@ jobs:
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
             FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
+            FASTAPI_IMAGE=${{ secrets.FASTAPI_IMAGE }}
             EOF
 
             echo "🚀 Docker Compose 실행..."
