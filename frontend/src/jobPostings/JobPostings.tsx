@@ -521,7 +521,7 @@ const JobPostings: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-3">
+      <div className="max-w-[1440px] mx-auto px-2 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-3">
         {error && (
           <div className="mb-4 px-4 py-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">{error}</div>
         )}
@@ -549,7 +549,7 @@ const JobPostings: React.FC = () => {
           </div>
         )}
         {/* ✅ 필터 드롭다운 */}
-        <div className="flex items-center gap-2 mb-3 max-w-[390px] md:max-w-none">
+        <div className="flex items-center justify-center gap-2 mb-3 max-w-[390px] md:max-w-none md:justify-start">
           {/* 직무 필터 */}
           <div className="relative flex-1 md:flex-none" ref={positionRef}>
             <button
@@ -675,7 +675,7 @@ const JobPostings: React.FC = () => {
           <>
             {/* 모바일: 카드 형식 */}
             {isMobile ? (
-              <div className="flex flex-wrap gap-1 pb-6">
+              <div className="flex flex-wrap gap-1 justify-center pb-6">
                 {displayedJobs.map((job) => (
                   <div
                     key={job.id}
