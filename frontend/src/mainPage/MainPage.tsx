@@ -14,8 +14,10 @@ const MainPage: React.FC = () => {
           {/* 인기 있는 게시물 섹션 */}
           <PopularPosts />
 
-          {/* 실시간 채팅 섹션 */}
-          <RealTimeChat />
+          {/* 실시간 채팅 섹션 - 데스크톱만 */}
+          <div className="hidden md:block">
+            <RealTimeChat />
+          </div>
         </div>
       </div>
     </div>

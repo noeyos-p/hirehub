@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MagnifyingGlassIcon, UserCircleIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, UserCircleIcon, ChevronDownIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -79,24 +79,40 @@ export default function Header() {
           </nav>
         </div>
 
-        <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 lg:space-x-4 xl:space-x-6 min-w-0">
-          {/* 검색창 */}
-          <div className="relative hidden sm:block min-w-0">
+        <div className="flex items-center space-x-3 md:space-x-4 xl:space-x-6 min-w-0">
+          {/* 데스크톱 검색창 */}
+          <div className="relative hidden md:block min-w-0">
             <input
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="어떤 공고를 찾으세요?"
-              className="w-[120px] sm:w-[140px] md:w-[200px] lg:w-[280px] xl:w-[400px] h-[36px] md:h-[38px] lg:h-[41px] border border-gray-400 rounded-[10px] px-2 sm:px-3 md:px-4 py-1.5 pr-8 text-xs md:text-sm focus:outline-none focus:border-[#006AFF] transition-all"
+              className="w-[200px] lg:w-[280px] xl:w-[400px] h-[38px] lg:h-[41px] border border-gray-400 rounded-[10px] px-4 py-1.5 pr-10 text-sm focus:outline-none focus:border-[#006AFF] transition-all"
             />
             <button onClick={handleSearch}>
-              <MagnifyingGlassIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-500 absolute right-2 md:right-3 top-2 md:top-2.5 cursor-pointer hover:text-blue-500 transition" />
+              <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 absolute right-3 top-2.5 cursor-pointer hover:text-blue-500 transition" />
             </button>
           </div>
 
-          {/* 로그인/프로필 영역 */}
-          <div className="flex items-center flex-shrink-0">
+          {/* 모바일 로그인 버튼 */}
+          <div className="md:hidden flex items-center space-x-3">
+            <Link
+              to="/login"
+              className="text-sm font-medium text-gray-700 hover:text-[#006AFF] transition whitespace-nowrap px-4 py-1.5 border border-gray-300 rounded-md"
+            >
+              로그인
+            </Link>
+            <button className="p-1">
+              <MagnifyingGlassIcon className="w-5 h-5 text-gray-700" />
+            </button>
+            <button className="p-1">
+              <Bars3Icon className="w-6 h-6 text-gray-700" />
+            </button>
+          </div>
+
+          {/* 데스크톱 로그인/프로필 영역 */}
+          <div className="hidden md:flex items-center flex-shrink-0">
             {loading ? (
               <div className="w-7 h-7 md:w-8 md:h-8 bg-gray-200 rounded-full animate-pulse"></div>
             ) : isAuthenticated && user ? (
