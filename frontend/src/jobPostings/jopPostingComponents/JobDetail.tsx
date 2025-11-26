@@ -225,7 +225,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-        <div className="flex gap-4 md:gap-6 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-4 md:py-6">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-4 md:py-6">
           <div className="flex-1">
             <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8">
               <button onClick={onBack} className="text-xs sm:text-sm text-blue-600 mb-3 md:mb-4 hover:underline">
@@ -281,7 +281,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
           </div>
 
           {/* 오른쪽: 고정 사이드바 */}
-          <div className="w-64 md:w-72 lg:w-80 xl:w-96 flex-shrink-0">
+          <div className="w-full lg:w-80 xl:w-96 flex-shrink-0">
             <div className="sticky top-6 space-y-3">
               {/* 채용 정보 박스 */}
               <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
