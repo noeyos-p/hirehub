@@ -675,7 +675,7 @@ const JobPostings: React.FC = () => {
           <>
             {/* 모바일: 카드 형식 */}
             {isMobile ? (
-              <div className="flex flex-wrap gap-3 pb-6">
+              <div className="flex flex-wrap gap-1 pb-6">
                 {displayedJobs.map((job) => (
                   <div
                     key={job.id}
