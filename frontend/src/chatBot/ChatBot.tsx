@@ -166,7 +166,22 @@ const ChatBot: React.FC = () => {
 
   // WebSocket 연결
   useEffect(() => {
-    const sock = new SockJS(`${API_BASE_URL}/ws`);
+    // HTTPS 환경에서는 wss://, HTTP 환경에서는 ws:// 사용
+    const getWebSocketUrl = (baseUrl: string) => {
+      if (!baseUrl) return '/ws';
+
+      // http:// 또는 https://를 ws:// 또는 wss://로 변환
+      const wsUrl = baseUrl
+        .replace(/^https:\/\//i, 'wss://')
+        .replace(/^http:\/\//i, 'ws://');
+
+      return `${wsUrl}/ws`;
+    };
+
+    const wsUrl = getWebSocketUrl(API_BASE_URL);
+    console.log('WebSocket URL:', wsUrl);
+
+    const sock = new SockJS(wsUrl);
     const client = Stomp.over(() => sock);
     client.debug = () => {};
 

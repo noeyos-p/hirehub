@@ -18,7 +18,18 @@ const SupportAgent: React.FC = () => {
   const roomSubRef = useRef<any>(null);
 
   useEffect(() => {
-    const sock = new SockJS("/ws");
+    // HTTPS 환경에서는 wss://, HTTP 환경에서는 ws:// 사용
+    const getWebSocketUrl = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      return `${protocol}//${host}/ws`;
+    };
+
+    // 상대 경로 사용 (현재 호스트의 프로토콜 자동 적용)
+    const wsUrl = '/ws';
+    console.log('WebSocket URL:', wsUrl, '(상대 경로)');
+
+    const sock = new SockJS(wsUrl);
     const client = Stomp.over(sock);
     (client as any).debug = () => {};
 
