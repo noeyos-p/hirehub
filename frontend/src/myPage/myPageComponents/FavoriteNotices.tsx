@@ -281,10 +281,10 @@ const FavoriteNotices: React.FC = () => {
           const applied = appliedIds.has(n.jobPostId);
           return (
             <div key={n.id} className="flex items-center justify-between border-b border-gray-200 pb-4">
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  className="mt-1 accent-blue-500"
+                  className="accent-blue-500"
                   checked={selectedIds.includes(n.id)}
                   onChange={() => handleCheckboxChange(n.id)}
                   disabled={loading}

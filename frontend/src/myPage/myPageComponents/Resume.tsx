@@ -173,7 +173,7 @@ const Resume = () => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
+            <div className="flex flex-col items-end gap-2">
               <button
                 className={`text-xs sm:text-sm px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap ${resume.locked
                   ? "bg-gray-100 text-gray-600 hover:bg-gray-200"

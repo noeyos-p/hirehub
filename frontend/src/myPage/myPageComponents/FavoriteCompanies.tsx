@@ -202,6 +202,16 @@ const FavoriteCompanies: React.FC = () => {
     navigate(`/jobPostings/${jobId}`);
   };
 
+  /** 기업 페이지로 이동 */
+  const goCompanyPage = (companyId: number) => {
+    navigate(`/company/${companyId}`);
+  };
+
+  /** 기업 공고 모아보기 페이지로 이동 */
+  const goCompanyJobListings = (companyId: number) => {
+    navigate(`/jobPostings?company=${companyId}`);
+  };
+
   return (
     <div className="flex">
       <div className="flex-1 px-6 py-10 max-w-3xl lg:max-w-4xl mx-auto">
@@ -233,53 +243,27 @@ const FavoriteCompanies: React.FC = () => {
                       onChange={() => handleCheckboxChange(r.companyId)}
                       disabled={loading}
                     />
-                    <div className="text-gray-900 font-semibold text-[16px] py-[20px]">{r.companyName}</div>
+                    <div
+                      className="text-gray-900 font-semibold text-[16px] py-[20px] cursor-pointer hover:text-blue-600 transition-colors"
+                      onClick={() => goCompanyPage(r.companyId)}
+                      title="기업 페이지로 이동"
+                    >
+                      {r.companyName}
+                    </div>
                   </div>
 
                   <button
-                    onClick={() => toggleOpenPosts(r.companyId)}
-                    className="text-sm"
-                    title="현재 채용중 공고 보기"
+                    onClick={() => goCompanyJobListings(r.companyId)}
+                    className="text-sm cursor-pointer hover:text-blue-600 transition-colors"
+                    title="기업 공고 모아보기"
                   >
                     채용 중{" "}
-                    <span className="text-blue-800 underline underline-offset-2">
+                    <span className="text-blue-800 font-semibold">
                       {r.postCount ?? 0}
                     </span>
                     개
                   </button>
                 </div>
-
-                {isOpen && (
-                  <div className="mt-3 rounded-md border border-gray-100 bg-gray-50 p-3">
-                    {loadingPosts && cached.length === 0 ? (
-                      <div className="text-sm text-gray-500">불러오는 중…</div>
-                    ) : postsToShow.length === 0 ? (
-                      <div className="text-sm text-gray-500">현재 채용중인 공고가 없습니다.</div>
-                    ) : (
-                      <ul className="space-y-2">
-                        {postsToShow.map((p) => (
-                          <li key={p.id}>
-                            <div
-                              onClick={() => goJobDetail(p.id)}
-                              className="flex items-center justify-between bg-white rounded-md px-3 py-2 border hover:border-gray-300 cursor-pointer transition-colors"
-                              title="채용 상세 보기"
-                            >
-                              <div className="min-w-0">
-                                <div className="font-medium text-gray-900 truncate">{p.title}</div>
-                                <div className="text-xs text-gray-500">
-                                  {[p.position, p.location].filter(Boolean).join(" · ")}
-                                </div>
-                              </div>
-                              <div className="text-xs text-gray-600">
-                                {p.end_at ? `마감: ${prettyMDW(p.end_at)}` : ""}
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}

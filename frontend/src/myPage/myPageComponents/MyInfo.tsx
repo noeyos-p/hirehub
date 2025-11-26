@@ -151,19 +151,6 @@ const MyInfo: React.FC = () => {
     }
   };
 
-  const handleWithdraw = async () => {
-    if (!window.confirm("정말 탈퇴하시겠습니까? 모든 데이터가 완전히 삭제됩니다.")) return;
-    try {
-      await myPageApi.withdraw();
-      alert("회원 탈퇴가 완료되었습니다.");
-      localStorage.clear();
-      window.location.href = "/";
-    } catch (err) {
-      console.error(err);
-      alert("탈퇴 중 오류가 발생했습니다. 다시 시도해주세요.");
-    }
-  };
-
   const ageToShow = useMemo(() => me?.age ?? calcAge(me?.dob), [me]);
   const genderLabel = (code?: string) => (code && GENDER_LABEL[code]) || "-";
 
@@ -340,23 +327,6 @@ const MyInfo: React.FC = () => {
             </div>
           </div>
         </section>
-        {/* ✅ 회원탈퇴 버튼 - 반응형 대응 */}
-        <div className="
-              col-span-12 flex justify-start w-full mt-8 ml-[40px] mt-[-145px]
-                      ">
-          <button
-            onClick={handleWithdraw}
-            className="
-                text-red-500 font-semibold rounded-lg
-    px-1 py-1 md:px-1 md:py-1
-    hover:text-red-600 transition
-    w-full md:w-auto
-    shadow-none
-               "
-          >
-            탈퇴하기
-          </button>
-        </div>
       </div>
     </div>
   );

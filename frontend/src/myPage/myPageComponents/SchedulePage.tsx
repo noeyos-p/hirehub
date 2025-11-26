@@ -325,7 +325,9 @@ const SchedulePage: React.FC = () => {
                 className={getDayClass(fullDate)}
               >
                 <div>{day}</div>
-                {calendarMap[fullDate] > 0 && <div className="mt-1 mx-auto w-2 h-2 rounded-full bg-gray-400"></div>}
+                <div className="mt-1 mx-auto w-2 h-2 rounded-full">
+                  {calendarMap[fullDate] > 0 && <div className="w-2 h-2 rounded-full bg-gray-400"></div>}
+                </div>
               </div>
             );
           })}
