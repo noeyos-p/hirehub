@@ -281,7 +281,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
           </div>
 
           {/* 오른쪽: 고정 사이드바 */}
-          <div className="w-96 flex-shrink-0">
+          <div className="w-64 md:w-72 lg:w-80 xl:w-96 flex-shrink-0">
             <div className="sticky top-6 space-y-3">
               {/* 채용 정보 박스 */}
               <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
