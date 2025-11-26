@@ -40,12 +40,32 @@ const JobPostings: React.FC = () => {
   const [isApplying, setIsApplying] = useState(false);
   const itemsPerPage = 10;
 
+  // 회사 이미지 상태 (모바일 전용)
+  const [companyPhotos, setCompanyPhotos] = useState<Record<number, string>>({});
+
+  // 무한 스크롤을 위한 state (모바일 전용)
+  const [displayedCount, setDisplayedCount] = useState(10);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // 모바일 여부 감지 (768px 이하)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
   // ✅ 드롭다운 상태 관리
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const positionRef = useRef<HTMLDivElement>(null);
   const experienceRef = useRef<HTMLDivElement>(null);
   const educationRef = useRef<HTMLDivElement>(null);
   const locationRef = useRef<HTMLDivElement>(null);
+
+  // 화면 크기 변경 감지
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // ✅ 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -82,6 +102,32 @@ const JobPostings: React.FC = () => {
     }
   };
 
+  // 회사 이미지 가져오기 (중복 제거 최적화)
+  const fetchCompanyPhotos = async (jobs: JobPostResponse[]) => {
+    // 중복 제거: 고유한 companyId만 추출
+    const uniqueCompanyIds = Array.from(new Set(jobs.map(job => job.companyId)));
+
+    // 이미 로드된 회사는 제외
+    const newCompanyIds = uniqueCompanyIds.filter(id => !companyPhotos[id]);
+
+    if (newCompanyIds.length === 0) return; // 새로 로드할 회사가 없으면 종료
+
+    const photos: Record<number, string> = {};
+    await Promise.all(
+      newCompanyIds.map(async (companyId) => {
+        try {
+          const company = await jobPostApi.getCompanyById(companyId);
+          if (company.photo) {
+            photos[companyId] = company.photo;
+          }
+        } catch (e) {
+          console.error(`Failed to fetch photo for company ${companyId}`, e);
+        }
+      })
+    );
+    setCompanyPhotos((prev) => ({ ...prev, ...photos }));
+  };
+
   useEffect(() => {
     const fetchJobs = async () => {
       setIsLoading(true);
@@ -89,6 +135,10 @@ const JobPostings: React.FC = () => {
       try {
         const data = await jobPostApi.getJobPosts();
         setJobListings(data);
+        // 모바일이고 공고가 있으면 회사 이미지 로드
+        if (isMobile && data.length > 0) {
+          fetchCompanyPhotos(data);
+        }
       } catch (err: any) {
         setError(err.response?.data?.message || "채용공고를 불러오는데 실패했습니다.");
       } finally {
@@ -96,7 +146,7 @@ const JobPostings: React.FC = () => {
       }
     };
     fetchJobs();
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     fetchFavorites();
@@ -128,7 +178,33 @@ const JobPostings: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, companyFilter]);
+    setDisplayedCount(10); // 필터 변경 시 초기화
+  }, [searchQuery, companyFilter, filters]);
+
+  // 무한 스크롤: Intersection Observer (모바일 전용)
+  useEffect(() => {
+    if (!isMobile) return; // 데스크톱에서는 무한 스크롤 비활성화
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // 관찰 대상이 화면에 보이고, 더 불러올 데이터가 있고, 로딩 중이 아닐 때
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          setDisplayedCount((prev) => prev + 10);
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" } // 100px 전에 미리 로드
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [hasMore, isLoading, isMobile]);
 
   const clearCompanyFilter = () => {
     window.location.href = "/jobPostings";
@@ -294,6 +370,21 @@ const JobPostings: React.FC = () => {
     return matchesCompany && matchesSearch && matchesPosition && matchesExperience && matchesEducation && matchesLocation;
   });
 
+  // 무한 스크롤용: 현재까지 표시할 공고
+  const displayedJobs = filteredJobs.slice(0, displayedCount);
+
+  // 더 불러올 데이터가 있는지 확인
+  useEffect(() => {
+    setHasMore(displayedCount < filteredJobs.length);
+  }, [displayedCount, filteredJobs.length]);
+
+  // 무한 스크롤로 새 공고 로드 시 회사 이미지도 추가 로드 (모바일 전용)
+  useEffect(() => {
+    if (isMobile && displayedJobs.length > 0) {
+      fetchCompanyPhotos(displayedJobs);
+    }
+  }, [displayedCount, isMobile]);
+
   const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
   const paginatedJobs = filteredJobs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -458,17 +549,17 @@ const JobPostings: React.FC = () => {
           </div>
         )}
         {/* ✅ 필터 드롭다운 */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 mb-3">
+        <div className="flex items-center gap-2 mb-3 max-w-[390px] md:max-w-none">
           {/* 직무 필터 */}
-          <div className="relative" ref={positionRef}>
+          <div className="relative flex-1 md:flex-none" ref={positionRef}>
             <button
               onClick={() => toggleDropdown("position")}
               disabled={isLoading}
-              className="flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-sm sm:text-[15px] md:text-[16px] text-black min-w-[100px] sm:min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full md:w-auto flex items-center justify-between px-2 md:px-4 py-1.5 md:py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-xs md:text-[16px] text-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="truncate">{getDisplayLabel("position")}</span>
+              <span className="truncate text-xs md:text-base">{getDisplayLabel("position")}</span>
               <ChevronDownIcon
-                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 transition-transform flex-shrink-0 ${openDropdown === "position" ? "rotate-180" : ""}`}
+                className={`w-3 md:w-4 h-3 md:h-4 text-gray-500 transition-transform flex-shrink-0 ${openDropdown === "position" ? "rotate-180" : ""}`}
               />
             </button>
             {openDropdown === "position" && (
@@ -487,15 +578,15 @@ const JobPostings: React.FC = () => {
             )}
           </div>
           {/* 경력 필터 */}
-          <div className="relative" ref={experienceRef}>
+          <div className="relative flex-1 md:flex-none" ref={experienceRef}>
             <button
               onClick={() => toggleDropdown("experience")}
               disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-[16px] text-black min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full md:w-auto flex items-center justify-between px-2 md:px-4 py-1.5 md:py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-xs md:text-[16px] text-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{getDisplayLabel("experience")}</span>
+              <span className="truncate text-xs md:text-base">{getDisplayLabel("experience")}</span>
               <ChevronDownIcon
-                className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === "experience" ? "rotate-180" : ""
+                className={`w-3 md:w-4 h-3 md:h-4 text-gray-500 transition-transform ${openDropdown === "experience" ? "rotate-180" : ""
                   }`}
               />
             </button>
@@ -515,15 +606,15 @@ const JobPostings: React.FC = () => {
             )}
           </div>
           {/* 학력 필터 */}
-          <div className="relative" ref={educationRef}>
+          <div className="relative flex-1 md:flex-none" ref={educationRef}>
             <button
               onClick={() => toggleDropdown("education")}
               disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-[16px] text-black min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full md:w-auto flex items-center justify-between px-2 md:px-4 py-1.5 md:py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-xs md:text-[16px] text-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{getDisplayLabel("education")}</span>
+              <span className="truncate text-xs md:text-base">{getDisplayLabel("education")}</span>
               <ChevronDownIcon
-                className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === "education" ? "rotate-180" : ""}`}
+                className={`w-3 md:w-4 h-3 md:h-4 text-gray-500 transition-transform ${openDropdown === "education" ? "rotate-180" : ""}`}
               />
             </button>
             {openDropdown === "education" && (
@@ -542,15 +633,15 @@ const JobPostings: React.FC = () => {
             )}
           </div>
           {/* 희망지역 필터 */}
-          <div className="relative" ref={locationRef}>
+          <div className="relative flex-1 md:flex-none" ref={locationRef}>
             <button
               onClick={() => toggleDropdown("location")}
               disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-[16px] text-black min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full md:w-auto flex items-center justify-between px-2 md:px-4 py-1.5 md:py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-xs md:text-[16px] text-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{getDisplayLabel("location")}</span>
+              <span className="truncate text-xs md:text-base">{getDisplayLabel("location")}</span>
               <ChevronDownIcon
-                className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === "location" ? "rotate-180" : ""}`}
+                className={`w-3 md:w-4 h-3 md:h-4 text-gray-500 transition-transform ${openDropdown === "location" ? "rotate-180" : ""}`}
               />
             </button>
             {openDropdown === "location" && (
@@ -582,12 +673,78 @@ const JobPostings: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="divide-y divide-gray-200">
-              {paginatedJobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="flex flex-col sm:flex-row justify-between items-start hover:bg-gray-50 px-2 sm:px-4 md:px-6 rounded-md transition py-4 sm:py-5 md:py-[26px] gap-3 sm:gap-0"
-                >
+            {/* 모바일: 카드 형식 */}
+            {isMobile ? (
+              <div className="flex flex-wrap gap-3 pb-6">
+                {displayedJobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className="relative w-[180px] h-[200px] bg-white border border-gray-200 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleJobClick(job.id)}
+                  >
+                    {/* 회사 이미지 - 메인페이지와 동일한 크기/비율 */}
+                    <div className="w-full h-[100px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-3">
+                      {companyPhotos[job.companyId] ? (
+                        <img
+                          src={companyPhotos[job.companyId]}
+                          alt={job.companyName}
+                          className="max-w-[70%] max-h-[70%] object-contain"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent && !parent.querySelector('.error-message')) {
+                              const errorDiv = document.createElement('div');
+                              errorDiv.className = 'error-message w-full h-full flex items-center justify-center text-gray-400 text-sm';
+                              errorDiv.textContent = '이미지 없음';
+                              parent.appendChild(errorDiv);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+                          이미지 없음
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 텍스트 정보 */}
+                    <div className="pt-2.5 pb-2.5 px-3">
+                      <p className="font-bold text-gray-800 text-sm truncate">{job.companyName}</p>
+                      <p className="text-gray-900 font-normal text-xs mt-1 truncate">
+                        {job.title}
+                      </p>
+                      <p className="text-gray-500 text-[10px] truncate mt-1">
+                        {job.position} / {job.careerLevel}
+                      </p>
+                      <p className="text-gray-400 text-[11px] text-right mt-1.5">
+                        ~{job.endAt?.replace(/-/g, '.')}
+                      </p>
+                    </div>
+
+                    {/* 북마크 버튼 */}
+                    <button
+                      onClick={(e) => handleBookmarkClick(e, job.id)}
+                      className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors z-10"
+                      title={scrappedJobs.has(job.id) ? "북마크 해제" : "북마크 추가"}
+                    >
+                      {scrappedJobs.has(job.id) ? (
+                        <BookmarkSolidIcon className="w-4 h-4 text-[#006AFF]" />
+                      ) : (
+                        <BookmarkIcon className="w-4 h-4 text-gray-600" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* 데스크톱: 리스트 형식 */
+              <div className="divide-y divide-gray-200">
+                {paginatedJobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className="flex flex-col sm:flex-row justify-between items-start hover:bg-gray-50 px-2 sm:px-4 md:px-6 rounded-md transition py-4 sm:py-5 md:py-[26px] gap-3 sm:gap-0"
+                  >
                   {/* 왼쪽: 회사명 + 세로선 + 공고 정보 */}
                   <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-4 cursor-pointer w-full sm:w-auto" onClick={() => handleJobClick(job.id)}>
                     {/* 회사명 */}
@@ -643,67 +800,93 @@ const JobPostings: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
-            {/* ✅ 페이지네이션 */}
-            <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
-              {/* 처음으로 */}
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronDoubleLeftIcon className="w-5 h-5" />
-              </button>
-              {/* 이전 */}
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeftIcon className="w-5 h-5" />
-              </button>
-              {/* 페이지 번호 */}
-              {(() => {
-                const pages = [];
-                const maxVisible = 5;
-                let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-                if (endPage - startPage + 1 < maxVisible) {
-                  startPage = Math.max(1, endPage - maxVisible + 1);
-                }
-                for (let i = startPage; i <= endPage; i++) {
-                  pages.push(
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
-                        ? "bg-white text-[#006AFF] border-[#006AFF]"
-                        : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
-                        }`}
-                    >
-                      {i}
-                    </button>
-                  );
-                }
-                return pages;
-              })()}
-              {/* 다음 */}
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRightIcon className="w-5 h-5" />
-              </button>
-              {/* 마지막으로 */}
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronDoubleRightIcon className="w-5 h-5" />
-              </button>
-            </div>
+              </div>
+            )}
+
+            {/* 모바일: 무한 스크롤 UI */}
+            {isMobile && (
+              <>
+                {/* 로딩 인디케이터 & Observer 타겟 */}
+                {hasMore && (
+                  <div ref={observerTarget} className="py-8 flex justify-center">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#006AFF]"></div>
+                      <span className="text-sm">더 불러오는 중...</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 모든 데이터 로드 완료 */}
+                {!hasMore && filteredJobs.length > 10 && (
+                  <div className="py-8 text-center text-gray-500 text-sm">
+                    모든 채용공고를 불러왔습니다. (총 {filteredJobs.length}개)
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* 데스크톱: 페이지네이션 */}
+            {!isMobile && (
+              <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
+                {/* 처음으로 */}
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronDoubleLeftIcon className="w-5 h-5" />
+                </button>
+                {/* 이전 */}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeftIcon className="w-5 h-5" />
+                </button>
+                {/* 페이지 번호 */}
+                {(() => {
+                  const pages = [];
+                  const maxVisible = 5;
+                  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                  if (endPage - startPage + 1 < maxVisible) {
+                    startPage = Math.max(1, endPage - maxVisible + 1);
+                  }
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i)}
+                        className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
+                          ? "bg-white text-[#006AFF] border-[#006AFF]"
+                          : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
+                          }`}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+                  return pages;
+                })()}
+                {/* 다음 */}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRightIcon className="w-5 h-5" />
+                </button>
+                {/* 마지막으로 */}
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronDoubleRightIcon className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </>
         )}
         {/* ✅ ApplyModal은 항상 렌더링 가능하도록 */}
