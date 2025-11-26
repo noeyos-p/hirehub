@@ -51,7 +51,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 flex justify-center">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
       <div className="w-full max-w-[1440px] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] flex items-center justify-between py-3">
         <div className="flex items-center space-x-4 sm:space-x-6 md:space-x-8 lg:space-x-10 min-w-0">
           {/* 로고 */}
