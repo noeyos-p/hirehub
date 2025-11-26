@@ -1,6 +1,7 @@
 version: '3.9'
+
 services:
-   backend:
+  backend:
     image: ${BACKEND_IMAGE}
     container_name: backend
     env_file:
@@ -8,18 +9,20 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: aws
       RDS_ENDPOINT: ${RDS_ENDPOINT}
-      JWT_SECRET: ${JWT_SECRET}         # ✅ 이 줄 추가
+      JWT_SECRET: ${JWT_SECRET}
       JAVA_OPTS: "--add-opens java.base/java.lang=ALL-UNNAMED"
     restart: unless-stopped
     ports:
       - "8080:8080"
-  
-   frontend:
+    networks:
+      - hirehub-network
+
+  frontend:
     image: ${FRONTEND_IMAGE}
     container_name: frontend
     depends_on:
       - backend
-      - n8n
+      - fastapi
     restart: unless-stopped
     ports:
       - "80:80"
@@ -27,15 +30,20 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /etc/ssl/certs:/etc/ssl/certs:ro
-    
-   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.113.3
-    container_name: n8n
-    environment:
-      - N8N_BASIC_AUTH_ACTIVE=false
-      - N8N_HOST=n8n.noeyos.store
-      - N8N_PORT=5678
-      - WEBHOOK_URL=https://n8n.noeyos.store/
+    networks:
+      - hirehub-network
+
+  fastapi:
+    image: ${FASTAPI_IMAGE}
+    container_name: fastapi
+    env_file:
+      - .env.prod
     ports:
-      - "8081:5678"   # 필요 없으면 삭제해도 됨 (nginx로만 접근 시)
+      - "8000:8000"
     restart: unless-stopped
+    networks:
+      - hirehub-network
+
+networks:
+  hirehub-network:
+    driver: bridge

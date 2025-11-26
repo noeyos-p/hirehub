@@ -18,7 +18,7 @@ interface FaqCategory {
 }
 
 interface Message {
-  role: 'BOT' | 'USER' | 'AGENT' | 'SYS';
+  role: 'BOT' | 'USER' | 'AGENT' | 'SYS' | 'AI';
   text: string;
 }
 
@@ -26,7 +26,7 @@ const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10분
 const MESSAGE_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5분마다 정리
 
 const ChatBot: React.FC = () => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
   // 영구 저장 상태
   const roomId = useMemo(() => {
@@ -57,6 +57,7 @@ const ChatBot: React.FC = () => {
     const stored = localStorage.getItem('chatbot-isAgentConnected');
     return stored === 'true';
   });
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Refs
   const stompRef = useRef<CompatClient | null>(null);
@@ -64,6 +65,16 @@ const ChatBot: React.FC = () => {
   const processedMessagesRef = useRef<Map<string, number>>(new Map());
   const cleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const userInfo = useRef(getUserInfo());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 자동 스크롤
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // localStorage 동기화
   useEffect(() => {
@@ -78,7 +89,8 @@ const ChatBot: React.FC = () => {
   useEffect(() => {
     const controller = new AbortController();
     
-    fetch(`${API_BASE_URL}/api/chatbot/faq/categories`, {
+    // ✅ FaqController의 실제 경로: /api/faq
+    fetch(`${API_BASE_URL}/api/faq`, {
       signal: controller.signal
     })
       .then(res => res.ok ? res.json() : Promise.reject(res.status))
@@ -171,7 +183,6 @@ const ChatBot: React.FC = () => {
           try {
             const body = JSON.parse(frame.body);
             
-            // ✅ HelpDto 형식 처리 (content 필드 사용)
             const content = body.content || body.text;
             const role = body.role || 'BOT';
             
@@ -244,7 +255,6 @@ const ChatBot: React.FC = () => {
         if (body.text) {
           const role = (body.role as 'BOT' | 'USER' | 'AGENT' | 'SYS') ?? 'BOT';
           
-          // SYS 메시지도 표시
           if (role === 'SYS') {
             setMessages(prev => [...prev, { role: 'SYS', text: body.text }]);
           } else {
@@ -258,23 +268,84 @@ const ChatBot: React.FC = () => {
     }
   }, [resetInactivityTimer]);
 
-  // 메시지 전송
-  const sendText = useCallback(() => {
-    if (!stompRef.current?.connected || !input.trim() || !isAgentConnected) return;
+  // AI 챗봇에 질문하기
+  const askAI = useCallback(async (question: string) => {
+    if (!question.trim()) return;
 
-    stompRef.current.send(
-      `/app/support.send/${roomId}`,
-      {},
-      JSON.stringify({ 
-        type: "TEXT", 
-        role: "USER", 
-        text: input,
-        userId: userInfo.current.userId 
-      })
-    );
+    setIsAiLoading(true);
+    
+    // 사용자 메시지 추가
+    setMessages(prev => [...prev, { role: 'USER', text: question }]);
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      // 토큰이 있으면 추가
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ message: question })
+      });
+
+      if (!response.ok) {
+        console.error('AI 응답 상태 코드:', response.status);
+        const errorText = await response.text();
+        console.error('AI 응답 에러 내용:', errorText);
+        throw new Error(`AI 응답 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // AI 응답 추가
+      setMessages(prev => [...prev, { 
+        role: 'AI', 
+        text: data.answer || '답변을 생성할 수 없습니다.' 
+      }]);
+
+    } catch (error) {
+      console.error('AI 질문 오류:', error);
+      setMessages(prev => [...prev, { 
+        role: 'SYS', 
+        text: 'AI 응답을 가져오는 중 오류가 발생했습니다. Spring 서버와 FastAPI 서버가 모두 실행 중인지 확인해주세요.' 
+      }]);
+    } finally {
+      setIsAiLoading(false);
+    }
+  }, [API_BASE_URL]);
+
+  // 메시지 전송 (AI 또는 상담사)
+  const sendMessage = useCallback(() => {
+    if (!input.trim()) return;
+
+    if (isAgentConnected) {
+      // 상담사 연결 시 WebSocket으로 전송
+      if (!stompRef.current?.connected) return;
+
+      stompRef.current.send(
+        `/app/support.send/${roomId}`,
+        {},
+        JSON.stringify({ 
+          type: "TEXT", 
+          role: "USER", 
+          text: input,
+          userId: userInfo.current.userId 
+        })
+      );
+      resetInactivityTimer();
+    } else {
+      // AI 챗봇에게 질문
+      askAI(input);
+    }
+
     setInput("");
-    resetInactivityTimer();
-  }, [input, isAgentConnected, roomId, resetInactivityTimer]);
+  }, [input, isAgentConnected, roomId, resetInactivityTimer, askAI]);
 
   // 핸드오프 요청
   const requestHandoff = useCallback(() => {
@@ -405,20 +476,42 @@ const ChatBot: React.FC = () => {
         </div>
 
         <div className="bg-gray-100 rounded-lg p-6 min-h-[600px] flex flex-col">
-          <div className="flex-1 space-y-6 mb-6 overflow-y-auto">
+          <div className="flex-1 space-y-6 mb-6 overflow-y-auto max-h-[500px]">
             {messages.map((m, idx) => (
               <div key={idx} className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-gray-400 rounded-full flex-shrink-0" />
+                <div className={`w-10 h-10 rounded-full flex-shrink-0 ${
+                  m.role === 'AI' ? 'bg-purple-400' :
+                  m.role === 'AGENT' ? 'bg-green-400' :
+                  m.role === 'USER' ? 'bg-blue-400' :
+                  m.role === 'SYS' ? 'bg-yellow-400' : 'bg-gray-400'
+                }`} />
                 <div>
                   <p className="text-sm font-medium text-gray-700 mb-1">
-                    {m.role === 'BOT' ? 'HireBot' : m.role === 'AGENT' ? '상담사' : m.role === 'SYS' ? '알림' : '나'}
+                    {m.role === 'AI' ? '🤖 AI 봇' : 
+                     m.role === 'BOT' ? 'HireBot' : 
+                     m.role === 'AGENT' ? '👨‍💼 상담사' : 
+                     m.role === 'SYS' ? '📢 알림' : '👤 나'}
                   </p>
-                  <div className="bg-white rounded-lg px-4 py-3 shadow-sm max-w-md">
+                  <div className={`rounded-lg px-4 py-3 shadow-sm max-w-md ${
+                    m.role === 'USER' ? 'bg-blue-100' : 'bg-white'
+                  }`}>
                     <p className="text-sm text-gray-800">{m.text}</p>
                   </div>
                 </div>
               </div>
             ))}
+
+            {isAiLoading && (
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-purple-400 rounded-full flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">🤖 AI 봇</p>
+                  <div className="bg-white rounded-lg px-4 py-3 shadow-sm max-w-md">
+                    <p className="text-sm text-gray-800">답변을 생성하고 있습니다...</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* FAQ 아코디언 */}
             <div className="ml-13 space-y-3">
@@ -492,6 +585,7 @@ const ChatBot: React.FC = () => {
                 </div>
               )}
             </div>
+            <div ref={messagesEndRef} />
           </div>
 
           {/* 입력 영역 */}
@@ -500,22 +594,32 @@ const ChatBot: React.FC = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && isAgentConnected) sendText(); }}
-              placeholder={isAgentConnected ? "문의 사항을 남겨주세요" : "상담사 연결 후 이용 가능합니다"}
-              disabled={!isAgentConnected}
+              onKeyDown={(e) => { if (e.key === 'Enter') sendMessage(); }}
+              placeholder={
+                isAgentConnected 
+                  ? "상담사에게 메시지를 입력하세요" 
+                  : isAiLoading 
+                    ? "AI가 답변 중입니다..." 
+                    : "AI 챗봇에게 질문하세요"
+              }
+              disabled={isAiLoading}
               className={`w-full bg-white border border-gray-300 rounded-full px-6 py-4 pr-14 text-sm focus:outline-none ${
-                !isAgentConnected ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                isAiLoading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
               }`}
             />
             <button
-              onClick={sendText}
-              disabled={!isAgentConnected}
+              onClick={sendMessage}
+              disabled={isAiLoading}
               className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition ${
-                isAgentConnected ? 'text-gray-400 hover:text-gray-600' : 'text-gray-300 cursor-not-allowed'
+                isAiLoading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               <PaperAirplaneIcon className="w-5 h-5" />
             </button>
+          </div>
+
+          <div className="text-xs text-gray-500 mt-2 text-center">
+            {isAgentConnected ? '👨‍💼 상담사 모드' : '🤖 AI 챗봇 모드'}
           </div>
         </div>
 
@@ -529,8 +633,8 @@ const ChatBot: React.FC = () => {
 
 function getInitialMessages(): Message[] {
   return [
-    { role: 'BOT', text: '안녕하세요 반갑습니다.' },
-    { role: 'BOT', text: '카테고리를 선택하여 자주 묻는 질문을 확인해보세요.' },
+    { role: 'AI', text: '안녕하세요! AI 챗봇입니다. 무엇을 도와드릴까요?' },
+    { role: 'AI', text: '카테고리를 선택하여 자주 묻는 질문을 확인하거나, 직접 질문해주세요.' },
   ];
 }
 
