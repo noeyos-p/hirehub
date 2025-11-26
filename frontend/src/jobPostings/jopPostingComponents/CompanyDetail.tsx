@@ -212,58 +212,58 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex gap-6 max-w-[1440px] mx-auto px-[55px] py-6">
+      <div className="flex gap-4 md:gap-6 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-4 md:py-6">
         {/* 왼쪽: 메인 컨텐츠 */}
         <div className="flex-1">
-          <div className="bg-white rounded-lg shadow p-8">
-            <button onClick={onBack} className="text-sm text-blue-600 mb-4 hover:underline">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8">
+            <button onClick={onBack} className="text-xs sm:text-sm text-blue-600 mb-3 md:mb-4 hover:underline">
               ← 목록으로 돌아가기
             </button>
 
             {/* 회사명 및 즐겨찾기 */}
-            <div className="flex items-start justify-between mb-2">
+            <div className="flex flex-col sm:flex-row items-start justify-between mb-2 gap-3 sm:gap-0">
               {/* 왼쪽: 회사 정보 */}
-              <div className="flex flex-col items-start"> {/* 🔹 세로 배치 + 왼쪽 정렬 */}
+              <div className="flex flex-col items-start w-full sm:w-auto">
                 {/* 회사 사진 */}
                 {company.photo ? (
                   <img
                     src={company.photo}
                     alt={company.name}
-                    className="w-full h-auto object-cover rounded-lg mb-2 max-w-[150px]"
+                    className="w-full sm:w-auto h-auto object-cover rounded-lg mb-2 max-w-[120px] sm:max-w-[150px]"
                   />
                 ) : (
-                  <div className="w-full h-64 bg-gray-200 rounded-lg mb-2 flex items-center justify-center">
-                    <PhotoIcon className="w-16 h-16 text-gray-400" />
-                    <span className="text-gray-500 ml-2">기업 사진</span>
+                  <div className="w-full sm:w-auto h-48 sm:h-56 md:h-64 bg-gray-200 rounded-lg mb-2 flex flex-col items-center justify-center">
+                    <PhotoIcon className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-gray-400" />
+                    <span className="text-xs sm:text-sm text-gray-500 mt-2">기업 사진</span>
                   </div>
                 )}
 
                 {/* 회사 이름 */}
-                <h1 className="text-2xl font-semibold text-left mt-[12px]">{company.name}</h1> {/* 🔹 왼쪽 정렬 */}
+                <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-left mt-2 sm:mt-[12px]">{company.name}</h1>
               </div>
             </div>
             {/* 평균 평점 */}
             {Array.isArray(reviews) && reviews.length > 0 && (
-              <div className="flex items-center space-x-2 mb-4 mt-[-8px]">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 md:mb-4 mt-[-8px]">
                 <RatingStars score={Math.round(averageRating)} />
-                <span className="text-lg font-semibold text-gray-700">{averageRating.toFixed(1)}</span>
-                <span className="text-sm text-gray-500">({reviews.length}개의 리뷰)</span>
+                <span className="text-base sm:text-lg font-semibold text-gray-700">{averageRating.toFixed(1)}</span>
+                <span className="text-xs sm:text-sm text-gray-500">({reviews.length}개의 리뷰)</span>
               </div>
             )}
 
-            <p className="text-gray-600 mb-6">{company.content}</p>
+            <p className="text-sm sm:text-base text-gray-600 mb-4 md:mb-6">{company.content}</p>
 
             {/* 리뷰 섹션 */}
-            <div className="mt-10">
+            <div className="mt-6 md:mt-10">
 
               {/* ⭐ 리뷰 작성 영역 */}
               {isLoggedIn ? (
-                <div className="border border-gray-100 rounded-xl p-6 mb-5 bg-white w-full md:w-[49%]">
-                  <h3 className="text-lg font-semibold mb-4">리뷰 작성</h3>
+                <div className="border border-gray-100 rounded-xl p-4 sm:p-5 md:p-6 mb-4 md:mb-5 bg-white w-full md:w-[49%]">
+                  <h3 className="text-base sm:text-lg font-semibold mb-3 md:mb-4">리뷰 작성</h3>
 
                   {/* 별점 선택 */}
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600 mb-2">별점을 선택해주세요</p>
+                  <div className="mb-3 md:mb-4">
+                    <p className="text-xs sm:text-sm text-gray-600 mb-2">별점을 선택해주세요</p>
                     <div className="flex items-center space-x-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -275,7 +275,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                           className="focus:outline-none transition-transform hover:scale-110"
                         >
                           <StarSolidIcon
-                            className={`w-8 h-8 ${star <= (hoverRating || newRating)
+                            className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 ${star <= (hoverRating || newRating)
                               ? "text-yellow-400"
                               : "text-gray-300"
                               }`}
@@ -283,32 +283,32 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                         </button>
                       ))}
                       {newRating > 0 && (
-                        <span className="ml-2 text-sm text-gray-600">{newRating}점</span>
+                        <span className="ml-2 text-xs sm:text-sm text-gray-600">{newRating}점</span>
                       )}
                     </div>
                   </div>
 
                   {/* 리뷰 입력 */}
-                  <div className="flex items-center border border-gray-300 rounded-lg px-4 py-2">
+                  <div className="flex items-center border border-gray-300 rounded-lg px-3 sm:px-4 py-2">
                     <input
                       type="text"
                       placeholder="기업 리뷰를 남겨주세요"
-                      className="flex-1 text-sm outline-none"
+                      className="flex-1 text-xs sm:text-sm outline-none"
                       value={newReview}
                       onChange={(e) => setNewReview(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && handleAddReview()}
                     />
                     <button
                       onClick={handleAddReview}
-                      className="ml-2 text-sm text-gray-600 hover:text-gray-900"
+                      className="ml-2 text-sm sm:text-base text-gray-600 hover:text-gray-900"
                     >
                       ➤
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="border border-gray-300 rounded-lg p-6 mb-10 bg-gray-50 text-center">
-                  <p className="text-gray-600">
+                <div className="border border-gray-300 rounded-lg p-4 sm:p-5 md:p-6 mb-6 md:mb-10 bg-gray-50 text-center">
+                  <p className="text-sm sm:text-base text-gray-600">
                     리뷰를 작성하려면{" "}
                     <span className="text-blue-600 font-semibold">로그인</span>이 필요합니다.
                   </p>
@@ -319,15 +319,15 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
               <div className="mb-4">
 
                 {!Array.isArray(reviews) || reviews.length === 0 ? (
-                  <p className="text-gray-500 text-sm">아직 작성된 리뷰가 없습니다.</p>
+                  <p className="text-gray-500 text-xs sm:text-sm">아직 작성된 리뷰가 없습니다.</p>
                 ) : (
                   <>
                     {/* 리뷰 카드 그리드 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                       {visibleReviews.map((review) => (
                         <div
                           key={review.id}
-                          className="border border-gray-100 rounded-xl bg-white p-4 transition"
+                          className="border border-gray-100 rounded-xl bg-white p-3 sm:p-4 transition"
                         >
                           <div className="flex items-start space-x-3">
                             <div className="w-10 h-10 bg-gray-300 rounded-full flex-shrink-0"></div>

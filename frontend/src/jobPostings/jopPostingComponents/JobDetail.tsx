@@ -225,33 +225,33 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-        <div className="flex gap-6 max-w-[1440px] mx-auto px-[55px] py-6">
+        <div className="flex gap-4 md:gap-6 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-4 md:py-6">
           <div className="flex-1">
-            <div className="bg-white rounded-lg shadow p-8">
-              <button onClick={onBack} className="text-sm text-blue-600 mb-4 hover:underline">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8">
+              <button onClick={onBack} className="text-xs sm:text-sm text-blue-600 mb-3 md:mb-4 hover:underline">
                 ← 목록으로 돌아가기
               </button>
 
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center space-x-2">
-                  <Link to={`/company/${job.companyId}`} className="text-2xl font-semibold text-gray-800 cursor-pointer hover:underline">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2 sm:gap-0">
+                <div className="flex items-center space-x-1.5 sm:space-x-2">
+                  <Link to={`/company/${job.companyId}`} className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 cursor-pointer hover:underline truncate">
                     {job.companyName}
                   </Link>
-                  <button onClick={handleFavoriteClick} disabled={isFavoriteProcessing} className={`transition-all ${isFavoriteProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`} title={isFavorited ? "기업 즐겨찾기 해제" : "기업 즐겨찾기"}>
-                    {isFavorited ? <StarSolidIcon className="w-6 h-6 text-[#006AFF]" /> : <StarIcon className="w-6 h-6 text-gray-400 hover:text-[#006AFF]" />}
+                  <button onClick={handleFavoriteClick} disabled={isFavoriteProcessing} className={`transition-all flex-shrink-0 ${isFavoriteProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`} title={isFavorited ? "기업 즐겨찾기 해제" : "기업 즐겨찾기"}>
+                    {isFavorited ? <StarSolidIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#006AFF]" /> : <StarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 hover:text-[#006AFF]" />}
                   </button>
                 </div>
               </div>
 
-              <h1 className="text-xl font-bold text-gray-900 mb-2">{job.title}</h1>
-              <p className="text-sm text-gray-500 mb-6">조회수: {job.views}</p>
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2">{job.title}</h1>
+              <p className="text-xs sm:text-sm text-gray-500 mb-4 md:mb-6">조회수: {job.views}</p>
 
               {/* 공고 사진 */}
               {job.photo ? (
                 <img
                   src={job.photo}
                   alt={job.title}
-                  className="w-full h-auto object-cover rounded-lg mb-4 mx-auto max-w-[860px]"
+                  className="w-full h-auto object-cover rounded-lg mb-4 mx-auto max-w-full md:max-w-[860px]"
                   onLoad={() => console.log('✅ 이미지 로드 성공:', job.photo)}
                   onError={(e) => {
                     console.error('❌ 이미지 로드 실패:', job.photo);
@@ -259,14 +259,14 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                   }}
                 />
               ) : (
-                <div className="w-full h-64 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                  <PhotoIcon className="w-16 h-16 text-gray-400" />
+                <div className="w-full h-48 sm:h-56 md:h-64 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                  <PhotoIcon className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-gray-400" />
                 </div>
               )}
 
               {/* 상세 내용 */}
-              <div className="mt-10">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">상세 내용</h2>
+              <div className="mt-6 md:mt-10">
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">상세 내용</h2>
 
                 {job.content ? (
                   <div

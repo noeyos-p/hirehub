@@ -27,19 +27,17 @@ const MyPage: React.FC = () => {
   const activeComponent = tabs.find((t) => t.key === activeTab)?.component || <MyInfo />;
 
   return (
-    <div className="max-w-[1440px] mx-auto px-[55px]">
-      {/* ✅ 패딩 55px 추가 */}
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
       <div className="flex min-h-screen bg-white shadow-sm rounded-lg">
-        {/* ✅ 내부 컨테이너로 flex 및 bg 분리 */}
 
         {/* 좌측 탭 */}
-        <aside className="w-[250px] border-r border-gray-200 pt-[44px] pb-[44px] pl-[44px] bg-white">
-          <ul className="space-y-6">
+        <aside className="hidden lg:block w-[200px] xl:w-[250px] border-r border-gray-200 pt-6 md:pt-8 xl:pt-[44px] pb-6 md:pb-8 xl:pb-[44px] pl-6 md:pl-8 xl:pl-[44px] bg-white">
+          <ul className="space-y-4 md:space-y-5 xl:space-y-6">
             {tabs.map((t) => (
               <li
                 key={t.key}
                 onClick={() => navigate(`/myPage/${t.key}`)}
-                className={`text-[16px] cursor-pointer mb-[32px] hover:text-[#006AFF]
+                className={`text-sm md:text-[15px] xl:text-[16px] cursor-pointer mb-4 md:mb-6 xl:mb-[32px] hover:text-[#006AFF] transition
     ${activeTab === t.key ? "font-semibold text-black" : "text-gray-500"}
   `}
               >
@@ -51,7 +49,7 @@ const MyPage: React.FC = () => {
         </aside>
 
         {/* 본문 */}
-        <main className="flex-1 bg-gray-50 p-6">
+        <main className="flex-1 bg-gray-50 p-4 sm:p-5 md:p-6">
           <Routes>
             {/* ✅ 인덱스 라우트로 현재 탭 본문 렌더 */}
             <Route index element={activeComponent} />

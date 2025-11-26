@@ -137,45 +137,45 @@ const Resume = () => {
   }, [resumes, selectedIds]);
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">이력서 관리</h2>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">이력서 관리</h2>
         <button
           onClick={handleCreate}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-500 text-sm font-medium px-4 py-1.5 rounded-md"
+          className="bg-gray-200 hover:bg-gray-300 text-gray-500 text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap"
           disabled={loading}
         >
           이력서 작성
         </button>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5">
         {resumes.map((resume) => (
           <div
             key={resume.id}
-            className="flex items-center justify-between border-b border-gray-200 pb-4"
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-200 pb-3 sm:pb-4 gap-3 sm:gap-0"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <input
                 type="checkbox"
-                className="mt-[-2px] accent-blue-500"
+                className="mt-0 sm:mt-[-2px] accent-blue-500 flex-shrink-0"
                 checked={selectedIds.includes(resume.id)}
                 onChange={() => handleCheckboxChange(resume.id)}
                 disabled={loading || resume.locked}
               />
-              <div className="text-gray-900 font-semibold text-[16px] py-[20px]">
-                {resume.title}
+              <div className="text-gray-900 font-semibold text-sm sm:text-[15px] md:text-[16px] py-2 sm:py-3 md:py-[20px] min-w-0 flex-1">
+                <span className="truncate block sm:inline">{resume.title}</span>
                 {resume.locked && (
-                  <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 align-middle">
+                  <span className="ml-0 sm:ml-2 mt-1 sm:mt-0 inline-block text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 align-middle">
                     제출됨
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
               <button
-                className={`text-sm px-4 py-1.5 rounded-md ${resume.locked
+                className={`text-xs sm:text-sm px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap ${resume.locked
                   ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                   }`}
@@ -184,23 +184,23 @@ const Resume = () => {
               >
                 {resume.locked ? "조회하기" : "수정하기"}
               </button>
-              <span className="text-sm text-gray-500">- {dateOf(resume)}</span>
+              <span className="text-xs sm:text-sm text-gray-500">- {dateOf(resume)}</span>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="flex justify-between mt-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 sm:mt-6 gap-2 sm:gap-0">
         <button
           onClick={handleSelectAll}
-          className="text-sm text-gray-600 hover:text-gray-800"
+          className="text-xs sm:text-sm text-gray-600 hover:text-gray-800"
         >
           {allSelected ? "전체해제" : "전체선택"}
         </button>
         <button
           onClick={handleDelete}
           disabled={!selectedIds.length || loading}
-          className="text-red-500 hover:text-red-600 text-sm font-medium disabled:opacity-50"
+          className="text-red-500 hover:text-red-600 text-xs sm:text-sm font-medium disabled:opacity-50"
         >
           삭제
         </button>

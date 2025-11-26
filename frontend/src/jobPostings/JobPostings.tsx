@@ -427,21 +427,10 @@ const JobPostings: React.FC = () => {
     );
   };
 
-  // ✅ JobDetail 화면 조건문 제거
-  // URL 기반 라우팅으로 대체하므로 이 조건문은 필요 없음
-  // if (selectedJobId) {
-  //   const selectedJob = jobListings.find((j) => j.id === selectedJobId);
-  //   return (
-  //     <>
-  //       <JobDetail jobId={selectedJobId} onBack={() => setSelectedJobId(null)} />
-  //       {showApplyModal && <ApplyModal />}
-  //     </>
-  //   );
-  // }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1440px] mx-auto px-[55px] py-3">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-3">
         {error && (
           <div className="mb-4 px-4 py-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">{error}</div>
         )}
@@ -469,17 +458,17 @@ const JobPostings: React.FC = () => {
           </div>
         )}
         {/* ✅ 필터 드롭다운 */}
-        <div className="flex flex-wrap items-center gap-4 mb-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 mb-3">
           {/* 직무 필터 */}
           <div className="relative" ref={positionRef}>
             <button
               onClick={() => toggleDropdown("position")}
               disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-[16px] text-black min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-sm sm:text-[15px] md:text-[16px] text-black min-w-[100px] sm:min-w-[120px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{getDisplayLabel("position")}</span>
+              <span className="truncate">{getDisplayLabel("position")}</span>
               <ChevronDownIcon
-                className={`w-4 h-4 text-gray-500 transition-transform ${openDropdown === "position" ? "rotate-180" : ""}`}
+                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 transition-transform flex-shrink-0 ${openDropdown === "position" ? "rotate-180" : ""}`}
               />
             </button>
             {openDropdown === "position" && (
@@ -597,43 +586,43 @@ const JobPostings: React.FC = () => {
               {paginatedJobs.map((job) => (
                 <div
                   key={job.id}
-                  className="flex justify-between items-start hover:bg-gray-50 px-2 rounded-md transition py-[26px] px-[24px]"
+                  className="flex flex-col sm:flex-row justify-between items-start hover:bg-gray-50 px-2 sm:px-4 md:px-6 rounded-md transition py-4 sm:py-5 md:py-[26px] gap-3 sm:gap-0"
                 >
                   {/* 왼쪽: 회사명 + 세로선 + 공고 정보 */}
-                  <div className="flex-1 flex gap-4 cursor-pointer" onClick={() => handleJobClick(job.id)}>
-                    {/* 회사명 (너비 고정) */}
-                    <div className="w-[160px] flex items-center gap-2">
-                      <p className="text-[20px] font-semibold text-gray-900 truncate">{job.companyName}</p>
+                  <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-4 cursor-pointer w-full sm:w-auto" onClick={() => handleJobClick(job.id)}>
+                    {/* 회사명 */}
+                    <div className="w-full sm:w-[140px] md:w-[160px] flex items-center gap-2">
+                      <p className="text-base sm:text-lg md:text-[20px] font-semibold text-gray-900 truncate">{job.companyName}</p>
                       <button
                         onClick={(e) => handleFavoriteClick(e, job.companyId)}
                         className="transition-all hover:scale-110 flex-shrink-0"
                         title={favoritedCompanies.has(job.companyId) ? "즐겨찾기 해제" : "즐겨찾기"}
                       >
                         {favoritedCompanies.has(job.companyId) ? (
-                          <StarSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                          <StarSolidIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#006AFF]" />
                         ) : (
-                          <StarIcon className="w-5 h-5 text-gray-400 hover:text-[#006AFF]" />
+                          <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-[#006AFF]" />
                         )}
                       </button>
                     </div>
                     {/* 세로 구분선 */}
-                    <div className="w-px bg-gray-300"></div>
+                    <div className="hidden sm:block w-px bg-gray-300"></div>
                     {/* 공고 정보 */}
-                    <div className="flex-1 ml-[20px]">
-                      <p className="text-[16px] font-normal text-gray-800 mb-[9px]">{job.title}</p>
-                      <p className="text-sm text-gray-500">
+                    <div className="flex-1 sm:ml-[20px]">
+                      <p className="text-sm sm:text-[15px] md:text-[16px] font-normal text-gray-800 mb-1 sm:mb-[9px] line-clamp-2 sm:line-clamp-1">{job.title}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 truncate">
                         {job.position && <span>{job.position} / </span>}
                         {job.careerLevel} / {job.education} / {job.location}
                       </p>
                     </div>
                   </div>
                   {/* 오른쪽: 조회수, 스크랩, 날짜 */}
-                  <div className="flex flex-col items-end gap-2 ml-4">
+                  <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 ml-0 sm:ml-4 w-full sm:w-auto justify-between sm:justify-start">
                     {/* 조회수 + 스크랩 */}
-                    <div className="flex items-center gap-3 mb-[9px]">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-0 sm:mb-[9px]">
                       <div className="flex items-center gap-1 text-gray-500">
-                        <EyeIcon className="w-4 h-4" />
-                        <span className="text-sm">{job.views ?? 0}</span>
+                        <EyeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="text-xs sm:text-sm">{job.views ?? 0}</span>
                       </div>
                       <button
                         onClick={(e) => handleBookmarkClick(e, job.id)}
@@ -641,16 +630,16 @@ const JobPostings: React.FC = () => {
                         title={scrappedJobs.has(job.id) ? "북마크 해제" : "북마크 추가"}
                       >
                         {scrappedJobs.has(job.id) ? (
-                          <BookmarkSolidIcon className="w-5 h-5 text-[#006AFF]" />
+                          <BookmarkSolidIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#006AFF]" />
                         ) : (
-                          <BookmarkIcon className="w-5 h-5 text-gray-600 hover:text-[#006AFF]" />
+                          <BookmarkIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 hover:text-[#006AFF]" />
                         )}
                       </button>
                     </div>
                     {/* 날짜 */}
-                    <span className="text-sm text-gray-600 whitespace-nowrap">
+                    <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
                       {job.startAt?.replace(/-/g, ".")} - {job.endAt?.replace(/-/g, ".")}
-                    </span>
+                    </p>
                   </div>
                 </div>
               ))}
@@ -688,8 +677,8 @@ const JobPostings: React.FC = () => {
                       key={i}
                       onClick={() => setCurrentPage(i)}
                       className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
-                          ? "bg-white text-[#006AFF] border-[#006AFF]"
-                          : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
+                        ? "bg-white text-[#006AFF] border-[#006AFF]"
+                        : "bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]"
                         }`}
                     >
                       {i}
