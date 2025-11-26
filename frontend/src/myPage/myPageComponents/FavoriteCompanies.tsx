@@ -204,7 +204,7 @@ const FavoriteCompanies: React.FC = () => {
 
   return (
     <div className="flex">
-      <div className="flex-1 px-6 py-10 max-w-4xl mx-auto">
+      <div className="flex-1 px-6 py-10 max-w-3xl lg:max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold text-gray-900">관심 기업</h2>
           <button onClick={handleSelectAll} className="text-sm text-gray-600 hover:text-gray-800">

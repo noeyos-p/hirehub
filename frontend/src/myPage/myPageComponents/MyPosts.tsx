@@ -65,7 +65,7 @@ const MyPosts: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-3xl lg:max-w-4xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">작성한 게시물</h2>
         <button
