@@ -323,7 +323,7 @@ const MobileChatPage: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white pb-16">
+    <div className="h-screen flex flex-col bg-white">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
@@ -385,7 +385,7 @@ const MobileChatPage: React.FC = () => {
         ) : (
           <>
             {/* 메시지 목록 */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-[140px]">
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 text-sm mt-8">
                   채팅 내역이 없습니다. 첫 메시지를 보내보세요!
@@ -455,9 +455,9 @@ const MobileChatPage: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* 입력 영역 */}
-            <div className="p-3 bg-white border-t border-gray-200">
-              <div className="flex gap-2 items-center">
+            {/* 입력 영역 - 고정 위치 */}
+            <div className="fixed bottom-16 left-0 right-0 p-3 bg-white border-t border-gray-200 safe-area-inset-bottom">
+              <div className="flex gap-2 items-center max-w-screen-xl mx-auto">
                 <input
                   type="text"
                   value={inputMessage}
@@ -465,12 +465,13 @@ const MobileChatPage: React.FC = () => {
                   onKeyPress={handleKeyPress}
                   placeholder="메세지를 입력하세요"
                   disabled={!isConnected}
-                  className="flex-1 px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:border-blue-500 text-sm disabled:bg-gray-100"
+                  className="flex-1 px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:border-blue-500 text-base disabled:bg-gray-100"
+                  style={{ fontSize: '16px' }}
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim() || !isConnected}
-                  className="p-2.5 text-gray-500 hover:text-blue-500 disabled:text-gray-300 transition-colors"
+                  className="p-2.5 text-gray-500 hover:text-blue-500 disabled:text-gray-300 transition-colors flex-shrink-0"
                   title="메시지 전송"
                 >
                   <svg
