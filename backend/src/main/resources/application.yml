@@ -1,6 +1,10 @@
 server:
   port: 8080
 
+# ★ AI 서버 URL 추가
+ai:
+  server-url: http://localhost:8000  # FastAPI 서버 주소
+
 aws:
   s3:
     bucket: hirehub-s3-bucket
@@ -22,7 +26,6 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQL8Dialect
 
-  # SPA라면 thymeleaf 설정은 무의미 → 제거 가능 (남겨둬도 무해)
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
@@ -41,14 +44,13 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.springframework.security: DEBUG
 
-
-# ★ 프론트 기준 URL (구글 로그인 성공 시 여기로 보냄)
 app:
   jwt:
     secret: ${JWT_SECRET}
     access-expire-seconds: 360000
   front:
-    base-url: "https://noeyos.store"   # ← 필요에 따라 5173으로 바꾸면 됨
+    base-url: "http://localhost:3000"  # ← 개발환경에서는 3000 포트로 설정
   cors:
     allowed-origins:
-      - "https://noeyos.store"
+      - "http://localhost:3000"
+      - "http://localhost:5173"

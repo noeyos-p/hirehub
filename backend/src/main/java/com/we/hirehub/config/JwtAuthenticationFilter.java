@@ -39,6 +39,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/public/")
                 // ❌ 온보딩 제거 - 인증 필요하도록 변경
                 // || path.startsWith("/api/onboarding/")
+                || path.startsWith("/api/ai/")           // ✅ 추가
+                || path.startsWith("/api/faq")           // ✅ 추가
+                || path.startsWith("/api/chatbot/")      // ✅ 추가
                 || path.startsWith("/swagger-ui/")
                 || path.startsWith("/v3/api-docs/")
                 || path.startsWith("/login")
@@ -46,6 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.equals("/")
                 || path.startsWith("/ws/")
                 || path.equals("/api/ads")  // ✅ 일반 사용자 광고 조회 추가
+                || path.equals("/health")                // ✅ 추가 (선택사항)
         ) {
             log.debug("🚫 인증 불필요 경로 → JWT 검증 생략: {}", path);
             filterChain.doFilter(request, response);

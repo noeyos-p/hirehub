@@ -35,8 +35,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // ✅ 인증 없이 접근 가능한 경로
                         .requestMatchers(
+                                "/api/ai/**",           // AI 챗봇 API
+                                "/health",              // 헬스체크
                                 "/ws/**",
-                                "/api/chatbot/faq", "/api/chatbot/faq/**",
+                                "/api/faq/**",          // ✅ FAQ API (수정됨!)
+                                "/api/chatbot/**", // ✅ 챗봇 관련 API
                                 "/api/ads",  // ✅ 일반 사용자 광고 조회 추가
                                 "/api/auth/**",
                                 "/api/public/**",
