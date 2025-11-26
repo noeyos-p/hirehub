@@ -10,12 +10,21 @@ const AttentionSection: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
   const [companyPhotos, setCompanyPhotos] = useState<Record<number, string>>({});
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
-  const cardsPerPage = 5;
-  const totalPages = 3;
   const cardsContainerRef = useRef<HTMLDivElement>(null);
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // 반응형 페이지당 카드 수 계산
+  const getCardsPerPage = () => {
+    if (typeof window === 'undefined') return 5;
+    return window.innerWidth < 768 ? 2 : 5; // 모바일: 2개, 데스크톱: 5개
+  };
+
+  const [cardsPerPage, setCardsPerPage] = useState(getCardsPerPage());
+  const totalPages = Math.ceil(popularJobs.length / cardsPerPage);
 
   const fetchCompanyPhotos = async (jobs: JobPostResponse[]) => {
     const photos: Record<number, string> = {};
@@ -116,23 +125,63 @@ const AttentionSection: React.FC = () => {
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 0));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
 
+  // 터치 스와이프 핸들러
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && currentPage < totalPages - 1) {
+      goToNextPage();
+    }
+    if (isRightSwipe && currentPage > 0) {
+      goToPreviousPage();
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
+
   // 각 페이지마다 이동할 거리 계산 (반응형 + 동적)
   const getSlideDistance = (page: number) => {
     if (typeof window === 'undefined') return page * 1345;
 
     const width = window.innerWidth;
-    // 부드러운 전환을 위한 동적 계산
-    if (width < 640) return page * 550;        // 모바일
-    if (width < 768) return page * 700;        // 큰 모바일
+    const isMobile = width < 768;
+
+    if (isMobile) {
+      // 모바일: 카드 2개 폭 + gap 계산 (화면 너비 390px 기준)
+      const cardWidth = 180; // w-[180px]
+      const gap = 4; // space-x-1
+      return page * (cardWidth * 2 + gap);
+    }
+
+    // 데스크톱: 기존 로직 유지
     if (width < 1024) return page * 900;       // 태블릿
     if (width < 1280) return page * 1100;      // 작은 데스크톱
     return page * 1345;                         // 데스크톱
   };
 
-  // 윈도우 리사이즈 시 슬라이드 거리 재계산
+  // 윈도우 리사이즈 시 슬라이드 거리 및 페이지 수 재계산
   useEffect(() => {
     const handleResize = () => {
-      // 현재 페이지 유지하면서 거리만 재계산
+      const newCardsPerPage = getCardsPerPage();
+      if (newCardsPerPage !== cardsPerPage) {
+        setCardsPerPage(newCardsPerPage);
+        setCurrentPage(0); // 페이지 리셋
+      }
+
+      // 슬라이드 거리 재계산
       if (cardsContainerRef.current) {
         const distance = getSlideDistance(currentPage);
         cardsContainerRef.current.style.transform = `translateX(-${distance}px)`;
@@ -141,7 +190,7 @@ const AttentionSection: React.FC = () => {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [currentPage]);
+  }, [currentPage, cardsPerPage]);
 
   return (
     <section className="relative mb-8 md:mb-12 max-w-[1440px] mx-auto w-full">
@@ -149,21 +198,21 @@ const AttentionSection: React.FC = () => {
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className="text-lg md:text-xl font-bold text-gray-800">모두가 주목하는 공고</h2>
 
-        {/* 페이지 버튼 - 제목 오른쪽 */}
+        {/* 페이지 버튼 - 데스크톱만 표시 */}
         <div
           ref={buttonsContainerRef}
-          className="flex space-x-2"
+          className="hidden md:flex space-x-2"
         >
           <button
             onClick={goToPreviousPage}
-            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-white text-sm md:text-base z-10 ${currentPage === 0 ? 'invisible' : ''
+            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-7 h-7 flex items-center justify-center text-white text-base z-10 ${currentPage === 0 ? 'invisible' : ''
               }`}
           >
             ‹
           </button>
           <button
             onClick={goToNextPage}
-            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-white text-sm md:text-base z-10 ${currentPage === totalPages - 1 ? 'invisible' : ''
+            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-7 h-7 flex items-center justify-center text-white text-base z-10 ${currentPage === totalPages - 1 ? 'invisible' : ''
               }`}
           >
             ›
@@ -172,20 +221,25 @@ const AttentionSection: React.FC = () => {
       </div>
 
       {/* 카드 리스트 - 슬라이드 애니메이션 적용 */}
-      <div className="overflow-hidden">
+      <div
+        className="overflow-hidden -ml-1 md:ml-0"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div
           ref={cardsContainerRef}
-          className="flex space-x-4 pb-6 transition-transform duration-500 ease-in-out"
+          className="flex space-x-1 md:space-x-4 pb-6 transition-transform duration-500 ease-in-out"
           style={{ transform: `translateX(-${getSlideDistance(currentPage)}px)` }}
         >
           {popularJobs.map((job) => (
             <div
               key={job.id}
-              className="relative w-[170px] sm:w-[200px] md:w-[253px] h-[240px] sm:h-[260px] md:h-[288px] bg-white border border-gray-200 rounded-2xl md:rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
+              className="relative w-[180px] sm:w-[200px] md:w-[253px] h-[200px] sm:h-[260px] md:h-[288px] bg-white border border-gray-200 rounded-2xl md:rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleJobClick(job.id)}
             >
               {/* ✅ 회사 이미지 - companyPhotos 사용 */}
-              <div className="w-full h-[100px] sm:h-[120px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-2 md:p-4">
+              <div className="w-full h-[100px] sm:h-[120px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-3 md:p-4">
                 {companyPhotos[job.companyId] ? (
                   <img
                     src={companyPhotos[job.companyId]}
@@ -213,21 +267,21 @@ const AttentionSection: React.FC = () => {
               </div>
 
               {/* 텍스트 */}
-              <div className="pt-2 md:pt-[16px] pb-3 md:pb-[20px] px-3 md:px-[24px]">
-                <p className="font-semibold text-gray-800 text-sm md:text-[20px] truncate">{job.companyName}</p>
-                <p className="text-gray-900 font-normal text-xs md:text-[16px] mt-[2px] md:mt-[4px] truncate">
+              <div className="pt-2.5 md:pt-[16px] pb-2.5 md:pb-[20px] px-3 md:px-[24px]">
+                <p className="font-bold text-gray-800 text-sm md:text-[20px] truncate">{job.companyName}</p>
+                <p className="text-gray-900 font-normal text-xs md:text-[16px] mt-1 md:mt-[4px] truncate">
                   {job.title}
                 </p>
-                <p className="text-gray-500 text-[10px] md:text-[14px] truncate">
-                  {job.position} / {job.careerLevel} / {job.education} / {job.location}
+                <p className="text-gray-500 text-[10px] md:text-[14px] truncate mt-1">
+                  {job.position} / {job.careerLevel}
                 </p>
 
-                <p className="text-gray-500 text-xs md:text-[16px] text-right mt-1 md:mt-2">
-                  - {new Date(job.endAt).toLocaleDateString("ko-KR", {
+                <p className="text-gray-400 text-[11px] md:text-[16px] text-right mt-1.5 md:mt-2">
+                  ~{new Date(job.endAt).toLocaleDateString("ko-KR", {
                     year: "2-digit",
                     month: "2-digit",
                     day: "2-digit",
-                  })}
+                  }).replace(/\. /g, '.')}
                 </p>
               </div>
 
