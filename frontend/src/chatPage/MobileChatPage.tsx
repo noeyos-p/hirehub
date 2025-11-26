@@ -1,0 +1,502 @@
+// src/chatPage/MobileChatPage.tsx
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import api from '../api/api';
+import { chatApi } from '../api/chatApi';
+import type { ChatMessage } from '../types/interface';
+import MobileBottomNav from '../layout/MobileBottomNav';
+
+if (typeof window !== 'undefined') {
+  (window as any).global = window;
+  (window as any).process = { env: { NODE_ENV: 'development' } };
+}
+
+const MobileChatPage: React.FC = () => {
+  const [isJoined, setIsJoined] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [connectionError, setConnectionError] = useState<string>('');
+  const [userNickname, setUserNickname] = useState<string>('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const stompClientRef = useRef<Client | null>(null);
+  const isInitializing = useRef(false);
+  const sessionId = 'main-chat-room';
+
+  const API_BASE_URL = api.defaults.baseURL;
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  const fetchUserInfo = useCallback(async (): Promise<boolean> => {
+    try {
+      const user = await chatApi.getUserInfo();
+      if (user) {
+        const nick = user.nickname || user.name || '익명';
+        console.log('사용자 정보 조회 성공:', user);
+        setUserNickname(nick.trim() || '익명');
+        setUserId(user.id);
+        setIsAuthenticated(true);
+        return true;
+      } else {
+        console.log('사용자 정보 조회 실패 - 토큰 무효');
+        localStorage.removeItem('token');
+        setUserNickname('');
+        setIsAuthenticated(false);
+        return false;
+      }
+    } catch (e) {
+      console.error('사용자 정보 조회 에러:', e);
+      setUserNickname('');
+      setIsAuthenticated(false);
+      return false;
+    }
+  }, []);
+
+  const fetchRecentMessages = useCallback(async () => {
+    try {
+      const messages = await chatApi.getChatHistory(sessionId);
+      console.log('이전 메시지 로드:', messages.length, '개');
+      setMessages(messages);
+    } catch (e) {
+      console.error('메시지 로드 에러:', e);
+      setMessages([]);
+    }
+  }, [sessionId]);
+
+  const handleLeave = useCallback(() => {
+    console.log('채팅방 퇴장');
+    setIsJoined(false);
+    localStorage.removeItem('chatRoomJoined');
+    setMessages([]);
+    setIsConnected(false);
+
+    if (stompClientRef.current) {
+      stompClientRef.current.deactivate();
+      stompClientRef.current = null;
+    }
+  }, []);
+
+  const connectToChatRoom = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('토큰 없음 - 연결 불가');
+      return;
+    }
+
+    console.log('=== 채팅방 입장 시작 ===');
+
+    try {
+      await fetchRecentMessages();
+      setIsJoined(true);
+      localStorage.setItem('chatRoomJoined', 'true');
+
+      console.log('WebSocket 연결 시도, 토큰 존재:', !!token);
+
+      const wsUrl = API_BASE_URL ? `${API_BASE_URL}/ws` : '/ws';
+      console.log('SockJS URL:', wsUrl);
+
+      const client = new Client({
+        webSocketFactory: () => new SockJS(wsUrl),
+        connectHeaders: {
+          Authorization: `Bearer ${token}`
+        },
+        debug: (str) => console.log('STOMP:', str),
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+      });
+
+      client.onConnect = (frame) => {
+        console.log('✅ STOMP 연결 성공', frame);
+        setIsConnected(true);
+        setConnectionError('');
+
+        console.log(`📢 구독 시작: /topic/rooms/${sessionId}`);
+
+        client.subscribe(`/topic/rooms/${sessionId}`, (message) => {
+          console.log('📨 새 메시지 수신 (raw):', message);
+          console.log('📨 메시지 body:', message.body);
+
+          try {
+            const newMsg: ChatMessage = JSON.parse(message.body);
+            console.log('✅ 파싱된 메시지:', newMsg);
+
+            setMessages((prev) => {
+              if (newMsg.id && prev.some(m => m.id === newMsg.id)) {
+                console.log('⚠️ 중복 메시지 무시:', newMsg.id);
+                return prev;
+              }
+              console.log('✅ 메시지 추가:', newMsg);
+              return [...prev, newMsg];
+            });
+          } catch (e) {
+            console.error('❌ 메시지 파싱 실패:', e, message.body);
+          }
+        });
+      };
+
+      client.onStompError = (frame) => {
+        console.error('❌ STOMP 에러:', frame);
+        setConnectionError('연결 실패. 다시 로그인해주세요.');
+        setIsConnected(false);
+        handleLeave();
+      };
+
+      client.onWebSocketClose = (event) => {
+        console.log('WebSocket 연결 종료:', event);
+        setIsConnected(false);
+      };
+
+      client.onDisconnect = () => {
+        console.log('STOMP 연결 해제');
+        setIsConnected(false);
+      };
+
+      client.activate();
+      stompClientRef.current = client;
+
+      console.log('=== 채팅방 입장 완료 ===');
+    } catch (e) {
+      console.error('채팅방 입장 실패:', e);
+      setConnectionError('입장 실패. 다시 시도해주세요.');
+      handleLeave();
+    }
+  }, [API_BASE_URL, sessionId, fetchRecentMessages, handleLeave]);
+
+  useEffect(() => {
+    const handleLogout = () => {
+      console.log('로그아웃 이벤트 감지 - 채팅방 자동 퇴장');
+      handleLeave();
+    };
+
+    window.addEventListener('userLogout', handleLogout);
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' && e.newValue === null && e.oldValue !== null) {
+        console.log('localStorage에서 토큰 삭제 감지 - 채팅방 자동 퇴장');
+        handleLeave();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    const checkToken = setInterval(() => {
+      const token = localStorage.getItem('token');
+      if (!token && isJoined) {
+        console.log('토큰 없음 감지 - 채팅방 자동 퇴장');
+        handleLeave();
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('userLogout', handleLogout);
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(checkToken);
+    };
+  }, [isJoined, handleLeave]);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      if (isInitializing.current) return;
+      isInitializing.current = true;
+
+      const authenticated = await fetchUserInfo();
+
+      if (authenticated && localStorage.getItem('chatRoomJoined') === 'true') {
+        await connectToChatRoom();
+      }
+
+      isInitializing.current = false;
+      setIsLoading(false);
+    };
+
+    initAuth();
+  }, [fetchUserInfo, connectToChatRoom]);
+
+  useEffect(() => {
+    return () => {
+      if (stompClientRef.current) {
+        console.log('컴포넌트 언마운트: WebSocket 연결 해제');
+        stompClientRef.current.deactivate();
+      }
+    };
+  }, []);
+
+  const handleJoin = async () => {
+    setConnectionError('');
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setConnectionError('로그인이 필요합니다. 로그인 후 다시 시도해주세요.');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      const authenticated = await fetchUserInfo();
+      if (!authenticated) {
+        setConnectionError('로그인이 필요합니다. 로그인 후 다시 시도해주세요.');
+        return;
+      }
+    }
+
+    await connectToChatRoom();
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) {
+      console.log('빈 메시지 전송 시도 차단');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setConnectionError('로그인이 필요합니다.');
+      return;
+    }
+
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    console.log('메시지 전송 시도:', {
+      sessionId,
+      content: inputMessage,
+      nickname: userNickname,
+      hasToken: !!token,
+    });
+
+    try {
+      await chatApi.sendMessage({
+        sessionId,
+        content: inputMessage,
+        nickname: userNickname || '익명',
+        userId,
+      });
+
+      console.log('✅ 메시지 전송 성공');
+      setInputMessage('');
+    } catch (e: any) {
+      console.error('❌ 메시지 전송 에러:', e);
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        setConnectionError('인증이 만료되었습니다. 다시 로그인해주세요.');
+      } else {
+        setConnectionError('메시지 전송 실패. 다시 시도해주세요.');
+      }
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const formatKoreanTime = (utcTime: string) => {
+    const date = new Date(utcTime);
+    const koreanTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+    return koreanTime.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-white pb-16">
+      {/* 헤더 */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-bold text-gray-800">실시간 채팅</h1>
+          {isJoined && (
+            <span className={`text-xs px-2 py-1 rounded-full ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              {isConnected ? '● 연결됨' : '○ 연결 끊김'}
+            </span>
+          )}
+        </div>
+        {isJoined && (
+          <button
+            onClick={handleLeave}
+            className="text-red-500 hover:text-red-600 text-sm font-medium"
+          >
+            퇴장
+          </button>
+        )}
+      </div>
+
+      {/* 에러 메시지 */}
+      {connectionError && (
+        <div className="mx-4 mt-2 p-2 bg-yellow-100 text-yellow-800 text-xs rounded">
+          {connectionError}
+        </div>
+      )}
+
+      {/* 메인 채팅 영역 */}
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#DFE7EF]">
+        {!isJoined ? (
+          <div className="flex-1 flex flex-col items-center justify-center px-6">
+            <div className="text-center space-y-4">
+              <div className="space-y-2">
+                <p className="text-gray-600 font-medium">
+                  {isAuthenticated
+                    ? '채팅방에 참여하시겠습니까?'
+                    : '로그인 후 채팅방에 참여할 수 있습니다'}
+                </p>
+                {!isAuthenticated && (
+                  <p className="text-sm text-gray-500">
+                    채팅방 참여는 로그인이 필요합니다
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleJoin}
+                disabled={!isAuthenticated}
+                className={`px-6 py-3 rounded-lg transition-colors text-base font-medium ${
+                  isAuthenticated
+                    ? 'bg-[#006AFF] text-white hover:bg-blue-600'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                title={!isAuthenticated ? '로그인이 필요합니다' : ''}
+              >
+                참여하기
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* 메시지 목록 */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.length === 0 ? (
+                <div className="text-center text-gray-500 text-sm mt-8">
+                  채팅 내역이 없습니다. 첫 메시지를 보내보세요!
+                </div>
+              ) : (
+                messages.map((msg, i) => {
+                  const isMyMessage = msg.userId === userId;
+
+                  return (
+                    <div
+                      key={msg.id || i}
+                      className={`flex items-start gap-2 ${
+                        isMyMessage ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {!isMyMessage && (
+                        <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5 text-gray-600"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M12 2a5 5 0 100 10 5 5 0 000-10zM4 20a8 8 0 0116 0H4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                      )}
+
+                      <div
+                        className={`flex flex-col max-w-[75%] ${
+                          isMyMessage ? 'items-end' : 'items-start'
+                        }`}
+                      >
+                        {!isMyMessage && (
+                          <span className="text-xs font-semibold text-gray-700 mb-1 ml-1">
+                            {msg.nickname || '익명'}
+                          </span>
+                        )}
+
+                        <div
+                          className={`flex items-end ${
+                            isMyMessage ? 'flex-row-reverse gap-1' : 'flex-row gap-1'
+                          }`}
+                        >
+                          <div
+                            className={`px-4 py-2.5 text-sm rounded-2xl break-words ${
+                              isMyMessage
+                                ? 'bg-blue-500 text-white rounded-tr-sm'
+                                : 'bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm'
+                            }`}
+                          >
+                            {msg.content}
+                          </div>
+                          <span className="text-[11px] text-gray-400 whitespace-nowrap mb-[2px]">
+                            {formatKoreanTime(msg.createAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* 입력 영역 */}
+            <div className="p-3 bg-white border-t border-gray-200">
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="메세지를 입력하세요"
+                  disabled={!isConnected}
+                  className="flex-1 px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:border-blue-500 text-sm disabled:bg-gray-100"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || !isConnected}
+                  className="p-2.5 text-gray-500 hover:text-blue-500 disabled:text-gray-300 transition-colors"
+                  title="메시지 전송"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-6 h-6"
+                  >
+                    <path d="M22 2L11 13" />
+                    <path d="M22 2L15 22l-4-9-9-4 20-7z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 모바일 하단 네비게이션 */}
+      <MobileBottomNav />
+    </div>
+  );
+};
+
+export default MobileChatPage;

@@ -16,6 +16,7 @@ import JobDetailWrapper from './jobPostings/jopPostingComponents/JobDetailWrappe
 import ChatBot from './chatBot/ChatBot';
 import ResumeViewer from './myPage/resume/ResumeViewer';
 import AuthCallback from './page/AuthCallback';
+import MobileChatPage from './chatPage/MobileChatPage';
 
 function App() {
   return (
@@ -52,6 +53,9 @@ function App() {
         {/* 챗봇/기업 상세 */}
         <Route path="/chatBot" element={<Layout><ChatBot /></Layout>} />
         <Route path="/company/:companyId" element={<Layout><CompanyDetail onBack={() => window.history.back()} /></Layout>} />
+
+        {/* 모바일 실시간 채팅 */}
+        <Route path="/mobile-chat" element={<MobileChatPage />} />
 
         <Route path="/myPage/resume/ResumeViewer/:id" element={<ResumeViewer />} />
       </Routes>

@@ -32,7 +32,7 @@ const MobileBottomNav: React.FC = () => {
     },
     {
       label: '실시간 채팅',
-      path: '/chat',
+      path: '/mobile-chat',
       icon: ChatBubbleLeftRightIcon,
       iconSolid: ChatSolidIcon
     },
