@@ -1,8 +1,24 @@
 // src/api/api.ts
 import axios from "axios";
 
+// HTTPS 환경에서는 localhost를 사용할 수 없으므로 자동으로 현재 origin 사용
+const getBaseURL = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+
+  // 환경 변수가 설정되어 있으면 사용
+  if (envUrl) return envUrl;
+
+  // HTTPS 페이지에서는 현재 origin 사용 (localhost 사용 불가)
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    return window.location.origin;
+  }
+
+  // HTTP 개발 환경에서만 localhost 사용
+  return 'http://localhost:8080';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://noeyos.store",
+  baseURL: getBaseURL(),
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

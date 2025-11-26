@@ -26,7 +26,23 @@ const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10분
 const MESSAGE_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5분마다 정리
 
 const ChatBot: React.FC = () => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  // HTTPS 환경에서는 localhost를 사용할 수 없으므로 상대 경로 또는 현재 origin 사용
+  const getApiBaseUrl = () => {
+    const envUrl = import.meta.env.VITE_API_BASE_URL;
+
+    // 환경 변수가 설정되어 있으면 사용
+    if (envUrl) return envUrl;
+
+    // HTTPS 페이지에서는 localhost를 사용할 수 없으므로 현재 origin 사용
+    if (window.location.protocol === 'https:') {
+      return window.location.origin;
+    }
+
+    // HTTP 개발 환경에서만 localhost 사용
+    return 'http://localhost:8080';
+  };
+
+  const API_BASE_URL = getApiBaseUrl();
 
   // 영구 저장 상태
   const roomId = useMemo(() => {
