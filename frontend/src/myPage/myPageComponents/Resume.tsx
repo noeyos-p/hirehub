@@ -142,10 +142,11 @@ const Resume = () => {
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">이력서 관리</h2>
         <button
           onClick={handleCreate}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-500 text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap"
+          className="text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap transition-colors"
+          style={{ backgroundColor: '#006AFF' }}
           disabled={loading}
         >
-          이력서 작성
+          + 새 이력서 작성
         </button>
       </div>
 
@@ -175,10 +176,8 @@ const Resume = () => {
 
             <div className="flex flex-col items-end gap-2">
               <button
-                className={`text-xs sm:text-sm px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap ${resume.locked
-                  ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  }`}
+                className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap text-gray-700 transition-colors"
+                style={{ backgroundColor: resume.locked ? '#EFF4F8' : '#D6E4F0' }}
                 onClick={() => handleEdit(resume.id, resume.locked)}
                 disabled={loading}
               >

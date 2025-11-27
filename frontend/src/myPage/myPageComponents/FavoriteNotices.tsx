@@ -300,9 +300,10 @@ const FavoriteNotices: React.FC = () => {
                   onClick={() => openApplyModal(n.jobPostId)}
                   disabled={applied}
                   className={`text-sm px-4 py-1.5 rounded-md ${applied
-                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : "text-gray-700 hover:bg-gray-300 cursor-pointer"
                     }`}
+                  style={applied ? {} : { backgroundColor: '#D6E4F0' }}
                 >
                   {applied ? "지원 완료" : "지원하기"}
                 </button>

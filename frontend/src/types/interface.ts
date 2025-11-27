@@ -484,9 +484,11 @@ export interface MyPostItem {
 export interface ApplyItem {
   id: number;
   resumeId: number | null;
+  jobPostsId: number;
   companyName: string;
   resumeTitle: string;
   appliedAt: string;
+  jobPostTitle?: string;
 }
 
 export interface ResumeItem {

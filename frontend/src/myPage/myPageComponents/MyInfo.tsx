@@ -88,12 +88,12 @@ const FieldRow: React.FC<{
   children?: React.ReactNode;
   disabled?: boolean;
 }> = ({ label, value, onEdit, editing, children, disabled }) => (
-  <div className="grid grid-cols-12 items-center border-b border-zinc-200 py-4">
+  <div className="grid grid-cols-12 items-center border-b border-zinc-200 py-3">
     <div className="col-span-3 text-sm text-zinc-500">{label}</div>
-    <div className="col-span-8 text-sm md:text-base text-zinc-900">
+    <div className="col-span-6 text-sm md:text-base text-zinc-900">
       {editing ? children : value}
     </div>
-    <div className="col-span-1 flex justify-end">
+    <div className="col-span-3 flex justify-end">
       {onEdit && (
         <button
           className={`p-1 rounded ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-100"}`}
@@ -155,179 +155,168 @@ const MyInfo: React.FC = () => {
   const genderLabel = (code?: string) => (code && GENDER_LABEL[code]) || "-";
 
   return (
-    <div className="max-w-5xl mx-auto pt-[40px] pl-[52px]">
-      <h1 className="text-2xl font-bold mb-8">계정정보 설정</h1>
+    <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
+      <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">계정정보 설정</h2>
 
-      <div className="grid grid-cols-12 gap-8">
-        {/* 왼쪽 프로필 */}
-        <aside className="col-span-12 md:col-span-3 ml-[25px]">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                className="w-10 h-10 text-gray-600"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12 2a5 5 0 100 10 5 5 0 000-10zM4 20a8 8 0 0116 0H4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            {/* 닉네임 (인라인) */}
-            {editing === "nickname" ? (
-              <div className="flex items-center gap-2 w-full">
-                <input
-                  className="border border-zinc-300 rounded px-3 py-2 w-full"
-                  value={draft.nickname ?? ""}
-                  onChange={(e) => setDraft((d) => ({ ...d, nickname: e.target.value }))}
-                  placeholder="닉네임"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commit("nickname");
-                  }}
-                />
-                <button className="p-2" onClick={() => commit("nickname")} title="저장"><Check /></button>
-                <button className="p-2" onClick={cancel} title="취소"><X /></button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-zinc-700">
-                <span className="text-base">{me?.nickname || "닉네임 없음"}</span>
-                <button className="p-1 rounded hover:bg-zinc-100" onClick={() => startEdit("nickname")} aria-label="edit-nickname" title="닉네임 수정">
-                  <Pencil className="text-zinc-400" />
-                </button>
-              </div>
-            )}
+      <section className="grid grid-cols-1 xl:grid-cols-12 gap-4 xl:gap-10">
+        {/* 프로필 아이콘 + 닉네임 */}
+        <aside className="xl:col-span-4 flex flex-col sm:flex-row xl:flex-col items-center gap-4 -ml-32">
+          <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              className="w-10 h-10 text-gray-600"
+            >
+              <path
+                fillRule="evenodd"
+                d="M12 2a5 5 0 100 10 5 5 0 000-10zM4 20a8 8 0 0116 0H4z"
+                clipRule="evenodd"
+              />
+            </svg>
           </div>
+          {/* 닉네임 */}
+          {editing === "nickname" ? (
+            <div className="flex items-center gap-2">
+              <input
+                className="border border-zinc-300 rounded px-3 py-2"
+                value={draft.nickname ?? ""}
+                onChange={(e) => setDraft((d) => ({ ...d, nickname: e.target.value }))}
+                placeholder="닉네임"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commit("nickname");
+                }}
+              />
+              <button className="p-2" onClick={() => commit("nickname")} title="저장"><Check /></button>
+              <button className="p-2" onClick={cancel} title="취소"><X /></button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-zinc-700 ml-8">
+              <span className="text-base">{me?.nickname || "닉네임 없음"}</span>
+              <button className="p-1 rounded hover:bg-zinc-100" onClick={() => startEdit("nickname")} aria-label="edit-nickname" title="닉네임 수정">
+                <Pencil className="text-zinc-400" />
+              </button>
+            </div>
+          )}
         </aside>
 
-        {/* 오른쪽 상세 */}
-        <section className="col-span-12 md:col-span-9 relative -top-[20px]">
-          <div>
-            <div className="px-5">
-              {/* 이메일 */}
-              <FieldRow label="이메일" value={me?.email || emailFallback || "-"} />
+        {/* 상세 정보 */}
+        <div className="xl:col-span-8 space-y-1">
+          {/* 이메일 */}
+          <FieldRow label="이메일" value={me?.email || emailFallback || "-"} />
 
-
-
-              {/* 이름 */}
-              <FieldRow label="이름" value={me?.name || "-"} onEdit={() => startEdit("name")} editing={editing === "name"}>
-                <div className="flex items-center gap-2 w-full">
-                  <input className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.name ?? ""} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-                    placeholder="이름" />
-                  <button className="p-2" onClick={() => commit("name")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-              </FieldRow>
-
-              {/* 전화번호 */}
-              <FieldRow label="전화번호" value={formatPhone(me?.phone)} onEdit={() => startEdit("phone")} editing={editing === "phone"}>
-                <div className="flex items-center gap-2 w-full">
-                  <input className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.phone ?? ""} onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))} placeholder="010-1234-5678" />
-                  <button className="p-2" onClick={() => commit("phone")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-              </FieldRow>
-
-              {/* 생년월일 */}
-              <FieldRow label="생년월일" value={prettyDate(me?.dob)} onEdit={() => startEdit("dob")} editing={editing === "dob"}>
-                <div className="flex items-center gap-2">
-                  <input type="date" className="border border-zinc-300 rounded px-3 py-2"
-                    value={draft.dob ?? me?.dob ?? ""} onChange={(e) => setDraft((d) => ({ ...d, dob: e.target.value }))} />
-                  <button className="p-2" onClick={() => commit("dob")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-              </FieldRow>
-
-              {/* 나이 (표시만) */}
-              <FieldRow label="나이" value={ageToShow ? `${ageToShow}살` : "-"} disabled />
-
-              {/* 성별 — 온보딩 셀렉트와 동일(코드값 유지) */}
-              <FieldRow label="성별" value={genderLabel(me?.gender)} onEdit={() => startEdit("gender")} editing={editing === "gender"}>
-                <div className="flex items-center gap-2">
-                  <select className="border border-zinc-300 rounded px-3 py-2"
-                    value={draft.gender ?? me?.gender ?? ""} onChange={(e) => setDraft((d) => ({ ...d, gender: e.target.value }))}>
-                    <option value="">선택하세요</option>
-                    <option value="MALE">남성</option>
-                    <option value="FEMALE">여성</option>
-                    <option value="UNKNOWN">선택 안 함</option>
-                  </select>
-                  <button className="p-2" onClick={() => commit("gender")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-              </FieldRow>
-
-              {/* 주소 */}
-              <FieldRow label="주소" value={me?.address || "-"} onEdit={() => startEdit("address")} editing={editing === "address"}>
-                <div className="flex items-center gap-2 w-full">
-                  <input className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.address ?? me?.address ?? ""} onChange={(e) => setDraft((d) => ({ ...d, address: e.target.value }))} placeholder="예) 서울특별시 ..." />
-                  <button className="p-2" onClick={() => commit("address")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-              </FieldRow>
-
-              {/* 지역(희망근무지역) — 서울 25개 구 셀렉트 */}
-              <FieldRow label="지역" value={me?.location || "-"} onEdit={() => startEdit("location")} editing={editing === "location"}>
-                <div className="flex items-center gap-2 w-full">
-                  <select className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.location ?? me?.location ?? ""} onChange={(e) => setDraft((d) => ({ ...d, location: e.target.value }))}>
-                    <option value="">선택하세요</option>
-                    {SEOUL_DISTRICTS.map((d) => (<option key={d} value={d}>{d}</option>))}
-                  </select>
-                  <button className="p-2" onClick={() => commit("location")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-              </FieldRow>
-
-              {/* 직무 — 동일 옵션 */}
-              <FieldRow label="직무" value={me?.position || "-"} onEdit={() => startEdit("position")} editing={editing === "position"}>
-                <div className="flex items-center gap-2 w-full">
-                  <select className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.position ?? me?.position ?? ""} onChange={(e) => setDraft((d) => ({ ...d, position: e.target.value }))}>
-                    <option value="">선택하세요</option>
-                    {POSITION_OPTIONS.map((p) => (<option key={p} value={p}>{p}</option>))}
-                  </select>
-                  <button className="p-2" onClick={() => commit("position")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-              </FieldRow>
-
-              {/* 경력 — 동일 옵션 */}
-              <FieldRow label="경력" value={me?.careerLevel || "-"} onEdit={() => startEdit("careerLevel")} editing={editing === "careerLevel"}>
-                <div className="flex items-center gap-2 w-full">
-                  <select className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.careerLevel ?? me?.careerLevel ?? ""} onChange={(e) => setDraft((d) => ({ ...d, careerLevel: e.target.value }))}>
-                    <option value="">선택하세요</option>
-                    {CAREER_OPTIONS.map((c) => (<option key={c} value={c}>{c}</option>))}
-                  </select>
-                  <button className="p-2" onClick={() => commit("careerLevel")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-              </FieldRow>
-
-              {/* 학력 — 동일 옵션 */}
-              <FieldRow label="학력" value={me?.education || "-"} onEdit={() => startEdit("education")} editing={editing === "education"}>
-                <div className="flex items-center gap-2 w-full">
-                  <select className="border border-zinc-300 rounded px-3 py-2 w-full"
-                    value={draft.education ?? me?.education ?? ""} onChange={(e) => setDraft((d) => ({ ...d, education: e.target.value }))}>
-                    <option value="">선택하세요</option>
-                    {EDUCATION_OPTIONS.map((e2) => (<option key={e2} value={e2}>{e2}</option>))}
-                  </select>
-                  <button className="p-2" onClick={() => commit("education")}><Check /></button>
-                  <button className="p-2" onClick={cancel}><X /></button>
-                </div>
-
-
-              </FieldRow>
-
+          {/* 이름 */}
+          <FieldRow label="이름" value={me?.name || "-"} onEdit={() => startEdit("name")} editing={editing === "name"}>
+            <div className="flex items-center gap-2 w-full">
+              <input className="border border-zinc-300 rounded px-3 py-2 w-full"
+                value={draft.name ?? ""} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                placeholder="이름" />
+              <button className="p-2" onClick={() => commit("name")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
             </div>
-          </div>
-        </section>
-      </div>
+          </FieldRow>
+
+          {/* 전화번호 */}
+          <FieldRow label="전화번호" value={formatPhone(me?.phone)} onEdit={() => startEdit("phone")} editing={editing === "phone"}>
+            <div className="flex items-center gap-2 w-full">
+              <input className="border border-zinc-300 rounded px-3 py-2 w-full"
+                value={draft.phone ?? ""} onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))} placeholder="010-1234-5678" />
+              <button className="p-2" onClick={() => commit("phone")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
+            </div>
+          </FieldRow>
+
+          {/* 생년월일 */}
+          <FieldRow label="생년월일" value={prettyDate(me?.dob)} onEdit={() => startEdit("dob")} editing={editing === "dob"}>
+            <div className="flex items-center gap-2">
+              <input type="date" className="border border-zinc-300 rounded px-3 py-2"
+                value={draft.dob ?? me?.dob ?? ""} onChange={(e) => setDraft((d) => ({ ...d, dob: e.target.value }))} />
+              <button className="p-2" onClick={() => commit("dob")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
+            </div>
+          </FieldRow>
+
+          {/* 나이 (표시만) */}
+          <FieldRow label="나이" value={ageToShow ? `${ageToShow}살` : "-"} disabled />
+
+          {/* 성별 — 온보딩 셀렉트와 동일(코드값 유지) */}
+          <FieldRow label="성별" value={genderLabel(me?.gender)} onEdit={() => startEdit("gender")} editing={editing === "gender"}>
+            <div className="flex items-center gap-2">
+              <select className="border border-zinc-300 rounded px-3 py-2"
+                value={draft.gender ?? me?.gender ?? ""} onChange={(e) => setDraft((d) => ({ ...d, gender: e.target.value }))}>
+                <option value="">선택하세요</option>
+                <option value="MALE">남성</option>
+                <option value="FEMALE">여성</option>
+                <option value="UNKNOWN">선택 안 함</option>
+              </select>
+              <button className="p-2" onClick={() => commit("gender")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
+            </div>
+          </FieldRow>
+
+          {/* 주소 */}
+          <FieldRow label="주소" value={me?.address || "-"} onEdit={() => startEdit("address")} editing={editing === "address"}>
+            <div className="flex items-center gap-2 w-full">
+              <input className="border border-zinc-300 rounded px-3 py-2 w-full"
+                value={draft.address ?? me?.address ?? ""} onChange={(e) => setDraft((d) => ({ ...d, address: e.target.value }))} placeholder="예) 서울특별시 ..." />
+              <button className="p-2" onClick={() => commit("address")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
+            </div>
+          </FieldRow>
+
+          {/* 지역(희망근무지역) — 서울 25개 구 셀렉트 */}
+          <FieldRow label="지역" value={me?.location || "-"} onEdit={() => startEdit("location")} editing={editing === "location"}>
+            <div className="flex items-center gap-2 w-full">
+              <select className="border border-zinc-300 rounded px-3 py-2 w-full"
+                value={draft.location ?? me?.location ?? ""} onChange={(e) => setDraft((d) => ({ ...d, location: e.target.value }))}>
+                <option value="">선택하세요</option>
+                {SEOUL_DISTRICTS.map((d) => (<option key={d} value={d}>{d}</option>))}
+              </select>
+              <button className="p-2" onClick={() => commit("location")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
+            </div>
+          </FieldRow>
+
+          {/* 직무 — 동일 옵션 */}
+          <FieldRow label="직무" value={me?.position || "-"} onEdit={() => startEdit("position")} editing={editing === "position"}>
+            <div className="flex items-center gap-2 w-full">
+              <select className="border border-zinc-300 rounded px-3 py-2 w-full"
+                value={draft.position ?? me?.position ?? ""} onChange={(e) => setDraft((d) => ({ ...d, position: e.target.value }))}>
+                <option value="">선택하세요</option>
+                {POSITION_OPTIONS.map((p) => (<option key={p} value={p}>{p}</option>))}
+              </select>
+              <button className="p-2" onClick={() => commit("position")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
+            </div>
+          </FieldRow>
+
+          {/* 경력 — 동일 옵션 */}
+          <FieldRow label="경력" value={me?.careerLevel || "-"} onEdit={() => startEdit("careerLevel")} editing={editing === "careerLevel"}>
+            <div className="flex items-center gap-2 w-full">
+              <select className="border border-zinc-300 rounded px-3 py-2 w-full"
+                value={draft.careerLevel ?? me?.careerLevel ?? ""} onChange={(e) => setDraft((d) => ({ ...d, careerLevel: e.target.value }))}>
+                <option value="">선택하세요</option>
+                {CAREER_OPTIONS.map((c) => (<option key={c} value={c}>{c}</option>))}
+              </select>
+              <button className="p-2" onClick={() => commit("careerLevel")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
+            </div>
+          </FieldRow>
+
+          {/* 학력 — 동일 옵션 */}
+          <FieldRow label="학력" value={me?.education || "-"} onEdit={() => startEdit("education")} editing={editing === "education"}>
+            <div className="flex items-center gap-2 w-full">
+              <select className="border border-zinc-300 rounded px-3 py-2 w-full"
+                value={draft.education ?? me?.education ?? ""} onChange={(e) => setDraft((d) => ({ ...d, education: e.target.value }))}>
+                <option value="">선택하세요</option>
+                {EDUCATION_OPTIONS.map((e2) => (<option key={e2} value={e2}>{e2}</option>))}
+              </select>
+              <button className="p-2" onClick={() => commit("education")}><Check /></button>
+              <button className="p-2" onClick={cancel}><X /></button>
+            </div>
+          </FieldRow>
+        </div>
+      </section>
     </div>
   );
 };

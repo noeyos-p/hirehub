@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { myPageApi } from "../../api/myPageApi";
+import { jobPostApi } from "../../api/jobPostApi";
 import type { ApplyItem } from "../../types/interface";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
@@ -15,6 +16,16 @@ const prettyDateTime = (iso?: string) => {
   return `${y}.${m}.${dd}(${w})`;
 };
 
+const prettyMDW = (iso?: string) => {
+  if (!iso) return "-";
+  const d = new Date(`${iso}T00:00:00`);
+  if (isNaN(d.getTime())) return "-";
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const w = yoil[d.getDay()];
+  return `${m}.${dd}(${w})`;
+};
+
 const AppliedNotices: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,7 +37,22 @@ const AppliedNotices: React.FC = () => {
     try {
       setLoading(true);
       const data = await myPageApi.getApplies();
-      setItems(Array.isArray(data) ? data : []);
+      console.log('📌 지원 내역 API 응답:', data);
+
+      // 각 지원 내역에 대해 공고 제목 조회
+      const itemsWithJobTitle = await Promise.all(
+        (Array.isArray(data) ? data : []).map(async (item) => {
+          try {
+            const jobPost = await jobPostApi.getJobPostById(item.jobPostsId);
+            return { ...item, jobPostTitle: jobPost.title };
+          } catch (e) {
+            console.error(`공고 ${item.jobPostsId} 조회 실패:`, e);
+            return { ...item, jobPostTitle: '공고 정보 없음' };
+          }
+        })
+      );
+
+      setItems(itemsWithJobTitle);
       setSelectedIds([]);
     } catch (e) {
       console.error(e);
@@ -72,14 +98,14 @@ const AppliedNotices: React.FC = () => {
     navigate(`/myPage/resume/ResumeViewer/${row.resumeId}`);
   };
 
-  // ✅ 이력서 수정 (Resume.tsx 로직과 동일하게)
-  const handleEditResume = (row: ApplyItem) => {
-    if (!row.resumeId) {
-      alert("이 지원 건의 이력서 ID를 찾을 수 없습니다.");
+  // ✅ 공고 상세 페이지로 이동
+  const handleGoToJobPost = (jobPostId: number) => {
+    console.log('🔍 클릭한 jobPostId:', jobPostId, '타입:', typeof jobPostId);
+    if (!jobPostId || isNaN(jobPostId)) {
+      alert('공고 ID를 찾을 수 없습니다.');
       return;
     }
-    // Resume.tsx에서와 동일한 수정 페이지로 이동
-    navigate(`/myPage/resume/ResumeDetail?id=${row.resumeId}`);
+    navigate(`/jobPostings/${jobPostId}`);
   };
 
 
@@ -98,34 +124,31 @@ const AppliedNotices: React.FC = () => {
               key={notice.id}
               className="flex items-center justify-between border-b border-gray-200 pb-4"
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div>
-                  <div className="text-gray-900 font-semibold">{notice.companyName}</div>
-                  <div className="text-gray-700 mt-1">{notice.resumeTitle}</div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    - {prettyDateTime(notice.appliedAt)}
+                  <div
+                    className="text-gray-900 font-semibold cursor-pointer hover:text-[#006AFF] transition-colors"
+                    onClick={() => handleGoToJobPost(notice.jobPostsId)}
+                    title="공고 상세 보기"
+                  >
+                    {notice.companyName}
+                  </div>
+                  <div className="text-gray-700 mt-1">
+                    {notice.jobPostTitle || notice.resumeTitle}
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                <div className="flex gap-2">
-                  <button
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm px-4 py-1.5 rounded-md"
-                    onClick={() => handleOpenResume(notice)}
-                    disabled={loading}
-                  >
-                    이력서 보기
-                  </button>
-
-                  <button
-                    className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-1.5 rounded-md"
-                    onClick={() => handleEditResume(notice)}
-                    disabled={loading}
-                  >
-                    수정
-                  </button>
-                </div>
+                <button
+                  className="hover:bg-gray-300 text-gray-700 text-sm px-4 py-1.5 rounded-md cursor-pointer"
+                  style={{ backgroundColor: '#D6E4F0' }}
+                  onClick={() => handleOpenResume(notice)}
+                  disabled={loading}
+                >
+                  이력서 보기
+                </button>
+                <span className="text-sm text-gray-500">- {prettyMDW(notice.appliedAt)}</span>
               </div>
             </div>
           ))}

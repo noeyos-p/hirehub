@@ -1,20 +1,47 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { myPageApi } from "../../api/myPageApi";
+import { commentApi } from "../../api/boardApi";
 import type { MyPostItem } from "../../types/interface";
+import { EyeIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
 const MyPosts: React.FC = () => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<MyPostItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
+  const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
+
+  const fetchAllCommentCounts = async (postList: MyPostItem[]) => {
+    const counts: Record<number, number> = {};
+
+    await Promise.all(
+      postList.map(async (post) => {
+        try {
+          const comments = await commentApi.getCommentsByBoardId(post.id);
+          counts[post.id] = comments.length;
+        } catch (err: any) {
+          if (err.response?.status === 401 || err.response?.status === 404) {
+            counts[post.id] = 0;
+          } else {
+            console.error(`게시글 ${post.id}의 댓글 조회 실패:`, err);
+            counts[post.id] = 0;
+          }
+        }
+      })
+    );
+
+    setCommentCounts(counts);
+  };
 
   const fetchMine = async () => {
     try {
       setLoading(true);
       const data = await myPageApi.getMyPosts();
-      setPosts(Array.isArray(data) ? data : []);
+      const postList = Array.isArray(data) ? data : [];
+      setPosts(postList);
       setSelectedIds([]);
+      await fetchAllCommentCounts(postList);
     } catch (e) {
       console.error("내 게시물 불러오기 실패:", e);
       setPosts([]);
@@ -108,14 +135,22 @@ const MyPosts: React.FC = () => {
 
             <div className="flex flex-col items-end justify-between">
               <button
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-4 py-1.5 rounded-md"
+                className="text-gray-700 text-sm px-4 py-1.5 rounded-md transition-colors"
+                style={{ backgroundColor: '#D6E4F0' }}
                 onClick={() => handleEdit(post.id)}
                 disabled={loading}
               >
                 수정하기
               </button>
-              <div className="flex items-center text-gray-400 text-xs space-x-4 mt-2">
-                <span>👁‍🗨{post.views ?? 0}</span>
+              <div className="flex items-center space-x-3 mt-2">
+                <div className="flex items-center space-x-1 text-sm text-gray-500">
+                  <EyeIcon className="w-4 h-4" />
+                  <span>{post.views ?? 0}</span>
+                </div>
+                <div className="flex items-center space-x-1 text-sm text-gray-500">
+                  <ChatBubbleLeftIcon className="w-4 h-4" />
+                  <span>{commentCounts[post.id] || 0}</span>
+                </div>
               </div>
             </div>
           </div>

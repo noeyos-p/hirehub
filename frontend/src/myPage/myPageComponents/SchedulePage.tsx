@@ -1,13 +1,14 @@
 // src/myPage/myPageComponents/SchedulePage.tsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { myPageApi } from "../../api/myPageApi";
 import { jobPostApi } from "../../api/jobPostApi";
-import JobDetail from "../../jobPostings/jopPostingComponents/JobDetail";
 import type { Notice, ResumeItem } from "../../types/interface";
 
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 
 const SchedulePage: React.FC = () => {
+  const navigate = useNavigate();
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
 
@@ -25,10 +26,6 @@ const SchedulePage: React.FC = () => {
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [applying, setApplying] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<number | undefined>(undefined);
-
-  // 공고 상세 페이지
-  const [showJobDetail, setShowJobDetail] = useState(false);
-  const [selectedJobForDetail, setSelectedJobForDetail] = useState<number | null>(null);
 
   const prevMonth = () => {
     if (selectedMonth === 1) {
@@ -150,16 +147,31 @@ const SchedulePage: React.FC = () => {
     const isToday = fullDate === todayStr;
 
     let classes = "p-4 rounded cursor-pointer transition-all duration-200 text-base ";
-    if (isSelected) classes += "border border-blue-300 font-bold scale-105";
-    else if (isPast) classes += "text-gray-300 cursor-not-allowed";
+    if (isSelected) classes += "font-bold scale-105";
+    else if (isPast) classes += "text-gray-400";
     else classes += "hover:bg-gray-200 hover:scale-105";
-    if (isToday) classes += "border bg-blue-300";
     return classes;
   };
 
+  const getDayStyle = (fullDate: string) => {
+    const isSelected = fullDate === selectedDate;
+    const isToday = fullDate === todayStr;
+
+    if (isSelected) {
+      return { backgroundColor: '#EFF4F8' };
+    }
+    if (isToday) {
+      return { backgroundColor: '#D6E4F0' };
+    }
+    return {};
+  };
+
+  const getNumberColor = (fullDate: string) => {
+    return {};
+  };
+
   const handleJobClick = (jobId: number) => {
-    setSelectedJobForDetail(jobId);
-    setShowJobDetail(true);
+    navigate(`/jobPostings/${jobId}`);
   };
 
   const openApplyModal = async (jobPostId?: number) => {
@@ -271,21 +283,6 @@ const SchedulePage: React.FC = () => {
     </div>
   );
 
-  // 공고 상세 모달
-  if (showJobDetail && selectedJobForDetail) {
-    return (
-      <div className="p-4">
-        <JobDetail
-          jobId={selectedJobForDetail}
-          onBack={() => {
-            setShowJobDetail(false);
-            setSelectedJobForDetail(null);
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="flex p-4 gap-6">
       {/* 좌측 달력 */}
@@ -321,10 +318,11 @@ const SchedulePage: React.FC = () => {
             return (
               <div
                 key={day}
-                onClick={() => fullDate >= todayStr && setSelectedDate(fullDate)}
+                onClick={() => setSelectedDate(fullDate)}
                 className={getDayClass(fullDate)}
+                style={getDayStyle(fullDate)}
               >
-                <div>{day}</div>
+                <div style={getNumberColor(fullDate)}>{day}</div>
                 <div className="mt-1 mx-auto w-2 h-2 rounded-full">
                   {calendarMap[fullDate] > 0 && <div className="w-2 h-2 rounded-full bg-gray-400"></div>}
                 </div>
@@ -349,18 +347,18 @@ const SchedulePage: React.FC = () => {
               onClick={() => notice.id && handleJobClick(notice.id)}
             >
               {/* 회사명 */}
-              <p className="text-sm font-semibold text-gray-900 mb-1">
+              <p className="text-base font-semibold text-gray-900 mb-1">
                 {notice.companyName}
               </p>
 
               {/* 공고 제목 */}
-              <h3 className="text-sm text-gray-800 mb-2">
+              <h3 className="text-sm text-gray-800 mb-1">
                 {notice.title}
               </h3>
 
               {/* 공고 정보 */}
-              <div className="space-y-1 mb-3">
-                <p className="text-sm text-gray-500">
+              <div className="mb-3">
+                <p className="text-sm text-gray-500 mb-1">
                   {notice.position && <span>{notice.position} / </span>}
                   {notice.careerLevel} / {notice.education} / {notice.location}
                 </p>
@@ -371,7 +369,8 @@ const SchedulePage: React.FC = () => {
 
               {/* 지원하기 버튼 */}
               <button
-                className="w-full mt-2 px-4 py-2 bg-gray-300 text-white rounded-md text-sm hover:bg-gray-400 transition-colors"
+                className="w-full mt-2 px-4 py-2 text-gray-700 rounded-md text-sm transition-colors hover:bg-opacity-80"
+                style={{ backgroundColor: '#D6E4F0' }}
                 onClick={(e) => {
                   e.stopPropagation();
                   openApplyModal(notice.id);
