@@ -687,17 +687,6 @@ const ChatBot: React.FC = () => {
                         )}
                       </div>
                     ))}
-
-                    {/* 상담사 연결 버튼 */}
-                    {!isAgentConnected && (
-                      <button
-                        onClick={requestHandoff}
-                        className="block w-full max-w-md text-left text-white rounded-lg px-4 py-3 shadow-sm text-sm transition hover:opacity-90"
-                        style={{ backgroundColor: '#006AFF' }}
-                      >
-                        💬 상담사 연결하기
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
