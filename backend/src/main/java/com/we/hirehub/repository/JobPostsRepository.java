@@ -53,4 +53,6 @@ public interface JobPostsRepository extends JpaRepository<JobPosts, Long> {
             String positionKeyword,
             Pageable pageable
     );
+
+    List<JobPosts> findByIdBetween(Long startId, Long endId); // ✅ 추가
 }

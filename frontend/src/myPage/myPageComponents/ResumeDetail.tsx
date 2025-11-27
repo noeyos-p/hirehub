@@ -6,6 +6,7 @@ import type { ResumeDto, MyProfileDto, EducationBE, CareerBE, NamedBE } from "..
 import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
+import api from "../../api/api";
 
 type ExtraState = {
   educations: Array<{ school: string; period: string; status: string; major: string }>;
@@ -334,33 +335,33 @@ const ResumeDetail: React.FC = () => {
   const INVALID_PERIOD_MSG = "정확한 값을 입력해주세요. (예: 2023.01 ~ 2024.05)";
 
   // const { eduStart, eduEnd, gradStatus, setEduStart, setEduEnd, setGradStatus, eduSchoolRef, eduMajorRef, setExtra, isValidPeriod, INVALID_PERIOD_MSG } = props/hooks;
-// 위 변수들이 함수 스코프 내에 존재한다고 가정합니다.
-const addEducation = () => {
+  // 위 변수들이 함수 스코프 내에 존재한다고 가정합니다.
+  const addEducation = () => {
     // 1. Ref와 State에서 모든 값 가져오기
     const school = eduSchoolRef.current?.value?.trim() || "";
 
     // 기간을 YYYY.MM ~ YYYY.MM 형식으로 결합
     const period =
-    (eduStart && eduEnd)
-    ? `${eduStart.replace('-', '.')} ~ ${eduEnd.replace('-', '.')}`
-    : "";
-        
-    const status = gradStatus || ""; 
+      (eduStart && eduEnd)
+        ? `${eduStart.replace('-', '.')} ~ ${eduEnd.replace('-', '.')}`
+        : "";
+
+    const status = gradStatus || "";
     const major = eduMajorRef.current?.value?.trim() || "";
-    
+
     // 모든 필드가 비어있으면 추가하지 않음
     if (!school && !period && !status && !major) {
-        console.log("모든 필드가 비어있습니다."); // 디버깅용
-        return;
+      console.log("모든 필드가 비어있습니다."); // 디버깅용
+      return;
     }
-    
+
     // 2. 학력 리스트 업데이트
     console.log("학력 추가:", { school, period, status, major }); // 디버깅용
-    setExtra((prev) => ({ 
-        ...prev, 
-        educations: [...prev.educations, { school, period, status, major }] 
+    setExtra((prev) => ({
+      ...prev,
+      educations: [...prev.educations, { school, period, status, major }]
     }));
-    
+
     // 3. 입력 필드 초기화 (Ref 초기화)
     if (eduSchoolRef.current) eduSchoolRef.current.value = "";
     if (eduMajorRef.current) eduMajorRef.current.value = "";
@@ -372,7 +373,7 @@ const addEducation = () => {
     setShowStartPicker(false);
     setShowEndPicker(false);
     setOpenGrad(false);
-};
+  };
 
   const addCareer = () => {
     const company = carCompanyRef.current?.value?.trim() || "";
@@ -485,6 +486,53 @@ const addEducation = () => {
     }
   };
 
+  // ai 첨삭 기능 추가
+  const [aiReview, setAiReview] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const handleAiReview = async () => {
+  if (!essayContent.trim()) {
+    alert("자기소개서 내용을 입력해주세요!");
+    return;
+  }
+
+  // 현재 이력서 전체 정보 구성
+  const resumeData = {
+    title,
+    essayTitle,
+    essayContent,
+    profile: {
+      name: profile?.name,
+      gender: gender,
+      birth,
+      age: profile?.age,
+      phone: profile?.phone,
+      email: profile?.email,
+      address: profile?.address,
+      region: profile?.region,
+    },
+    educations: extra.educations,
+    careers: extra.careers,
+    certs: extra.certs,
+    skills: extra.skills,
+    langs: extra.langs,
+  };
+
+  try {
+    setReviewLoading(true);
+
+  const res = await api.post("/ai/review", resumeData);
+    console.log("🧠 리뷰 결과:", res.data);
+
+    // ❌ axios 응답에서 res.json() 쓰면 에러
+    setAiReview(res.data.feedback || "첨삭 결과가 없습니다.");
+  } catch (err) {
+    console.error("❌ AI 첨삭 요청 실패:", err);
+    alert("AI 첨삭 요청 중 오류가 발생했습니다: " + (err.response?.data?.message || err.message));
+  } finally {
+    setReviewLoading(false);
+  }
+};
+
   /** ---------------- UI ---------------- */
 
   return (
@@ -533,17 +581,17 @@ const addEducation = () => {
       {/* 학력 */}
       <div className="mb-12">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"> {/* flex items-center gap-2 추가 */}
-          학력
-          {/* 작은 원형 플러스 버튼 (Tailwind CSS 스타일링) */}
-  <button
-  type="button"  // 이 부분 추가
-  onClick={addEducation}
-  className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
-  aria-label="학력 추가"
->
-  +
-</button>
-          </h3>
+          학력
+          {/* 작은 원형 플러스 버튼 (Tailwind CSS 스타일링) */}
+          <button
+            type="button"  // 이 부분 추가
+            onClick={addEducation}
+            className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+            aria-label="학력 추가"
+          >
+            +
+          </button>
+        </h3>
 
         {/* 추가된 학력 리스트 */}
         {extra.educations.map((ed, i) => (
@@ -1052,6 +1100,25 @@ const addEducation = () => {
             placeholder="내용을 입력하세요."
             maxLength={5000}
           />
+          {/* AI 첨삭 기능 */}
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={handleAiReview}
+              className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition"
+              disabled={reviewLoading}
+            >
+              {reviewLoading ? "AI 분석 중..." : "AI 첨삭받기"}
+            </button>
+          </div>
+
+          {/* 첨삭 결과 출력 */}
+          {aiReview && (
+            <div className="mt-6 p-4 border border-blue-200 bg-blue-50 rounded whitespace-pre-wrap">
+              <h4 className="font-semibold text-blue-800 mb-2">AI 첨삭 결과</h4>
+              <div className="text-gray-800">{aiReview}</div>
+            </div>
+          )}
           <div className="text-right text-sm text-gray-500 mt-1">
             {essayContent.length}/5000
           </div>

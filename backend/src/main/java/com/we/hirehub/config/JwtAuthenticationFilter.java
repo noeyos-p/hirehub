@@ -39,6 +39,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/public/")
                 // ❌ 온보딩 제거 - 인증 필요하도록 변경
                 // || path.startsWith("/api/onboarding/")
+                || path.startsWith("/api/ai/")           // ✅ 추가
+                || path.startsWith("/api/faq")           // ✅ 추가
+                || path.startsWith("/api/chatbot/")      // ✅ 추가
                 || path.startsWith("/swagger-ui/")
                 || path.startsWith("/v3/api-docs/")
                 || path.startsWith("/login")
