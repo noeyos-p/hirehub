@@ -515,19 +515,19 @@ ${essayContent}
 - 지역: ${profile?.region || ''}
 
 학력:
-${extra.educations?.map(e => `- ${e.schoolName} (${e.major}) ${e.startDate}~${e.endDate}`).join('\n') || '없음'}
+${extra.educations?.map(e => `- ${e.school} (${e.major}) ${e.period} ${e.status}`).join('\n') || '없음'}
 
 경력:
-${extra.careers?.map(c => `- ${c.companyName} (${c.position}) ${c.startDate}~${c.endDate}\n  ${c.description || ''}`).join('\n') || '없음'}
+${extra.careers?.map(c => `- ${c.company} (${c.role}) ${c.period}\n  직무: ${c.job}\n  ${c.desc || ''}`).join('\n') || '없음'}
 
 자격증:
-${extra.certs?.map(c => `- ${c.certName} (${c.issuer}) ${c.acquiredDate}`).join('\n') || '없음'}
+${extra.certs?.length > 0 ? extra.certs.join('\n- ') : '없음'}
 
 기술/스킬:
-${extra.skills?.map(s => `- ${s.skillName} (${s.level})`).join('\n') || '없음'}
+${extra.skills?.length > 0 ? extra.skills.join('\n- ') : '없음'}
 
 어학:
-${extra.langs?.map(l => `- ${l.langName} (${l.level}) ${l.testName || ''} ${l.score || ''}`).join('\n') || '없음'}
+${extra.langs?.length > 0 ? extra.langs.join('\n- ') : '없음'}
   `.trim();
 
   try {
