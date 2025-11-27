@@ -60,7 +60,7 @@ async def chat(req: ChatRequest):
                     "content": "당신은 채용 플랫폼 HireHub의 친절한 고객 지원 AI 챗봇입니다. 사용자의 질문에 명확하고 친절하게 답변해주세요."
                 },
                 {
-                    "role": "users",
+                    "role": "user",
                     "content": req.message
                 }
             ],
@@ -87,64 +87,28 @@ async def health_check():
 # 자기소개서 ai 첨삭기능
 
 class ResumeReviewRequest(BaseModel):
-    title: Optional[str] = None
-    essayTitle: Optional[str] = None
-    essayContent: str
-
-    profile: Optional[Dict[str, Any]] = None
-    educations: Optional[List[Dict[str, Any]]] = None
-    careers: Optional[List[Dict[str, Any]]] = None
-    certs: Optional[List[str]] = None
-    skills: Optional[List[str]] = None
-    langs: Optional[List[str]] = None
+    content: str  # Spring Boot에서 보내는 텍스트 형식
 
 @app.post("/ai/review")
 async def review_resume(req: ResumeReviewRequest):
     try:
-        # JSON 데이터를 문자열로 정리
-        profile_info = json.dumps(req.profile or {}, ensure_ascii=False, indent=2)
-        educations = json.dumps(req.educations or [], ensure_ascii=False, indent=2)
-        careers = json.dumps(req.careers or [], ensure_ascii=False, indent=2)
-        certs = json.dumps(req.certs or [], ensure_ascii=False, indent=2)
-        skills = json.dumps(req.skills or [], ensure_ascii=False, indent=2)
-        langs = json.dumps(req.langs or [], ensure_ascii=False, indent=2)
+        print(f"📨 받은 이력서 내용: {req.content[:200]}...")
 
         prompt = f"""
 당신은 전문 채용담당자입니다.
 아래 사용자가 입력한 이력서 정보를 참고하여,
 자기소개서를 **상황에 맞게 정확하게 첨삭**해주세요.
 
-### 1) 지원자의 기본 정보
-{profile_info}
-
-### 2) 학력
-{educations}
-
-### 3) 경력
-{careers}
-
-### 4) 자격증
-{certs}
-
-### 5) 스킬
-{skills}
-
-### 6) 사용 언어
-{langs}
-
-### 7) 자기소개서 제목
-{req.essayTitle}
-
-### 8) 자기소개서 본문
-{req.essayContent}
+### 이력서 전체 내용
+{req.content}
 
 ---
 
 ### 🔍 첨삭 규칙
-1) 지원자의 이력과 맞지 않는 내용이 있으면 정확히 지적  
-2) 경력·스킬과 연결되는 표현 제안  
-3) 지원 직무에 어울리지 않는 문장은 자연스럽게 개선  
-4) 부족한 문맥·성과·강점 보완 추천  
+1) 지원자의 이력과 맞지 않는 내용이 있으면 정확히 지적
+2) 경력·스킬과 연결되는 표현 제안
+3) 지원 직무에 어울리지 않는 문장은 자연스럽게 개선
+4) 부족한 문맥·성과·강점 보완 추천
 5) 마지막에는 "개선된 자기소개서"를 완전한 문장으로 재작성
 
 ---
@@ -157,7 +121,7 @@ async def review_resume(req: ResumeReviewRequest):
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "당신은 전문 채용담당자입니다."},
-                {"role": "users", "content": prompt}
+                {"role": "user", "content": prompt}
             ],
             max_tokens=1500,
             temperature=0.3
