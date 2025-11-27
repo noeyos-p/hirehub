@@ -108,6 +108,9 @@ aws:
     secret-key: ${AWS_SECRET_KEY}
   region: ap-northeast-2
 
+ai:
+  server-url: http://fastapi:8000
+
 logging:
   level:
     org.hibernate.SQL: info
