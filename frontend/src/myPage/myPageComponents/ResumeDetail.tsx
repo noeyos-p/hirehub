@@ -520,7 +520,7 @@ const ResumeDetail: React.FC = () => {
   try {
     setReviewLoading(true);
 
-  const res = await api.post("/ai/review", resumeData);
+  const res = await api.post("/api/resume/ai-review", resumeData);
     console.log("🧠 리뷰 결과:", res.data);
 
     // ❌ axios 응답에서 res.json() 쓰면 에러
