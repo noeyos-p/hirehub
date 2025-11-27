@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
+      - 'fastapi/**'
       - 'infra/**'
       - '.github/workflows/deploy.yml'
 
@@ -66,6 +67,7 @@ jobs:
             echo "🛠️ Docker 이미지 pull..."
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-backend:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-frontend:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-fastapi:latest
 
             echo "📂 디렉터리 준비..."
             cd ~/app || { mkdir -p ~/app; cd ~/app; }
@@ -82,6 +84,7 @@ jobs:
             AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             JWT_SECRET=${{ secrets.JWt_SECRET }}
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
             FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
