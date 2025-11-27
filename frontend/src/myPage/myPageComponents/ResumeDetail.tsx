@@ -496,31 +496,44 @@ const ResumeDetail: React.FC = () => {
   }
 
   // 현재 이력서 전체 정보 구성
-  const resumeData = {
-    title,
-    essayTitle,
-    essayContent,
-    profile: {
-      name: profile?.name,
-      gender: gender,
-      birth,
-      age: profile?.age,
-      phone: profile?.phone,
-      email: profile?.email,
-      address: profile?.address,
-      region: profile?.region,
-    },
-    educations: extra.educations,
-    careers: extra.careers,
-    certs: extra.certs,
-    skills: extra.skills,
-    langs: extra.langs,
-  };
+  // 이력서 데이터를 문자열로 변환
+  const resumeText = `
+제목: ${title}
+
+자기소개서 제목: ${essayTitle}
+자기소개서 내용:
+${essayContent}
+
+프로필:
+- 이름: ${profile?.name || ''}
+- 성별: ${gender || ''}
+- 생년월일: ${birth || ''}
+- 나이: ${profile?.age || ''}
+- 연락처: ${profile?.phone || ''}
+- 이메일: ${profile?.email || ''}
+- 주소: ${profile?.address || ''}
+- 지역: ${profile?.region || ''}
+
+학력:
+${extra.educations?.map(e => `- ${e.schoolName} (${e.major}) ${e.startDate}~${e.endDate}`).join('\n') || '없음'}
+
+경력:
+${extra.careers?.map(c => `- ${c.companyName} (${c.position}) ${c.startDate}~${c.endDate}\n  ${c.description || ''}`).join('\n') || '없음'}
+
+자격증:
+${extra.certs?.map(c => `- ${c.certName} (${c.issuer}) ${c.acquiredDate}`).join('\n') || '없음'}
+
+기술/스킬:
+${extra.skills?.map(s => `- ${s.skillName} (${s.level})`).join('\n') || '없음'}
+
+어학:
+${extra.langs?.map(l => `- ${l.langName} (${l.level}) ${l.testName || ''} ${l.score || ''}`).join('\n') || '없음'}
+  `.trim();
 
   try {
     setReviewLoading(true);
 
-  const res = await api.post("/api/resume/ai-review", resumeData);
+  const res = await api.post("/api/resume/ai-review", { content: resumeText });
     console.log("🧠 리뷰 결과:", res.data);
 
     // ❌ axios 응답에서 res.json() 쓰면 에러
