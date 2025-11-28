@@ -76,6 +76,16 @@ export default function Header() {
               className="inline-block whitespace-nowrap font-bord text-xs sm:text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition">
               자유게시판
             </Link>
+
+            <Link to="/cover-letter"
+              className="inline-block whitespace-nowrap font-bord text-xs sm:text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition">
+              자소서 수정
+            </Link>
+
+            <Link to="/job-matching"
+              className="inline-block whitespace-nowrap font-bord text-xs sm:text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition">
+              공고매칭
+            </Link>
           </nav>
         </div>
 

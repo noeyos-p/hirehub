@@ -17,6 +17,8 @@ import ChatBot from './chatBot/ChatBot';
 import ResumeViewer from './myPage/resume/ResumeViewer';
 import AuthCallback from './page/AuthCallback';
 import MobileChatPage from './chatPage/MobileChatPage';
+import CoverLetterPage from './coverLetterPage/CoverLetterPage';
+import JobMatchingPage from './jobMatchingPage/JobMatchingPage';
 
 function App() {
   return (
@@ -27,6 +29,12 @@ function App() {
 
         {/* 게시판 */}
         <Route path="/board/*" element={<Layout><BoardPage /></Layout>} />
+
+        {/* 자소서 첨삭 */}
+        <Route path="/cover-letter" element={<Layout><CoverLetterPage /></Layout>} />
+
+        {/* 공고 매칭 */}
+        <Route path="/job-matching" element={<Layout><JobMatchingPage /></Layout>} />
 
         {/* 관리자 */}
         <Route path="/admin" element={<Navigate to="/admin/job-management" replace />} />

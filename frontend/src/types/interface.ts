@@ -540,6 +540,33 @@ export interface ResumeDto {
   certs?: any[];
   skills?: any[];
   langs?: any[];
+
+  // DTO 필드 (자소서 첨삭 페이지 호환)
+  educationDtos?: Array<{
+    name: string;
+    major?: string;
+    status?: string;
+    type?: string;
+    startAt?: string;
+    endAt?: string;
+  }>;
+  careerLevelDtos?: Array<{
+    companyName: string;
+    position?: string;
+    type?: string;
+    content?: string;
+    startAt?: string;
+    endAt?: string;
+  }>;
+  certificateDtos?: Array<{
+    name: string;
+  }>;
+  skillDtos?: Array<{
+    name: string;
+  }>;
+  languageDtos?: Array<{
+    name: string;
+  }>;
 }
 
 export interface MyProfileDto {

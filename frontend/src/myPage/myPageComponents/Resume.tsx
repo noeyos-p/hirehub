@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { myPageApi } from "../../api/myPageApi";
 import type { ResumeItem, PagedResponse } from "../../types/interface";
-import api from "../../api/api";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
 const prettyMDW = (iso?: string) => {
@@ -20,11 +19,6 @@ const Resume = () => {
   const [resumes, setResumes] = useState<ResumeItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
-
-    // 🔽 여기 안으로 옮기기
-  const [loadingResumeId, setLoadingResumeId] = useState<number | null>(null);
-  const [matchResults, setMatchResults] = useState([]);
-  const [selectedResume, setSelectedResume] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -142,29 +136,6 @@ const Resume = () => {
     return unlocked.length > 0 && selectedIds.length === unlocked.length;
   }, [resumes, selectedIds]);
 
-  // ai 매칭시스템 기능 추가
-const handleMatch = async (resume) => {
-  try {
-    setLoadingResumeId(resume.id);
-    setMatchResults([]);
-
-    const res = await api.post("/api/resume/match", { resumeId: resume.id });
-
-    console.log("✅ 서버 응답 코드:", res.status);
-
-    // axios는 status 200~299면 자동으로 성공 처리됨.
-    // 별도 .ok 체크나 .json() 호출 ❌
-    console.log("📦 응답 데이터:", res.data);
-
-    setMatchResults(res.data.results || []);
-  } catch (err) {
-    console.error("🔥 매칭 에러 발생:", err);
-    alert("매칭 중 오류: " + (err.response?.data?.message || err.message));
-  } finally {
-    setLoadingResumeId(null);
-  }
-};
-
   return (
     <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
@@ -188,7 +159,7 @@ const handleMatch = async (resume) => {
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <input
                 type="checkbox"
-                className="mt-0 sm:mt-[-2px] accent-blue-500 flex-shrink-0"
+                className="mt-0 sm:mt-[-2px] accent-[#006AFF] flex-shrink-0"
                 checked={selectedIds.includes(resume.id)}
                 onChange={() => handleCheckboxChange(resume.id)}
                 disabled={loading || resume.locked}
@@ -212,18 +183,6 @@ const handleMatch = async (resume) => {
               >
                 {resume.locked ? "조회하기" : "수정하기"}
               </button>
-  {/* ⬇⬇⬇ 새로 넣을 AI 매칭 버튼 */}
-<button
-  className={`text-xs px-3 py-1.5 rounded-md
-    ${loadingResumeId === resume.id
-      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-      : "bg-blue-600 text-white hover:bg-blue-700"}
-  `}
-  onClick={() => handleMatch(resume)}
-  disabled={loadingResumeId === resume.id}
->
-  {loadingResumeId === resume.id ? "매칭 중..." : "AI 매칭"}
-</button>
               <span className="text-xs sm:text-sm text-gray-500">- {dateOf(resume)}</span>
             </div>
           </div>
@@ -245,30 +204,6 @@ const handleMatch = async (resume) => {
           삭제
         </button>
       </div>
-      {matchResults.length > 0 && (
-  <div className="mt-8 p-4 border rounded bg-blue-50">
-    <h3 className="text-lg font-semibold text-blue-900 mb-4">
-      "{selectedResume?.title}" AI 매칭 결과
-    </h3>
-
-    {matchResults.map((item, i) => (
-      <div key={i} className="p-4 mb-4 bg-white border rounded shadow">
-        <p className="text-base font-semibold">
-          {item.companyName} / {item.jobTitle}
-        </p>
-        <p className="mt-1">
-          등급: <b>{item.grade}</b> (점수 {item.score})
-        </p>
-
-        <ul className="mt-2 text-sm text-gray-600">
-          {item.reasons.map((r, idx) => (
-            <li key={idx}>• {r}</li>
-          ))}
-        </ul>
-      </div>
-    ))}
-  </div>
-)}
     </div>
   );
 };

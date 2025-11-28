@@ -6,7 +6,6 @@ import type { ResumeDto, MyProfileDto, EducationBE, CareerBE, NamedBE } from "..
 import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
-import api from "../../api/api";
 
 type ExtraState = {
   educations: Array<{ school: string; period: string; status: string; major: string }>;
@@ -486,66 +485,6 @@ const ResumeDetail: React.FC = () => {
     }
   };
 
-  // ai 첨삭 기능 추가
-  const [aiReview, setAiReview] = useState("");
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const handleAiReview = async () => {
-  if (!essayContent.trim()) {
-    alert("자기소개서 내용을 입력해주세요!");
-    return;
-  }
-
-  // 현재 이력서 전체 정보 구성
-  // 이력서 데이터를 문자열로 변환
-  const resumeText = `
-제목: ${title}
-
-자기소개서 제목: ${essayTitle}
-자기소개서 내용:
-${essayContent}
-
-프로필:
-- 이름: ${profile?.name || ''}
-- 성별: ${gender || ''}
-- 생년월일: ${birth || ''}
-- 나이: ${profile?.age || ''}
-- 연락처: ${profile?.phone || ''}
-- 이메일: ${profile?.email || ''}
-- 주소: ${profile?.address || ''}
-- 지역: ${profile?.region || ''}
-
-학력:
-${extra.educations?.map(e => `- ${e.school} (${e.major}) ${e.period} ${e.status}`).join('\n') || '없음'}
-
-경력:
-${extra.careers?.map(c => `- ${c.company} (${c.role}) ${c.period}\n  직무: ${c.job}\n  ${c.desc || ''}`).join('\n') || '없음'}
-
-자격증:
-${extra.certs?.length > 0 ? extra.certs.join('\n- ') : '없음'}
-
-기술/스킬:
-${extra.skills?.length > 0 ? extra.skills.join('\n- ') : '없음'}
-
-어학:
-${extra.langs?.length > 0 ? extra.langs.join('\n- ') : '없음'}
-  `.trim();
-
-  try {
-    setReviewLoading(true);
-
-  const res = await api.post("/api/resume/ai-review", { content: resumeText });
-    console.log("🧠 리뷰 결과:", res.data);
-
-    // ❌ axios 응답에서 res.json() 쓰면 에러
-    setAiReview(res.data.feedback || "첨삭 결과가 없습니다.");
-  } catch (err) {
-    console.error("❌ AI 첨삭 요청 실패:", err);
-    alert("AI 첨삭 요청 중 오류가 발생했습니다: " + (err.response?.data?.message || err.message));
-  } finally {
-    setReviewLoading(false);
-  }
-};
-
   /** ---------------- UI ---------------- */
 
   return (
@@ -699,7 +638,7 @@ ${extra.langs?.length > 0 ? extra.langs.join('\n- ') : '없음'}
                             setEduStart(value);
                             setShowStartPicker(false);
                           }}
-                          className="py-2 px-3 text-sm hover:bg-blue-50 rounded transition-colors"
+                          className="py-2 px-3 text-sm hover:bg-[#E6F0FF] rounded transition-colors"
                         >
                           {month}월
                         </button>
@@ -739,7 +678,7 @@ ${extra.langs?.length > 0 ? extra.langs.join('\n- ') : '없음'}
                             setEduEnd(value);
                             setShowEndPicker(false);
                           }}
-                          className="py-2 px-3 text-sm hover:bg-blue-50 rounded transition-colors"
+                          className="py-2 px-3 text-sm hover:bg-[#E6F0FF] rounded transition-colors"
                         >
                           {month}월
                         </button>
@@ -1113,25 +1052,6 @@ ${extra.langs?.length > 0 ? extra.langs.join('\n- ') : '없음'}
             placeholder="내용을 입력하세요."
             maxLength={5000}
           />
-          {/* AI 첨삭 기능 */}
-          <div className="mt-4 flex justify-end">
-            <button
-              type="button"
-              onClick={handleAiReview}
-              className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition"
-              disabled={reviewLoading}
-            >
-              {reviewLoading ? "AI 분석 중..." : "AI 첨삭받기"}
-            </button>
-          </div>
-
-          {/* 첨삭 결과 출력 */}
-          {aiReview && (
-            <div className="mt-6 p-4 border border-blue-200 bg-blue-50 rounded whitespace-pre-wrap">
-              <h4 className="font-semibold text-blue-800 mb-2">AI 첨삭 결과</h4>
-              <div className="text-gray-800">{aiReview}</div>
-            </div>
-          )}
           <div className="text-right text-sm text-gray-500 mt-1">
             {essayContent.length}/5000
           </div>
