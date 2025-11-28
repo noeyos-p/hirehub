@@ -80,7 +80,7 @@ export default function CoverLetterPage() {
         }
 
         // 학력 정보 (htmlContent 우선, 없으면 직접 필드)
-        const educations = parsedData?.education ?? resume.educationDtos ?? resume.educations ?? [];
+        const educations = parsedData?.education ?? resume.educationDtos ?? [];
         console.log('🎓 학력 데이터:', educations, '길이:', educations.length);
         if (educations.length > 0) {
           text += `=== 학력 ===\n`;
@@ -91,7 +91,7 @@ export default function CoverLetterPage() {
         }
 
         // 경력 정보 (htmlContent 우선, 없으면 직접 필드)
-        const careers = parsedData?.career ?? resume.careerLevelDtos ?? resume.careerDtos ?? resume.careers ?? [];
+        const careers = parsedData?.career ?? resume.careerLevelDtos ?? (resume as any).careers ?? [];
         console.log('💼 경력 데이터:', careers, '길이:', careers.length);
         if (careers.length > 0) {
           text += `=== 경력 ===\n`;
@@ -102,7 +102,7 @@ export default function CoverLetterPage() {
         }
 
         // 자격증 (htmlContent 우선, 없으면 직접 필드)
-        const certificates = parsedData?.certificate ?? resume.certificateDtos ?? resume.certificates ?? [];
+        const certificates = parsedData?.certificate ?? resume.certificateDtos ?? [];
         console.log('📜 자격증 데이터:', certificates, '길이:', certificates.length);
         if (certificates.length > 0) {
           text += `=== 자격증 ===\n`;
@@ -113,7 +113,7 @@ export default function CoverLetterPage() {
         }
 
         // 스킬 (htmlContent 우선, 없으면 직접 필드)
-        const skills = parsedData?.skill ?? resume.skillDtos ?? resume.skills ?? [];
+        const skills = parsedData?.skill ?? resume.skillDtos ?? [];
         console.log('⚡ 스킬 데이터:', skills, '길이:', skills.length);
         if (skills.length > 0) {
           text += `=== 기술 스택 ===\n`;
