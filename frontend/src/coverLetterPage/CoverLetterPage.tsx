@@ -49,6 +49,17 @@ export default function CoverLetterPage() {
       const essayTitle = resume.essayTitle ?? resume.essayTittle ?? '';
       const essayContent = resume.essayContent ?? '';
 
+      // htmlContent 파싱 (학력, 경력 등의 정보가 여기 저장됨)
+      let parsedData: any = null;
+      if (resume.htmlContent) {
+        try {
+          parsedData = JSON.parse(resume.htmlContent);
+          console.log('📦 htmlContent 파싱 결과:', parsedData);
+        } catch (e) {
+          console.error('❌ htmlContent 파싱 실패:', e);
+        }
+      }
+
       // 자기소개서만 모드
       if (inputMode === 'essay') {
         if (essayContent) {
@@ -68,39 +79,58 @@ export default function CoverLetterPage() {
           text += `${essayContent}\n\n`;
         }
 
-        // 학력 정보
-        if (resume.educationDtos && resume.educationDtos.length > 0) {
+        // 학력 정보 (htmlContent 우선, 없으면 직접 필드)
+        const educations = parsedData?.education ?? resume.educationDtos ?? resume.educations ?? [];
+        console.log('🎓 학력 데이터:', educations, '길이:', educations.length);
+        if (educations.length > 0) {
           text += `=== 학력 ===\n`;
-          resume.educationDtos.forEach((edu) => {
+          educations.forEach((edu: any) => {
             text += `${edu.name} | ${edu.major || ''} | ${edu.status}\n`;
           });
           text += '\n';
         }
 
-        // 경력 정보
-        if (resume.careerLevelDtos && resume.careerLevelDtos.length > 0) {
+        // 경력 정보 (htmlContent 우선, 없으면 직접 필드)
+        const careers = parsedData?.career ?? resume.careerLevelDtos ?? resume.careerDtos ?? resume.careers ?? [];
+        console.log('💼 경력 데이터:', careers, '길이:', careers.length);
+        if (careers.length > 0) {
           text += `=== 경력 ===\n`;
-          resume.careerLevelDtos.forEach((career) => {
+          careers.forEach((career: any) => {
             text += `${career.companyName} | ${career.position}\n`;
-            text += `${career.content}\n\n`;
+            text += `${career.content || ''}\n\n`;
           });
         }
 
-        // 자격증
-        if (resume.certificateDtos && resume.certificateDtos.length > 0) {
+        // 자격증 (htmlContent 우선, 없으면 직접 필드)
+        const certificates = parsedData?.certificate ?? resume.certificateDtos ?? resume.certificates ?? [];
+        console.log('📜 자격증 데이터:', certificates, '길이:', certificates.length);
+        if (certificates.length > 0) {
           text += `=== 자격증 ===\n`;
-          resume.certificateDtos.forEach((cert) => {
+          certificates.forEach((cert: any) => {
             text += `- ${cert.name}\n`;
           });
           text += '\n';
         }
 
-        // 스킬
-        if (resume.skillDtos && resume.skillDtos.length > 0) {
+        // 스킬 (htmlContent 우선, 없으면 직접 필드)
+        const skills = parsedData?.skill ?? resume.skillDtos ?? resume.skills ?? [];
+        console.log('⚡ 스킬 데이터:', skills, '길이:', skills.length);
+        if (skills.length > 0) {
           text += `=== 기술 스택 ===\n`;
-          text += resume.skillDtos.map(s => s.name).join(', ');
+          text += skills.map((s: any) => s.name).join(', ');
           text += '\n\n';
         }
+
+        // 언어 정보도 추가
+        const languages = parsedData?.language ?? [];
+        if (languages.length > 0) {
+          text += `=== 언어 ===\n`;
+          text += languages.map((lang: any) => lang.name).join(', ');
+          text += '\n\n';
+        }
+
+        console.log('✅ 이력서 전체 모드 - 최종 텍스트 길이:', text.length, '글자');
+        console.log('📝 최종 텍스트 내용:', text);
       }
 
       setOriginalText(text);
