@@ -94,9 +94,10 @@ naver:
     front-redirect-url: "https://noeyos.store/auth/callback"
 
 solapi:
- api-key: ${SOLAPI_API_KEY}
- api-secret: ${SOLAPI_API_SECRET}
- sender: ${SOLAPI_SENDER}
+  api-key: ${SOLAPI_API_KEY}
+  api-secret: ${SOLAPI_API_SECRET}
+  sender: ${SOLAPI_SENDER}
+
 
 
 app:
