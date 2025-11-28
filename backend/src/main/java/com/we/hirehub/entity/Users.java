@@ -24,7 +24,13 @@ public class Users {
 
     private String nickname;
 
+
+    @Column(length = 20)
     private String phone;
+
+    // 🔥 추가됨
+    @Column(nullable = false)
+    private boolean phoneVerified = false;
 
     // 생년월일
     private String dob;

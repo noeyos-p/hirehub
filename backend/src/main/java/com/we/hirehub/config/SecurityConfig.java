@@ -36,6 +36,7 @@ public class SecurityConfig {
                         // ✅ 인증 없이 접근 가능한 경로
                         .requestMatchers(
                                 "/api/ai/**",           // AI 챗봇 API
+                                "/api/sms/**", //문자인증
                                 "/api/resume/match", // 👈 공개 허용
                                 "/health",              // 헬스체크
                                 "/ws/**",

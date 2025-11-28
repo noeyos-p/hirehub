@@ -16,4 +16,7 @@ public class SignupAndLoginDto {
 
     @NotBlank
     private String password;
+
+    @NotBlank
+    private String phone;   // 추가🔥
 }

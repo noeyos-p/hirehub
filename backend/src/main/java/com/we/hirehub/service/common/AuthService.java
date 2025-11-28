@@ -21,6 +21,7 @@ public class AuthService {
 
     private final UsersRepository usersRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SmsCodeService smsCodeService;
 
     public Optional<Users> findByEmail(String email) {
         return usersRepository.findByEmail(email);
@@ -30,21 +31,36 @@ public class AuthService {
     // - 엔티티/DDL 변경 없이 동작
     // - 이메일 중복 검사 → 비밀번호 인코딩 → USER 롤로 저장
     public Users signupEmail(SignupAndLoginDto req) {
+
         if (req == null || req.getEmail() == null || req.getEmail().isBlank()
-                || req.getPassword() == null || req.getPassword().isBlank()) {
-            throw new IllegalArgumentException("email/password is required");
+                || req.getPassword() == null || req.getPassword().isBlank()
+                || req.getPhone() == null || req.getPhone().isBlank()) {
+            throw new IllegalArgumentException("email/password/phone is required");
         }
 
+        // 이메일 중복 체크
         usersRepository.findByEmail(req.getEmail()).ifPresent(u -> {
             throw new IllegalStateException("이미 사용 중인 이메일입니다.");
         });
+
+        // 🔥 휴대폰번호 중복 체크 (선택)
+        if (usersRepository.existsByPhoneAndEmailNot(req.getPhone(), req.getEmail())) {
+            throw new IllegalStateException("이미 가입된 전화번호입니다.");
+        }
+
+        // 🔥 SMS 인증 여부 체크
+        if (!smsCodeService.isVerified(req.getPhone())) {
+            throw new IllegalStateException("휴대폰 인증이 필요합니다.");
+        }
 
         String encoded = passwordEncoder.encode(req.getPassword());
 
         Users u = Users.builder()
                 .email(req.getEmail())
                 .password(encoded)
-                .role(Role.USER)          // 기본 USER
+                .phone(req.getPhone())
+                .phoneVerified(true)   // 🔥 인증됨
+                .role(Role.USER)
                 .build();
 
         return usersRepository.save(u);

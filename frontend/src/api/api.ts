@@ -48,8 +48,13 @@ if (bootToken) {
 // Request 인터셉터
 api.interceptors.request.use(
   (config) => {
-    if (config.url?.includes('/api/auth/signup')) {
-      return config; // 첫 회원가입 요청은 token 체크 안함
+    // 회원가입 및 문자 인증 요청은 토큰 검사하지 않음
+    if (
+      config.url?.includes('/api/auth/signup') ||
+      config.url?.includes('/api/sms/send') ||
+      config.url?.includes('/api/sms/verify')
+    ) {
+      return config;
     }
     const token = localStorage.getItem('token');
     if (token) {
