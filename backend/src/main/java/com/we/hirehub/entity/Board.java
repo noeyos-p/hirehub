@@ -46,4 +46,13 @@ public class Board {
     @Builder.Default
     private Long views = 0L;
 
+    // 숨김 여부
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean hidden = false;
+
+    // 역할 (USER, BOT, ADMIN 등)
+    @Column(length = 20)
+    private String role;
+
 }

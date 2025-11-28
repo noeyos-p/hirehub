@@ -72,4 +72,24 @@ public class JobPosts {
     @Column(nullable = false)
     private Integer views = 0; // 조회수 기본값 0
 
+    // 메인 공고 우선순위
+    @Column(name = "main_job")
+    private String mainJob;
+
+    // 자격요건
+    @Column(columnDefinition = "LONGTEXT")
+    private String qualification;
+
+    // 우대사항
+    @Column(columnDefinition = "LONGTEXT")
+    private String preference;
+
+    // 채용유형
+    @Column(name = "hire_type")
+    private String hireType;
+
+    // 기술 스택
+    @Column(columnDefinition = "LONGTEXT")
+    private String skill;
+
 }

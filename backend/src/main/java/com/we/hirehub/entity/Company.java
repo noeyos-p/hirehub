@@ -56,4 +56,28 @@ public class Company {
     // 기업사진
     @Column(columnDefinition = "LONGTEXT") // 사용이유 : AWS S3 url 사용
     private String photo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "total_sales_id")
+    private TotalSales totalSales;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "avg_salary_id")
+    private AvgSalary avgSalary;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "month_salary_id")
+    private MonthSalary monthSalary;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "new_salary_id")
+    private NewSalary newSalary;
+
+    // 직원수
+    @Column(name = "count")
+    private String count;
+
+    // 기업 유형 (기업 구분)
+    @Column(name = "company_type")
+    private String companyType;
 }

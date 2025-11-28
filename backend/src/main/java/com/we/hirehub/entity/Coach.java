@@ -1,0 +1,41 @@
+package com.we.hirehub.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "coach")
+public class Coach {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private Users user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "resume_id", nullable = false)
+    private Resume resume;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_posts_id", nullable = false)
+    private JobPosts jobPosts;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
+    // 코칭 내용
+    @Column(columnDefinition = "LONGTEXT")
+    private String content;
+
+    // ✅ 새로 추가: 메시지 역할 (USER, AGENT, SYS)
+    @Column(name = "role", length = 20)
+    private String role;
+}
