@@ -44,18 +44,34 @@ const ChatBot: React.FC = () => {
 
   const API_BASE_URL = getApiBaseUrl();
 
-  // 영구 저장 상태
+  // ✅ 사용자별 고유 roomId 생성
   const roomId = useMemo(() => {
-    const stored = localStorage.getItem('chatbot-roomId');
-    if (stored) return stored;
-    const newId = crypto.randomUUID();
-    localStorage.setItem('chatbot-roomId', newId);
-    return newId;
+    const userInfo = getUserInfo();
+    const userId = userInfo.userId;
+
+    if (userId) {
+      // 로그인한 사용자: userId 기반 roomId
+      return `user-${userId}-${crypto.randomUUID()}`;
+    } else {
+      // 비로그인 사용자: 세션별 고유 ID
+      const stored = localStorage.getItem('chatbot-guest-roomId');
+      if (stored) return stored;
+      const newId = `guest-${crypto.randomUUID()}`;
+      localStorage.setItem('chatbot-guest-roomId', newId);
+      return newId;
+    }
   }, []);
 
   const [input, setInput] = useState("");
+
+  // ✅ 사용자별 대화 기록 저장
   const [messages, setMessages] = useState<Message[]>(() => {
-    const stored = localStorage.getItem('chatbot-messages');
+    const userInfo = getUserInfo();
+    const storageKey = userInfo.userId
+      ? `chatbot-messages-user-${userInfo.userId}`
+      : 'chatbot-messages-guest';
+
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
       try {
         return JSON.parse(stored);
@@ -74,7 +90,11 @@ const ChatBot: React.FC = () => {
     return stored !== 'false'; // 기본값 true (처음엔 무조건 보임)
   });
   const [isAgentConnected, setIsAgentConnected] = useState(() => {
-    const stored = localStorage.getItem('chatbot-isAgentConnected');
+    const userInfo = getUserInfo();
+    const storageKey = userInfo.userId
+      ? `chatbot-isAgentConnected-user-${userInfo.userId}`
+      : 'chatbot-isAgentConnected-guest';
+    const stored = localStorage.getItem(storageKey);
     return stored === 'true';
   });
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -96,13 +116,21 @@ const ChatBot: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // localStorage 동기화
+  // ✅ localStorage 동기화 (사용자별)
   useEffect(() => {
-    localStorage.setItem('chatbot-messages', JSON.stringify(messages));
+    const userInfo = getUserInfo();
+    const storageKey = userInfo.userId
+      ? `chatbot-messages-user-${userInfo.userId}`
+      : 'chatbot-messages-guest';
+    localStorage.setItem(storageKey, JSON.stringify(messages));
   }, [messages]);
 
   useEffect(() => {
-    localStorage.setItem('chatbot-isAgentConnected', String(isAgentConnected));
+    const userInfo = getUserInfo();
+    const storageKey = userInfo.userId
+      ? `chatbot-isAgentConnected-user-${userInfo.userId}`
+      : 'chatbot-isAgentConnected-guest';
+    localStorage.setItem(storageKey, String(isAgentConnected));
   }, [isAgentConnected]);
 
   useEffect(() => {
@@ -451,6 +479,7 @@ const ChatBot: React.FC = () => {
   const clearMessages = useCallback(() => {
     if (window.confirm('대화 내용을 삭제하시겠습니까?\n(상대방 화면에는 영향이 없습니다)')) {
       setMessages(getInitialMessages());
+      setIsFaqVisible(true); // ✅ 대화 삭제 시 FAQ 다시 보이기
     }
   }, []);
 
@@ -475,6 +504,32 @@ const ChatBot: React.FC = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isAgentConnected, resetInactivityTimer]);
+
+  // ✅ 로그아웃 시 채팅 기록 초기화
+  useEffect(() => {
+    const handleLogout = () => {
+      console.log('🔄 로그아웃 감지 - 채팅 기록 초기화');
+
+      // 현재 사용자의 채팅 관련 localStorage 삭제
+      const userInfo = getUserInfo();
+      if (userInfo.userId) {
+        localStorage.removeItem(`chatbot-messages-user-${userInfo.userId}`);
+        localStorage.removeItem(`chatbot-isAgentConnected-user-${userInfo.userId}`);
+      }
+
+      // 게스트 데이터도 삭제
+      localStorage.removeItem('chatbot-messages-guest');
+      localStorage.removeItem('chatbot-isAgentConnected-guest');
+      localStorage.removeItem('chatbot-guest-roomId');
+
+      // 메시지 초기화
+      setMessages(getInitialMessages());
+      setIsAgentConnected(false);
+    };
+
+    window.addEventListener('userLogout', handleLogout);
+    return () => window.removeEventListener('userLogout', handleLogout);
+  }, []);
 
   // 타이머 관리
   useEffect(() => {
