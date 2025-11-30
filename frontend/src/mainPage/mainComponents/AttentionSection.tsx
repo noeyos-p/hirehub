@@ -12,10 +12,17 @@ const AttentionSection: React.FC = () => {
   const [companyPhotos, setCompanyPhotos] = useState<Record<number, string>>({});
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const cardsContainerRef = useRef<HTMLDivElement>(null);
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   // 반응형 페이지당 카드 수 계산
   const getCardsPerPage = () => {
@@ -196,7 +203,9 @@ const AttentionSection: React.FC = () => {
     <section className="relative max-w-[1440px] mx-auto w-full">
       {/* 제목 */}
       <div className="flex items-center justify-between mb-4 md:mb-6">
-        <h2 className="text-lg md:text-xl font-bold text-gray-800">모두가 주목하는 공고</h2>
+        <h2 className="text-lg md:text-xl font-bold text-gray-800">
+          {isLoggedIn ? 'AI 추천 공고' : '모두가 주목하는 공고'}
+        </h2>
 
         {/* 페이지 버튼 - 데스크톱만 표시 */}
         <div
