@@ -19,6 +19,7 @@ import AuthCallback from './page/AuthCallback';
 import MobileChatPage from './chatPage/MobileChatPage';
 import CoverLetterPage from './coverLetterPage/CoverLetterPage';
 import JobMatchingPage from './jobMatchingPage/JobMatchingPage';
+import InterviewCoachingPage from './interviewCoachingPage/InterviewCoachingPage';
 
 function App() {
   return (
@@ -35,6 +36,9 @@ function App() {
 
         {/* 공고 매칭 */}
         <Route path="/job-matching" element={<Layout><JobMatchingPage /></Layout>} />
+
+        {/* 면접 코칭 */}
+        <Route path="/interview-coaching" element={<Layout><InterviewCoachingPage /></Layout>} />
 
         {/* 관리자 */}
         <Route path="/admin" element={<Navigate to="/admin/job-management" replace />} />

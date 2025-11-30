@@ -180,7 +180,7 @@ export default function CoverLetterPage() {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <DocumentTextIcon className="w-8 h-8 text-gray-700 mr-2" />
+            <DocumentTextIcon className="w-10 h-10 text-[#006AFF] mr-2" />
             <h1 className="text-3xl font-bold text-gray-900">AI 자기소개서 수정</h1>
           </div>
           <p className="text-gray-600">
@@ -249,10 +249,10 @@ export default function CoverLetterPage() {
                   <button
                     key={resume.id}
                     onClick={() => handleResumeSelect(resume.id)}
-                    className={`p-4 border-2 rounded-lg text-left transition ${
+                    className={`p-4 border rounded-lg text-left transition ${
                       selectedResumeId === resume.id
-                        ? 'border-[#006AFF] bg-blue-50'
-                        : 'border-gray-200 hover:border-[#006AFF]'
+                        ? 'border-[#4E98FF] bg-[#00000]'
+                        : 'border-gray-200 hover:border-[#4E98FF]'
                     }`}
                   >
                     <div className="flex items-start justify-between">

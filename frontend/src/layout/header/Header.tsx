@@ -86,6 +86,11 @@ export default function Header() {
               className="inline-block whitespace-nowrap font-bord text-xs sm:text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition">
               공고매칭
             </Link>
+
+            <Link to="/interview-coaching"
+              className="inline-block whitespace-nowrap font-bord text-xs sm:text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition">
+              면접코칭
+            </Link>
           </nav>
         </div>
 

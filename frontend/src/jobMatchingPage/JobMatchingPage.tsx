@@ -83,7 +83,7 @@ export default function JobMatchingPage() {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <MagnifyingGlassIcon className="w-10 h-10 text-blue-600 mr-2" />
+            <MagnifyingGlassIcon className="w-10 h-10 text-[#006AFF] mr-2" />
             <h1 className="text-3xl font-bold text-gray-900">AI 공고 매칭</h1>
           </div>
           <p className="text-gray-600">
@@ -115,10 +115,10 @@ export default function JobMatchingPage() {
                   <button
                     key={resume.id}
                     onClick={() => setSelectedResumeId(resume.id)}
-                    className={`p-4 border-2 rounded-lg text-left transition ${
+                    className={`p-4 border rounded-lg text-left transition ${
                       selectedResumeId === resume.id
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-300'
+                        ? 'border-[#4E98FF] bg-withe'
+                        : 'border-gray-200 hover:border-[#4E98FF]'
                     }`}
                   >
                     <div className="flex items-start justify-between">
