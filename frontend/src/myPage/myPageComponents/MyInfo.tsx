@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { myPageApi } from "../../api/myPageApi";
 import type { UsersRequest, UsersResponse } from "../../types/interface";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 /* === Daum 주소검색 타입 선언 === */
 declare global {
@@ -157,6 +158,14 @@ const MyInfo: React.FC = () => {
   const [addressDetail, setAddressDetail] = useState("");
   const detailRef = useRef<HTMLInputElement | null>(null);
 
+  /* 드롭다운 상태 관리 */
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const genderRef = useRef<HTMLDivElement | null>(null);
+  const locationRef = useRef<HTMLDivElement | null>(null);
+  const positionRef = useRef<HTMLDivElement | null>(null);
+  const careerRef = useRef<HTMLDivElement | null>(null);
+  const educationRef = useRef<HTMLDivElement | null>(null);
+
   const emailFallback = useMemo(() => readJwtEmail(), []);
 
   useEffect(() => {
@@ -164,6 +173,28 @@ const MyInfo: React.FC = () => {
       const data = await fetchMe();
       setMe(data);
     })().catch(console.error);
+  }, []);
+
+  /* 드롭다운 외부 클릭 감지 */
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        genderRef.current &&
+        !genderRef.current.contains(event.target as Node) &&
+        locationRef.current &&
+        !locationRef.current.contains(event.target as Node) &&
+        positionRef.current &&
+        !positionRef.current.contains(event.target as Node) &&
+        careerRef.current &&
+        !careerRef.current.contains(event.target as Node) &&
+        educationRef.current &&
+        !educationRef.current.contains(event.target as Node)
+      ) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const startEdit = (key: keyof UsersResponse) => {
@@ -289,7 +320,7 @@ const MyInfo: React.FC = () => {
           >
             <div className="flex items-center gap-2 w-full">
               <input
-                className="border border-zinc-300 rounded px-3 py-2 w-full"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
                 value={draft.name ?? ""}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, name: e.target.value }))
@@ -313,7 +344,7 @@ const MyInfo: React.FC = () => {
           >
             <div className="flex items-center gap-2 w-full">
               <input
-                className="border border-zinc-300 rounded px-3 py-2 w-full"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
                 value={draft.phone ?? ""}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, phone: e.target.value }))
@@ -338,7 +369,7 @@ const MyInfo: React.FC = () => {
             <div className="flex items-center gap-2">
               <input
                 type="date"
-                className="border border-zinc-300 rounded px-3 py-2"
+                className="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
                 value={draft.dob ?? ""}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, dob: e.target.value }))
@@ -367,19 +398,49 @@ const MyInfo: React.FC = () => {
             onEdit={() => startEdit("gender")}
             editing={editing === "gender"}
           >
-            <div className="flex items-center gap-2">
-              <select
-                className="border border-zinc-300 rounded px-3 py-2"
-                value={draft.gender ?? ""}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, gender: e.target.value }))
-                }
-              >
-                <option value="">선택하세요</option>
-                <option value="MALE">남성</option>
-                <option value="FEMALE">여성</option>
-                <option value="UNKNOWN">선택 안 함</option>
-              </select>
+            <div className="flex items-center gap-2 w-full">
+              <div className="relative flex-1" ref={genderRef}>
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === "gender" ? null : "gender")}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                >
+                  <span className="truncate">{draft.gender ? GENDER_LABEL[draft.gender] : "선택하세요"}</span>
+                  <ChevronDownIcon
+                    className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${openDropdown === "gender" ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {openDropdown === "gender" && (
+                  <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <button
+                      onClick={() => {
+                        setDraft((d) => ({ ...d, gender: "MALE" }));
+                        setOpenDropdown(null);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm transition ${draft.gender === "MALE" ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                    >
+                      남성
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDraft((d) => ({ ...d, gender: "FEMALE" }));
+                        setOpenDropdown(null);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm transition ${draft.gender === "FEMALE" ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                    >
+                      여성
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDraft((d) => ({ ...d, gender: "UNKNOWN" }));
+                        setOpenDropdown(null);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm transition ${draft.gender === "UNKNOWN" ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                    >
+                      선택 안 함
+                    </button>
+                  </div>
+                )}
+              </div>
               <button className="p-2" onClick={() => commit("gender")}>
                 <Check />
               </button>
@@ -400,34 +461,24 @@ const MyInfo: React.FC = () => {
           >
             <div className="flex flex-col gap-2 w-full">
 
-              {/* 주소 input */}
+              {/* 주소 input - 클릭하면 주소 찾기 API 실행 */}
               <input
-                className="border border-zinc-300 rounded px-3 py-2 w-full"
+                readOnly
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black cursor-pointer"
                 value={draft.address ?? ""}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, address: e.target.value }))
-                }
-                placeholder="예) 서울 강남구 ..."
-              />
-
-              {/* 주소 찾기 버튼 */}
-              <button
-                type="button"
                 onClick={() =>
                   openPostcode((addr) => {
                     setDraft((d) => ({ ...d, address: addr }));
                     setTimeout(() => detailRef.current?.focus(), 120);
                   })
                 }
-                className="p-2 rounded bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm w-20"
-              >
-                찾기
-              </button>
+                placeholder="주소를 검색하려면 클릭하세요"
+              />
 
               {/* 상세주소 */}
               <input
                 ref={detailRef}
-                className="border border-zinc-300 rounded px-3 py-2 w-full"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
                 value={addressDetail}
                 onChange={(e) => setAddressDetail(e.target.value)}
                 placeholder="상세 주소 (예: 101동 1203호)"
@@ -445,28 +496,41 @@ const MyInfo: React.FC = () => {
             </div>
           </FieldRow>
 
-          {/* 지역 */}
+          {/* 선호지역 */}
           <FieldRow
-            label="지역"
+            label="선호지역"
             value={me?.location || "-"}
             onEdit={() => startEdit("location")}
             editing={editing === "location"}
           >
             <div className="flex items-center gap-2 w-full">
-              <select
-                className="border border-zinc-300 rounded px-3 py-2 w-full"
-                value={draft.location ?? ""}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, location: e.target.value }))
-                }
-              >
-                <option value="">선택하세요</option>
-                {SEOUL_DISTRICTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+              <div className="relative flex-1" ref={locationRef}>
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === "location" ? null : "location")}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                >
+                  <span className="truncate">{draft.location || "선택하세요"}</span>
+                  <ChevronDownIcon
+                    className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${openDropdown === "location" ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {openDropdown === "location" && (
+                  <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-[300px] overflow-y-auto">
+                    {SEOUL_DISTRICTS.map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => {
+                          setDraft((prev) => ({ ...prev, location: d }));
+                          setOpenDropdown(null);
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition ${draft.location === d ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className="p-2" onClick={() => commit("location")}>
                 <Check />
               </button>
@@ -484,20 +548,33 @@ const MyInfo: React.FC = () => {
             editing={editing === "position"}
           >
             <div className="flex items-center gap-2 w-full">
-              <select
-                className="border border-zinc-300 rounded px-3 py-2 w-full"
-                value={draft.position ?? ""}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, position: e.target.value }))
-                }
-              >
-                <option value="">선택하세요</option>
-                {POSITION_OPTIONS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <div className="relative flex-1" ref={positionRef}>
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === "position" ? null : "position")}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                >
+                  <span className="truncate">{draft.position || "선택하세요"}</span>
+                  <ChevronDownIcon
+                    className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${openDropdown === "position" ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {openDropdown === "position" && (
+                  <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    {POSITION_OPTIONS.map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => {
+                          setDraft((prev) => ({ ...prev, position: p }));
+                          setOpenDropdown(null);
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition ${draft.position === p ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className="p-2" onClick={() => commit("position")}>
                 <Check />
               </button>
@@ -515,20 +592,33 @@ const MyInfo: React.FC = () => {
             editing={editing === "careerLevel"}
           >
             <div className="flex items-center gap-2 w-full">
-              <select
-                className="border border-zinc-300 rounded px-3 py-2 w-full"
-                value={draft.careerLevel ?? ""}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, careerLevel: e.target.value }))
-                }
-              >
-                <option value="">선택하세요</option>
-                {CAREER_OPTIONS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+              <div className="relative flex-1" ref={careerRef}>
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === "career" ? null : "career")}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                >
+                  <span className="truncate">{draft.careerLevel || "선택하세요"}</span>
+                  <ChevronDownIcon
+                    className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${openDropdown === "career" ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {openDropdown === "career" && (
+                  <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    {CAREER_OPTIONS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          setDraft((prev) => ({ ...prev, careerLevel: c }));
+                          setOpenDropdown(null);
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition ${draft.careerLevel === c ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className="p-2" onClick={() => commit("careerLevel")}>
                 <Check />
               </button>
@@ -546,20 +636,33 @@ const MyInfo: React.FC = () => {
             editing={editing === "education"}
           >
             <div className="flex items-center gap-2 w-full">
-              <select
-                className="border border-zinc-300 rounded px-3 py-2 w-full"
-                value={draft.education ?? ""}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, education: e.target.value }))
-                }
-              >
-                <option value="">선택하세요</option>
-                {EDUCATION_OPTIONS.map((e2) => (
-                  <option key={e2} value={e2}>
-                    {e2}
-                  </option>
-                ))}
-              </select>
+              <div className="relative flex-1" ref={educationRef}>
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === "education" ? null : "education")}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                >
+                  <span className="truncate">{draft.education || "선택하세요"}</span>
+                  <ChevronDownIcon
+                    className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${openDropdown === "education" ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {openDropdown === "education" && (
+                  <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    {EDUCATION_OPTIONS.map((e2) => (
+                      <button
+                        key={e2}
+                        onClick={() => {
+                          setDraft((prev) => ({ ...prev, education: e2 }));
+                          setOpenDropdown(null);
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition ${draft.education === e2 ? "text-[#006AFF] font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        {e2}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className="p-2" onClick={() => commit("education")}>
                 <Check />
               </button>
