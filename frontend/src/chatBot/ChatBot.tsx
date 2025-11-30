@@ -18,7 +18,7 @@ interface FaqCategory {
 }
 
 interface Message {
-  role: 'BOT' | 'USER' | 'AGENT' | 'SYS' | 'AI';
+  role: 'BOT' | 'USER' | 'ADMIN' | 'SYS' | 'AI';
   text: string;
 }
 
@@ -310,15 +310,15 @@ const ChatBot: React.FC = () => {
 
       default:
         if (body.text) {
-          const role = (body.role as 'BOT' | 'USER' | 'AGENT' | 'SYS') ?? 'BOT';
-          
+          const role = (body.role as 'BOT' | 'USER' | 'ADMIN' | 'SYS') ?? 'BOT';
+
           if (role === 'SYS') {
             setMessages(prev => [...prev, { role: 'SYS', text: body.text }]);
           } else {
             setMessages(prev => [...prev, { role, text: body.text }]);
           }
-          
-          if (role === 'AGENT') {
+
+          if (role === 'ADMIN') {
             resetInactivityTimer();
           }
         }
@@ -613,8 +613,8 @@ const ChatBot: React.FC = () => {
                   {!isUser && (
                     <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                       <img
-                        src={m.role === 'AGENT' ? '/images/agent.png' : '/images/ai-bot.png'}
-                        alt={m.role === 'AGENT' ? 'Agent' : 'AI Bot'}
+                        src={m.role === 'ADMIN' ? '/images/agent.png' : '/images/ai-bot.png'}
+                        alt={m.role === 'ADMIN' ? 'Admin' : 'AI Bot'}
                         className="w-[180%] h-[180%] object-cover"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
@@ -633,7 +633,7 @@ const ChatBot: React.FC = () => {
                       <span className="text-xs font-semibold text-gray-700 mb-1 ml-1">
                         {m.role === 'AI' ? 'AI 봇' :
                          m.role === 'BOT' ? 'HireBot' :
-                         m.role === 'AGENT' ? '상담사' : '봇'}
+                         m.role === 'ADMIN' ? '상담사' : '봇'}
                       </span>
                     )}
 

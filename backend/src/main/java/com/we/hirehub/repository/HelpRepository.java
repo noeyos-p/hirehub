@@ -34,4 +34,23 @@ public interface HelpRepository extends JpaRepository<Help, Long> {
             "WHERE h.session.id = :sessionId " +
             "ORDER BY h.requestAt DESC")
     List<Help> findLatestBySessionId(@Param("sessionId") String sessionId, Pageable pageable);
+
+    /**
+     * ✅ 미처리 상담 요청 조회 (requestAt은 있지만 startAt이 없는 경우)
+     * 관리자가 로그인하지 않았을 때 요청된 상담들을 조회
+     * sessionId별로 가장 최근 요청만 가져옴
+     */
+    @Query("SELECT h FROM Help h " +
+            "LEFT JOIN FETCH h.users " +
+            "LEFT JOIN FETCH h.session " +
+            "WHERE h.requestAt IS NOT NULL " +
+            "AND h.startAt IS NULL " +
+            "AND h.id IN (" +
+            "  SELECT MAX(h2.id) FROM Help h2 " +
+            "  WHERE h2.requestAt IS NOT NULL " +
+            "  AND h2.startAt IS NULL " +
+            "  GROUP BY h2.session.id" +
+            ") " +
+            "ORDER BY h.requestAt DESC")
+    List<Help> findPendingRequests();
 }

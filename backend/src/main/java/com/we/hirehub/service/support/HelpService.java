@@ -151,6 +151,37 @@ public class HelpService {
         }
     }
 
+    /**
+     * ✅ 미처리 상담 요청 조회
+     * 관리자가 로그인 시 이전에 요청된 미처리 상담들을 확인
+     */
+    @Transactional(readOnly = true)
+    public List<HelpDto> getPendingRequests() {
+        List<Help> pendingHelps = helpRepository.findPendingRequests();
+
+        return pendingHelps.stream()
+                .map(help -> {
+                    String nickname = "익명";
+                    if (help.getUsers() != null) {
+                        if (help.getUsers().getNickname() != null && !help.getUsers().getNickname().trim().isEmpty()) {
+                            nickname = help.getUsers().getNickname();
+                        } else if (help.getUsers().getName() != null && !help.getUsers().getName().trim().isEmpty()) {
+                            nickname = help.getUsers().getName();
+                        }
+                    }
+                    return HelpDto.builder()
+                            .id(help.getId())
+                            .sessionId(help.getSession().getId())
+                            .userId(help.getUsers() != null ? help.getUsers().getId() : null)
+                            .nickname(nickname)
+                            .content("상담 요청")
+                            .role("SYS")
+                            .createAt(help.getRequestAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
     // ===== Private Helper Methods =====
 
     /**
@@ -186,8 +217,8 @@ public class HelpService {
      * 최종 닉네임 결정 로직
      */
     private String determineFinalNickname(Users user, String role) {
-        // AGENT 역할이면 무조건 "상담사"
-        if ("AGENT".equals(role)) {
+        // ADMIN 역할이면 무조건 "상담사"
+        if ("ADMIN".equals(role)) {
             return "상담사";
         }
 

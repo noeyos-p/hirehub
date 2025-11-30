@@ -83,9 +83,9 @@ const SupportAgent: React.FC = () => {
     stompRef.current.send(
       `/app/support.send/${activeRoom}`,
       {},
-      JSON.stringify({ type: "TEXT", role: "AGENT", text: input })
+      JSON.stringify({ type: "TEXT", role: "ADMIN", text: input })
     );
-    setLogs(prev => [...prev, `[ME] ${input}`]);
+    // WebSocket 브로드캐스트로 받은 메시지만 표시하므로 여기서는 추가하지 않음
     setInput("");
   };
 

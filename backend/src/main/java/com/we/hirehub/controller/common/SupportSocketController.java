@@ -28,9 +28,10 @@ public class SupportSocketController {
 
     // ✅ 유저/상담사가 채팅 보냄 (DB 저장 + WebSocket 브로드캐스트)
     @MessageMapping("support.send/{roomId}")
-    public void userSend(@DestinationVariable String roomId, Map<String, Object> payload) {
+    public void userSend(@DestinationVariable String roomId, Map<String, Object> payload, java.security.Principal principal) {
         log.info("=== 메시지 수신 ===");
         log.info("roomId: {}, payload: {}", roomId, payload);
+        log.info("인증 정보: {}", principal != null ? principal.getName() : "null");
 
         String type = (String) payload.getOrDefault("type", "TEXT");
         String text = (String) payload.getOrDefault("text", "");
@@ -43,54 +44,58 @@ public class SupportSocketController {
 
         // ✅ 사용자 정보 추출
         Users user = null;
-        String nickname = "익명";
 
-        try {
-            Object userIdObj = payload.get("userId");
-            log.info("📦 userId 추출 시도: {}", userIdObj);
+        if ("ADMIN".equals(role)) {
+            // 관리자 메시지: Principal에서 이메일을 가져와 Users 조회
+            if (principal != null) {
+                String email = principal.getName();
+                log.info("🔍 ADMIN 역할 - Principal 이메일: {}", email);
+                user = usersRepository.findByEmail(email).orElse(null);
 
-            if (userIdObj != null) {
-                Long userId = null;
-                if (userIdObj instanceof Number) {
-                    userId = ((Number) userIdObj).longValue();
-                } else if (userIdObj instanceof String) {
-                    String userIdStr = (String) userIdObj;
-                    if (!userIdStr.equals("null") && !userIdStr.isEmpty()) {
-                        userId = Long.parseLong(userIdStr);
-                    }
+                if (user != null) {
+                    log.info("✅ 관리자 조회 성공: ID={}, Email={}", user.getId(), user.getEmail());
+                } else {
+                    log.warn("⚠️ 이메일 {}에 해당하는 관리자를 찾을 수 없음", email);
                 }
-
-                if (userId != null) {
-                    log.info("🔍 DB에서 userId={} 조회", userId);
-                    user = usersRepository.findById(userId).orElse(null);
-
-                    if (user != null) {
-                        log.info("✅ 사용자 조회 성공: ID={}, Email={}, Nickname={}",
-                                user.getId(), user.getEmail(), user.getNickname());
-
-                        // 닉네임 결정
-                        if (user.getNickname() != null && !user.getNickname().trim().isEmpty()) {
-                            nickname = user.getNickname();
-                        } else if (user.getName() != null && !user.getName().trim().isEmpty()) {
-                            nickname = user.getName();
-                        }
-                    } else {
-                        log.warn("⚠️ userId={}에 해당하는 사용자를 찾을 수 없음", userId);
-                    }
-                }
+            } else {
+                log.warn("⚠️ ADMIN 역할이지만 Principal이 null입니다");
             }
-        } catch (Exception e) {
-            log.error("⚠ 사용자 정보 추출 실패", e);
+        } else {
+            // 일반 유저 메시지: payload의 userId로 조회
+            try {
+                Object userIdObj = payload.get("userId");
+                log.info("📦 userId 추출 시도: {}", userIdObj);
+
+                if (userIdObj != null) {
+                    Long userId = null;
+                    if (userIdObj instanceof Number) {
+                        userId = ((Number) userIdObj).longValue();
+                    } else if (userIdObj instanceof String) {
+                        String userIdStr = (String) userIdObj;
+                        if (!userIdStr.equals("null") && !userIdStr.isEmpty()) {
+                            userId = Long.parseLong(userIdStr);
+                        }
+                    }
+
+                    if (userId != null) {
+                        log.info("🔍 DB에서 userId={} 조회", userId);
+                        user = usersRepository.findById(userId).orElse(null);
+
+                        if (user != null) {
+                            log.info("✅ 사용자 조회 성공: ID={}, Email={}, Nickname={}",
+                                    user.getId(), user.getEmail(), user.getNickname());
+                        } else {
+                            log.warn("⚠️ userId={}에 해당하는 사용자를 찾을 수 없음", userId);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("⚠ 사용자 정보 추출 실패", e);
+            }
         }
 
-        // payload에서 전달된 nickname이 있으면 우선 사용 (상담사의 경우)
-        Object payloadNickname = payload.get("nickname");
-        if (payloadNickname != null && !payloadNickname.toString().trim().isEmpty()) {
-            nickname = payloadNickname.toString().trim();
-        }
-
-        log.info("🔍 최종 저장 정보: userId={}, nickname={}, role={}, text={}",
-                user != null ? user.getId() : "null", nickname, role, text);
+        log.info("🔍 최종 저장 정보: userId={}, role={}, text={}",
+                user != null ? user.getId() : "null", role, text);
 
         // ✅ HelpService를 통해 DB 저장 (자동으로 WebSocket 브로드캐스트도 수행)
         try {
@@ -105,10 +110,11 @@ public class SupportSocketController {
 
     // 유저가 핸드오프 요청
     @MessageMapping("support.handoff/{roomId}")
-    public void handoffRequest(@DestinationVariable String roomId, Map<String, Object> payload) {
+    public void handoffRequest(@DestinationVariable String roomId, Map<String, Object> payload, java.security.Principal principal) {
         log.info("=== 핸드오프 요청 받음 ===");
         log.info("roomId: {}", roomId);
         log.info("payload: {}", payload);
+        log.info("인증 정보: {}", principal != null ? principal.getName() : "null");
 
         var s = supportQueue.state(roomId);
 
@@ -189,7 +195,10 @@ public class SupportSocketController {
 
     // 상담사가 수락
     @MessageMapping("support.handoff.accept")
-    public void handoffAccept(Map<String, Object> payload) {
+    public void handoffAccept(Map<String, Object> payload, java.security.Principal principal) {
+        log.info("=== 핸드오프 수락 ===");
+        log.info("인증 정보: {}", principal != null ? principal.getName() : "null");
+
         String roomId = (String) payload.get("roomId");
         if (roomId == null || roomId.isBlank()) return;
 
@@ -224,7 +233,10 @@ public class SupportSocketController {
 
     // ✅ 유저가 연결 해제
     @MessageMapping("support.disconnect/{roomId}")
-    public void userDisconnect(@DestinationVariable String roomId, Map<String, Object> payload) {
+    public void userDisconnect(@DestinationVariable String roomId, Map<String, Object> payload, java.security.Principal principal) {
+        log.info("=== 유저 연결 해제 ===");
+        log.info("인증 정보: {}", principal != null ? principal.getName() : "null");
+
         var s = supportQueue.state(roomId);
 
         // SupportQueue에 저장된 정보 사용
@@ -269,7 +281,10 @@ public class SupportSocketController {
 
     // ✅ 상담사가 연결 해제
     @MessageMapping("support.agent.disconnect")
-    public void agentDisconnect(Map<String, Object> payload) {
+    public void agentDisconnect(Map<String, Object> payload, java.security.Principal principal) {
+        log.info("=== 상담사 연결 해제 ===");
+        log.info("인증 정보: {}", principal != null ? principal.getName() : "null");
+
         String roomId = (String) payload.get("roomId");
         if (roomId == null || roomId.isBlank()) return;
 

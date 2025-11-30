@@ -30,6 +30,11 @@ const LiveSupport: React.FC = () => {
   const API_BASE_URL = getApiBaseUrl();
 
   const [queue, setQueue] = useState<QueueItem[]>([]);
+
+  // ✅ queue 변경 추적
+  useEffect(() => {
+    console.log("🔄 큐 상태 변경됨:", queue.length, "건", queue);
+  }, [queue]);
   const [activeRoom, setActiveRoom] = useState<string | null>(() =>
     localStorage.getItem('agent-activeRoom')
   );
@@ -50,6 +55,11 @@ const LiveSupport: React.FC = () => {
   const roomSubRef = useRef<{ unsubscribe: () => void } | null>(null);
   const processedMessagesRef = useRef<Map<string, number>>(new Map());
   const cleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ 수락한 방 추적 (localStorage에서 복원)
+  const acceptedRoomsRef = useRef<Set<string>>(
+    new Set(JSON.parse(localStorage.getItem('agent-acceptedRooms') || '[]'))
+  );
 
   // localStorage 동기화
   useEffect(() => {
@@ -101,14 +111,17 @@ const LiveSupport: React.FC = () => {
 
   // 방 구독
   const subscribeRoom = useCallback((roomId: string) => {
+    console.log("📡 방 구독 시도:", roomId);
+
     if (!stompRef.current?.connected) {
-      console.error("STOMP 클라이언트가 없습니다");
+      console.error("❌ STOMP 클라이언트가 연결되지 않았습니다");
       return;
     }
 
     // 기존 구독 해제
     if (roomSubRef.current) {
       try {
+        console.log("🔄 기존 구독 해제 중...");
         roomSubRef.current.unsubscribe();
       } catch (e) {
         console.error("구독 해제 오류:", e);
@@ -116,7 +129,9 @@ const LiveSupport: React.FC = () => {
       roomSubRef.current = null;
     }
 
+    console.log("📍 구독 경로:", `/topic/rooms/${roomId}`);
     roomSubRef.current = stompRef.current.subscribe(`/topic/rooms/${roomId}`, (frame) => {
+      console.log("📨 방 메시지 수신:", frame.body);
       try {
         const body = JSON.parse(frame.body);
 
@@ -124,11 +139,17 @@ const LiveSupport: React.FC = () => {
         const content = body.content || body.text;
         const role = body.role || 'UNKNOWN';
 
-        if (!content) return;
+        if (!content) {
+          console.warn("⚠️ 메시지 내용이 없습니다:", body);
+          return;
+        }
 
         const messageId = `agent-${body.type}-${role}-${content}`;
 
-        if (isMessageProcessed(messageId)) return;
+        if (isMessageProcessed(messageId)) {
+          console.log("⏭️ 중복 메시지 무시:", messageId);
+          return;
+        }
 
         handleRoomMessage({ ...body, text: content, role });
       } catch (e) {
@@ -136,6 +157,7 @@ const LiveSupport: React.FC = () => {
         if (frame.body) setLogs(prev => [...prev, `[RAW] ${frame.body}`]);
       }
     });
+    console.log("✅ 방 구독 완료:", roomId);
   }, [isMessageProcessed]);
 
   // 방 메시지 핸들러
@@ -178,7 +200,7 @@ const LiveSupport: React.FC = () => {
       default:
         if (body.text) {
           const role = body.role ?? "UNKNOWN";
-          const prefix = role === "AGENT" ? "[나]" : `[${role}]`;
+          const prefix = role === "ADMIN" ? "[나]" : `[${role}]`;
           setLogs(prev => [...prev, `${prefix} ${body.text}`]);
         }
     }
@@ -189,6 +211,12 @@ const LiveSupport: React.FC = () => {
     console.log("📥 큐 메시지 수신:", body);
 
     if (body.event === "HANDOFF_REQUESTED" && body.roomId) {
+      // ✅ 이미 수락한 방은 무시
+      if (acceptedRoomsRef.current.has(body.roomId)) {
+        console.log("⏭️ 이미 수락한 방이므로 무시:", body.roomId);
+        return;
+      }
+
       console.log("🔔 핸드오프 요청 수신:", {
         roomId: body.roomId,
         userName: body.userName,
@@ -196,36 +224,115 @@ const LiveSupport: React.FC = () => {
       });
 
       setQueue(prev => {
-        // ✅ 이미 큐에 있는 경우 업데이트 (재연결 요청 처리)
-        const existingIndex = prev.findIndex(q => q.roomId === body.roomId);
+        // ✅ 중복 체크: roomId가 이미 있으면 업데이트, 없으면 추가
+        const exists = prev.some(q => q.roomId === body.roomId);
 
-        const newItem: QueueItem = {
-          roomId: body.roomId,
-          userName: body.userName || "user",
-          userNickname: body.userNickname || "user"
-        };
-
-        if (existingIndex >= 0) {
+        if (exists) {
           console.log("♻️ 기존 큐 항목 업데이트:", body.roomId);
-          const updated = [...prev];
-          updated[existingIndex] = newItem;
-          return updated;
+          return prev.map(q =>
+            q.roomId === body.roomId
+              ? {
+                  roomId: body.roomId,
+                  userName: body.userName || "user",
+                  userNickname: body.userNickname || "user"
+                }
+              : q
+          );
         } else {
           console.log("➕ 새 큐 항목 추가:", body.roomId);
-          return [...prev, newItem];
+          return [...prev, {
+            roomId: body.roomId,
+            userName: body.userName || "user",
+            userNickname: body.userNickname || "user"
+          }];
         }
       });
     } else if (body.event === "USER_DISCONNECTED" && body.roomId) {
       console.log("🗑️ 큐에서 제거:", body.roomId);
       setQueue(prev => prev.filter(q => q.roomId !== body.roomId));
+      // ✅ 수락 목록에서도 제거
+      acceptedRoomsRef.current.delete(body.roomId);
+      localStorage.setItem('agent-acceptedRooms', JSON.stringify(Array.from(acceptedRoomsRef.current)));
     }
   }, []);
+
+  // ✅ 미처리 상담 요청 불러오기
+  const loadPendingRequests = useCallback(async () => {
+    console.log("🔍 미처리 상담 요청 불러오기 시작");
+    try {
+      const token = localStorage.getItem("adminAccessToken") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("token");
+
+      console.log("🔑 사용 중인 토큰:", token ? "있음" : "없음");
+      console.log("📡 요청 URL:", `${API_BASE_URL}/api/admin/support/pending`);
+
+      const response = await fetch(`${API_BASE_URL}/api/admin/support/pending`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log("📥 응답 상태:", response.status, response.statusText);
+
+      if (response.ok) {
+        const pendingRequests = await response.json();
+        console.log("📋 미처리 상담 요청:", pendingRequests);
+
+        // 중복 제거하면서 큐에 추가
+        setQueue(prev => {
+          console.log("현재 큐 상태:", prev);
+          const existingRoomIds = new Set(prev.map(q => q.roomId));
+          console.log("기존 roomId 목록:", Array.from(existingRoomIds));
+
+          const newRequests = pendingRequests
+            .filter((req: any) => {
+              const isDuplicate = existingRoomIds.has(req.sessionId);
+              const isAccepted = acceptedRoomsRef.current.has(req.sessionId);
+
+              if (isDuplicate) {
+                console.log(`⏭️ 중복 건너뛰기: ${req.sessionId}`);
+              }
+              if (isAccepted) {
+                console.log(`⏭️ 이미 수락한 방이므로 건너뛰기: ${req.sessionId}`);
+              }
+
+              return !isDuplicate && !isAccepted;
+            })
+            .map((req: any) => ({
+              roomId: req.sessionId,
+              userName: req.nickname || "user",
+              userNickname: req.nickname || "user"
+            }));
+
+          if (newRequests.length > 0) {
+            console.log(`➕ ${newRequests.length}건의 미처리 요청을 큐에 추가:`, newRequests);
+            const merged = [...prev, ...newRequests];
+            console.log("병합 후 큐:", merged);
+            return merged;
+          } else {
+            console.log("ℹ️ 새로운 미처리 요청 없음");
+          }
+          return prev;
+        });
+      } else {
+        const errorText = await response.text();
+        console.error("❌ API 응답 실패:", response.status, errorText);
+      }
+    } catch (error) {
+      console.error("❌ 미처리 요청 로드 실패:", error);
+    }
+  }, [API_BASE_URL]);
+
+  // ✅ 초기 로드 플래그
+  const initialLoadDoneRef = useRef(false);
 
   // STOMP 연결
   useEffect(() => {
     // SockJS는 http:// 또는 https:// URL을 받아서 자동으로 WebSocket으로 업그레이드
     const wsUrl = API_BASE_URL ? `${API_BASE_URL}/ws` : '/ws';
-    console.log('SockJS URL:', wsUrl);
+    console.log('🔌 SockJS 연결 시도:', wsUrl);
 
     const sock = new SockJS(wsUrl);
     const client = Stomp.over(sock);
@@ -235,15 +342,24 @@ const LiveSupport: React.FC = () => {
       localStorage.getItem("accessToken") ||
       localStorage.getItem("token");
 
+    console.log("🔑 사용할 토큰:", token ? `${token.substring(0, 20)}...` : "없음");
+
     const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      console.log("✅ Authorization 헤더 설정됨");
+    } else {
+      console.warn("⚠️ 토큰이 없습니다. WebSocket 연결이 인증되지 않을 수 있습니다.");
+    }
 
     client.connect(
       headers,
       () => {
+        console.log("✅ STOMP 연결 성공");
         stompRef.current = client;
 
         // 큐 구독
+        console.log("📡 /topic/support.queue 구독 시작");
         client.subscribe("/topic/support.queue", (frame) => {
           try {
             const body = JSON.parse(frame.body);
@@ -256,6 +372,13 @@ const LiveSupport: React.FC = () => {
             console.error("큐 메시지 파싱 오류:", e);
           }
         });
+        console.log("✅ 큐 구독 완료");
+
+        // ✅ 연결 후 미처리 요청 불러오기 (최초 1회만)
+        if (!initialLoadDoneRef.current) {
+          loadPendingRequests();
+          initialLoadDoneRef.current = true;
+        }
 
         // 활성 방 재구독
         if (activeRoom) {
@@ -276,16 +399,20 @@ const LiveSupport: React.FC = () => {
         console.error("연결 해제 오류:", e);
       }
     };
-  }, [API_BASE_URL, activeRoom, subscribeRoom, isMessageProcessed, handleQueueMessage]);
+  }, [API_BASE_URL, activeRoom, subscribeRoom, isMessageProcessed, handleQueueMessage, loadPendingRequests]);
 
   // 수락 핸들러
   const accept = useCallback((roomId: string) => {
+    console.log("✅ 수락 버튼 클릭:", roomId);
+    console.log("현재 큐:", queue);
+
     const request = queue.find(q => q.roomId === roomId);
     if (!request || !stompRef.current?.connected) {
       console.error("수락 실패: 요청을 찾을 수 없거나 STOMP 미연결");
       return;
     }
 
+    console.log("📤 WebSocket으로 수락 메시지 전송");
     stompRef.current.send(
       `/app/support.handoff.accept`,
       {},
@@ -297,7 +424,20 @@ const LiveSupport: React.FC = () => {
     `[SYS] [${request.userName} (${request.userNickname})] 상담 연결 중...`
     ]);
     setIsUserConnected(true);
-    setQueue(prev => prev.filter(q => q.roomId !== roomId));
+
+    console.log("🗑️ 큐에서 제거 시도:", roomId);
+
+    // ✅ 수락한 방 기록
+    acceptedRoomsRef.current.add(roomId);
+    localStorage.setItem('agent-acceptedRooms', JSON.stringify(Array.from(acceptedRoomsRef.current)));
+    console.log("✅ 수락한 방 목록:", Array.from(acceptedRoomsRef.current));
+
+    setQueue(prev => {
+      const filtered = prev.filter(q => q.roomId !== roomId);
+      console.log("제거 전 큐:", prev);
+      console.log("제거 후 큐:", filtered);
+      return filtered;
+    });
 
     subscribeRoom(roomId);
   }, [queue, subscribeRoom]);
@@ -305,35 +445,64 @@ const LiveSupport: React.FC = () => {
   // 메시지 전송
   const sendToRoom = useCallback(() => {
     if (!stompRef.current?.connected || !activeRoom || !input.trim() || !isUserConnected) {
+      console.error("메시지 전송 불가:", {
+        connected: stompRef.current?.connected,
+        activeRoom,
+        hasInput: !!input.trim(),
+        isUserConnected
+      });
       return;
     }
 
-    stompRef.current.send(
-      `/app/support.send/${activeRoom}`,
-      {},
-      JSON.stringify({
-        type: "TEXT",
-        role: "AGENT",
-        text: input,
-        nickname: "상담사"
-      })
-    );
+    const messagePayload = {
+      type: "TEXT",
+      role: "ADMIN",
+      text: input
+    };
 
-    setInput("");
+    console.log("📤 메시지 전송:", messagePayload);
+    console.log("📍 목적지:", `/app/support.send/${activeRoom}`);
+
+    try {
+      stompRef.current.send(
+        `/app/support.send/${activeRoom}`,
+        {},
+        JSON.stringify(messagePayload)
+      );
+      console.log("✅ 메시지 전송 성공");
+
+      // WebSocket 브로드캐스트로 받은 메시지만 표시하므로 여기서는 추가하지 않음
+      setInput("");
+    } catch (error) {
+      console.error("❌ 메시지 전송 실패:", error);
+      setLogs(prev => [...prev, `[ERROR] 메시지 전송 실패: ${error}`]);
+    }
   }, [activeRoom, input, isUserConnected]);
 
   // 연결 해제
   const disconnectFromUser = useCallback(() => {
     if (!stompRef.current?.connected || !activeRoom) return;
 
+    console.log("📤 상담사 연결 해제:", activeRoom);
+
     setIsUserConnected(false);
     setLogs(prev => [...prev, `[SYS] 연결을 해제했습니다.`]);
+
+    // ✅ 큐에서 제거
+    setQueue(prev => prev.filter(q => q.roomId !== activeRoom));
+
+    // ✅ 수락 목록에서도 제거
+    acceptedRoomsRef.current.delete(activeRoom);
+    localStorage.setItem('agent-acceptedRooms', JSON.stringify(Array.from(acceptedRoomsRef.current)));
 
     stompRef.current.send(
       "/app/support.agent.disconnect",
       {},
       JSON.stringify({ roomId: activeRoom })
     );
+
+    // ✅ activeRoom 초기화
+    setActiveRoom(null);
   }, [activeRoom]);
 
   // 대화 내용 삭제
