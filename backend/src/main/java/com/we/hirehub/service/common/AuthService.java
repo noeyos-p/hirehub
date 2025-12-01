@@ -49,9 +49,9 @@ public class AuthService {
         }
 
         // 🔥 SMS 인증 여부 체크
-        if (!smsCodeService.isVerified(req.getPhone())) {
-            throw new IllegalStateException("휴대폰 인증이 필요합니다.");
-        }
+//        if (!smsCodeService.isVerified(req.getPhone())) {
+//            throw new IllegalStateException("휴대폰 인증이 필요합니다.");
+//        }
 
         String encoded = passwordEncoder.encode(req.getPassword());
 
