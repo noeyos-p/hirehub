@@ -21,7 +21,9 @@ public class CoachDto {
     private Long resumeId;
     private Long jobPostsId;
     private Long companyId;
-    private String content;
+    private String question;
+    private String answer;
+    private String feedback;
     private String role;
     private String userName;
     private String resumeTitle;
@@ -36,7 +38,9 @@ public class CoachDto {
                 .resumeId(coach.getResume().getId())
                 .jobPostsId(coach.getJobPosts().getId())
                 .companyId(coach.getCompany().getId())
-                .content(coach.getContent())
+                .question(coach.getQuestion())
+                .answer(coach.getAnswer())
+                .feedback(coach.getFeedback())
                 .role(coach.getRole())
                 .userName(coach.getUser().getName())
                 .resumeTitle(coach.getResume().getTitle())
@@ -53,15 +57,23 @@ public class CoachDto {
                 .resume(resume)
                 .jobPosts(jobPosts)
                 .company(company)
-                .content(this.content)
+                .question(this.question)
+                .answer(this.answer)
+                .feedback(this.feedback)
                 .role(this.role)
                 .build();
     }
 
     /** 기존 Entity 업데이트 **/
     public void updateEntity(Coach coach) {
-        if (this.content != null) {
-            coach.setContent(this.content);
+        if (this.question != null) {
+            coach.setQuestion(this.question);
+        }
+        if (this.answer != null) {
+            coach.setAnswer(this.answer);
+        }
+        if (this.feedback != null) {
+            coach.setFeedback(this.feedback);
         }
         if (this.role != null) {
             coach.setRole(this.role);

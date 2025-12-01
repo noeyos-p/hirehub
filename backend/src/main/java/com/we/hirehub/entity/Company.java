@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 /** 완료 */
 
@@ -66,8 +64,8 @@ public class Company {
     private AvgSalary avgSalary;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "month_salary_id")
-    private MonthSalary monthSalary;
+    @JoinColumn(name = "age_average_id")
+    private AgeAverage ageAverage;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "new_salary_id")

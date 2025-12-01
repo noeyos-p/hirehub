@@ -31,9 +31,17 @@ public class Coach {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
-    // 코칭 내용
+    // 코칭 질문
     @Column(columnDefinition = "LONGTEXT")
-    private String content;
+    private String question;
+
+    // 코칭 질문
+    @Column(columnDefinition = "LONGTEXT")
+    private String answer;
+
+    // 코칭 질문
+    @Column(columnDefinition = "LONGTEXT")
+    private String feedback;
 
     // ✅ 새로 추가: 메시지 역할 (USER, AGENT, SYS)
     @Column(name = "role", length = 20)

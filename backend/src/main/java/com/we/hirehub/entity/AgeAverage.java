@@ -9,17 +9,13 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "month_salary")
-public class MonthSalary {
+@Table(name = "age_average")
+public class AgeAverage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 월
+    // 나이
     @Column(nullable = false)
-    private String month;
-
-    // 월별 평균 급여
-    @Column(nullable = false)
-    private String salary;
+    private Long age;
 }
