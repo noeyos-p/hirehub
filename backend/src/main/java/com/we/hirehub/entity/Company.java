@@ -78,4 +78,11 @@ public class Company {
     // 기업 유형 (기업 구분)
     @Column(name = "company_type")
     private String companyType;
+
+    // 위도 경도
+    @Column(name = "lat")
+    private Double lat;
+
+    @Column(name = "lng")
+    private Double lng;
 }
