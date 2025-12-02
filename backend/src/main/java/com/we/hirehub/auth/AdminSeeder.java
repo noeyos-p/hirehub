@@ -19,7 +19,8 @@ public class AdminSeeder {
     @PostConstruct
     public void seed() {
         usersRepository.findByEmail("admin@admin").ifPresentOrElse(
-                u -> {}, // 존재하면 패스
+                u -> {
+                }, // 존재하면 패스
                 () -> {
                     Users admin = new Users();
                     admin.setEmail("admin@admin");
@@ -28,5 +29,20 @@ public class AdminSeeder {
                     usersRepository.save(admin);
                 }
         );
+
+
+        // 2️⃣ BOT 자동 생성
+        usersRepository.findByEmail("bot@bot").ifPresentOrElse(
+                u -> {
+                },
+                () -> {
+                    Users bot = new Users();
+                    bot.setEmail("bot@bot");
+                    bot.setPassword(passwordEncoder.encode("bot123"));
+                    bot.setRole(Role.BOT);
+                    usersRepository.save(bot);
+                }
+        );
     }
 }
+

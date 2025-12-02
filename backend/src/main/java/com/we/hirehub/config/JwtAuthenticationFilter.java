@@ -42,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/ai/")           // ✅ 추가
                 || path.startsWith("/api/faq")           // ✅ 추가
                 || path.startsWith("/api/chatbot/")      // ✅ 추가
+                || path.startsWith("/api/board/ai/")     // ✅ 추가
                 || path.startsWith("/swagger-ui/")
                 || path.startsWith("/v3/api-docs/")
                 || path.startsWith("/login")
@@ -69,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (StringUtils.hasText(token) && tokenProvider.validate(token)) {
                 Long userId = tokenProvider.getUserId(token);
-                String email = tokenProvider.getUsername(token);
+                String email = tokenProvider.getEmail(token);
 
                 List<GrantedAuthority> authorities =
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));

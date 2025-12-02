@@ -1,259 +1,269 @@
+# main.py
+
+import os
+from dotenv import dotenv_values
+
+# ⚡ .env 값 강제 overwrite
+env = dotenv_values(".env")
+for key, value in env.items():
+    if value is not None:
+        os.environ[key] = value
+
+import time
+import json
+from datetime import datetime, timedelta
+from typing import List, Optional, Dict, Any
+
+import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import uvicorn
-import os
-import json              # 👈 여기 추가
-from dotenv import load_dotenv  # ✅ 추가
-from openai import OpenAI
-from typing import Optional, List, Dict, Any
 
-# ✅ .env 파일 로드 (main.py와 같은 폴더에 있어야 함)
+from openai import OpenAI
+
+# ===== ENV 로드 =====
 load_dotenv()
 
-# ✅ API 키 확인 및 출력 (디버깅용)
-api_key = os.getenv("OPENAI_API_KEY", "")
-print(f"🔑 API 키 로드 여부: {'있음' if api_key else '없음'}")
-if api_key:
-    print(f"🔑 API 키 앞 7자: {api_key[:7]}...")
+NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID", "")
+NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
-# ✅ OpenAI 클라이언트 초기화
-client = OpenAI(api_key=api_key)
+print("NAVER_CLIENT_ID:", repr(NAVER_CLIENT_ID))
+print("NAVER_CLIENT_SECRET:", repr(NAVER_CLIENT_SECRET))
+print("OPENAI_API_KEY:", repr(OPENAI_API_KEY))
+print(f"🔑 OPENAI 키: {'있음' if OPENAI_API_KEY else '없음'}")
 
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+# ===== FastAPI =====
 app = FastAPI()
+default_origins = ["http://localhost:3000", "http://localhost:5173", "https://noeyos.store"]
+env_origins = [o for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+allow_origins = env_origins if env_origins else default_origins
 
-# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://noeyos.store"],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ====== Schemas ======
+class NewsItem(BaseModel):
+    title: str
+    link: str
+    description: Optional[str] = None
+    pubDate: Optional[str] = None
+    press: Optional[str] = None
 
-class ChatRequest(BaseModel):
-    message: str
+class DigestRequest(BaseModel):
+    query: str = "채용 OR 공채 OR 채용공고"
+    days: int = 3
+    limit: int = 20
+    style: str = "bullet"
 
+# ===== Helper =====
+def naver_news_search(query: str, start: int = 1, display: int = 20, sort: str = "date"):
+    if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
+        raise RuntimeError("NAVER API 키 누락")
 
-@app.get("/")
-async def root():
-    return {"status": "AI Server is running", "version": "1.0.0"}
+    url = "https://openapi.naver.com/v1/search/news.json"
+    headers = {
+        "X-Naver-Client-Id": NAVER_CLIENT_ID,
+        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET,
+    }
+    params = {"query": query, "display": display, "start": start, "sort": sort}
+    r = requests.get(url, headers=headers, params=params, timeout=10)
+    r.raise_for_status()
+    return r.json()
 
-#  ai 챗봇 상담기능
-@app.post("/ai/chat")
-async def chat(req: ChatRequest):
-    try:
-        print(f"📨 받은 메시지: {req.message}")
+# ===== Fetch News =====
+@app.post("/news/fetch", response_model=List[NewsItem])
+def fetch_news(req: DigestRequest):
+    items = []
+    remaining = max(1, req.limit)
+    start = 1
 
-        # ✅ API 키 확인
-        if not client.api_key:
-            print("❌ OpenAI API 키가 설정되지 않았습니다!")
-            return {"answer": "OpenAI API 키가 설정되지 않았습니다. 관리자에게 문의하세요."}
+    while remaining > 0 and start <= 1000:
+        page_size = min(20, remaining)
+        data = naver_news_search(req.query, start=start, display=page_size)
+        raw = data.get("items", [])
+        if not raw:
+            break
 
-        # ✅ OpenAI API 호출
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "당신은 채용 플랫폼 HireHub의 친절한 고객 지원 AI 챗봇입니다. 사용자의 질문에 명확하고 친절하게 답변해주세요."
-                },
-                {
-                    "role": "user",
-                    "content": req.message
-                }
-            ],
-            max_tokens=500,
-            temperature=0.7
+        for it in raw:
+            items.append(
+                NewsItem(
+                    title=(it.get("title") or "").replace("<b>", "").replace("</b>", ""),
+                    link=it.get("link", ""),
+                    description=(it.get("description") or "").replace("<b>", "").replace("</b>", ""),
+                    pubDate=it.get("pubDate"),
+                    press=it.get("originallink") or None,
+                )
+            )
+        remaining -= len(raw)
+        start += page_size
+
+    # 날짜 필터
+    if req.days and req.days > 0:
+        cutoff = datetime.utcnow() - timedelta(days=req.days + 0.5)
+        def in_range(n: NewsItem):
+            try:
+                dt = datetime.strptime(n.pubDate, "%a, %d %b %Y %H:%M:%S %z")
+                return dt.timestamp() >= cutoff.timestamp()
+            except:
+                return False
+
+        items = [n for n in items if in_range(n)]
+
+    return items[:req.limit]
+
+# ===== Digest =====
+@app.post("/news/digest")
+def news_digest(req: DigestRequest):
+    """
+    뉴스 요약/가공 (Spring에서 호출)
+    """
+
+    # 🔥 1차: 채용 뉴스 검색
+    primary_req = DigestRequest(
+        query="채용 OR 공채 OR 노동시장 OR 인사",
+        days=req.days,
+        limit=req.limit,
+        style=req.style
+    )
+    items = fetch_news(primary_req)
+
+    # 🔥 2차: IT 뉴스 fallback
+    if not items:
+        print("⚠️ 채용 뉴스 없음 → IT 뉴스로 재검색")
+        it_req = DigestRequest(
+            query="IT OR 기술 OR AI OR 개발자 OR 스타트업",
+            days=req.days,
+            limit=req.limit,
+            style=req.style
         )
+        items = fetch_news(it_req)
 
-        answer = completion.choices[0].message.content
-        print(f"✅ AI 응답: {answer}")
-        return {"answer": answer}
+    # 🔥 3차: 산업 뉴스 fallback
+    if not items:
+        print("⚠️ IT 뉴스 없음 → 전체 산업 뉴스로 재검색")
+        broad_req = DigestRequest(
+            query="산업 OR 기업 OR 경제 OR 시장",
+            days=req.days,
+            limit=req.limit,
+            style=req.style
+        )
+        items = fetch_news(broad_req)
 
-    except Exception as e:
-        print(f"❌ Error: {type(e).__name__}")
-        print(f"❌ Error 상세: {e}")
+    if not items:
         return {
-            "answer": f"AI 처리 중 오류가 발생했습니다: {str(e)}"
+            "title": f"뉴스 없음 ({datetime.now().strftime('%Y-%m-%d %H:%M')})",
+            "content": "",
+            "tags": [],
+            "sources": []
         }
 
+    # 뉴스 제목 목록
+    titles = "\n".join([f"- {n.title}" for n in items[:req.limit]])
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+    prompt = f"""
+당신은 뉴스 에디터입니다.
+아래 뉴스들을 {req.style} 스타일로 요약하세요.
 
-# 자기소개서 ai 첨삭기능
+### 뉴스 목록
+{titles}
 
-class ResumeReviewRequest(BaseModel):
-    content: str  # Spring Boot에서 보내는 텍스트 형식
-
-@app.post("/ai/review")
-async def review_resume(req: ResumeReviewRequest):
-    try:
-        print(f"📨 받은 이력서 내용: {req.content[:200]}...")
-
-        prompt = f"""
-당신은 전문 채용담당자입니다.
-아래 사용자가 입력한 이력서 정보를 참고하여,
-자기소개서를 **상황에 맞게 정확하게 첨삭**해주세요.
-
-### 이력서 전체 내용
-{req.content}
-
----
-
-### 🔍 첨삭 규칙
-1) 지원자의 이력과 맞지 않는 내용이 있으면 정확히 지적
-2) 경력·스킬과 연결되는 표현 제안
-3) 지원 직무에 어울리지 않는 문장은 자연스럽게 개선
-4) 부족한 문맥·성과·강점 보완 추천
-5) 마지막에는 "개선된 자기소개서"를 완전한 문장으로 재작성
-
----
-
-이제 첨삭을 시작해줘.
-        """
-
-        # 🔥 OpenAI 호출
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "당신은 전문 채용담당자입니다."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1500,
-            temperature=0.3
-        )
-
-        feedback = completion.choices[0].message.content
-
-        print("📤 AI 첨삭 결과 반환")
-        return {"feedback": feedback}
-
-    except Exception as e:
-        print("❌ 첨삭 오류:", e)
-        return {"feedback": f"AI 첨삭 중 오류 발생: {str(e)}"}
-
-class MatchRequest(BaseModel):
-    user: Dict[str, Any]
-    resume: Dict[str, Any]
-    company: Dict[str, Any]
-    job: Dict[str, Any]
-
-
-# ai 매칭 시스템
-class MatchBatchRequest(BaseModel):
-    user: Dict[str, Any]
-    resume: Dict[str, Any]
-    jobs: List[Dict[str, Any]]  # [{jobId, job, company}]
-
-
-@app.post("/ai/match-batch")
-async def match_batch(req: MatchBatchRequest):
-    try:
-        # ✅ 1) ID 1001~1021만 필터링
-        filtered_jobs = [job for job in req.jobs if 1001 <= job.get("id", 0) <= 1021]
-
-        if not filtered_jobs:
-            print("⚠️ 조건에 맞는 JobPosts가 없습니다.")
-            return {"results": []}
-
-        # ✅ 2) 각 공고별로 간소화된 텍스트 생성 (토큰 절감용)
-        def summarize_job(job):
-            job_text = f"""
-            📌 제목: {job.get('title')}
-            📍 위치: {job.get('location')}
-            💼 경력: {job.get('careerLevel')}
-            🎓 학력: {job.get('education')}
-            💰 급여: {job.get('salary')}
-            📋 내용 요약: {(job.get('content') or '')[:800]}
-            """
-            return job_text.strip()
-
-        summarized_jobs = [summarize_job(job) for job in filtered_jobs]
-
-        # ✅ 3) GPT에 전달할 프롬프트 구성
-        prompt = f"""
-당신은 전문 채용담당자입니다.
-사용자 정보와 이력서를 바탕으로, 아래 채용공고(ID 1001~1021 중 해당 공고들)에 대해
-각각 **적합도 점수(0~100)** 와 **등급(A+~D)** 를 JSON 형식으로 계산하세요.
-
-### 👤 사용자 정보
-{json.dumps(req.user, ensure_ascii=False, indent=2)}
-
-### 📄 이력서 정보
-{json.dumps(req.resume, ensure_ascii=False, indent=2)}
-
-### 📢 채용공고 리스트 (요약)
-{json.dumps(summarized_jobs, ensure_ascii=False, indent=2)}
-
-출력 형식(JSON ONLY):
-{{
-  "results": [
-    {{
-      "jobId": 1001,
-      "score": 87,
-      "grade": "A",
-      "reasons": ["이유1", "이유2"]
-    }}
-  ]
-}}
+불필요한 광고성 문장은 제외하고 산업 동향 중심으로 정리하세요.
 """
 
-        # ✅ 4) GPT 호출 (요약된 입력으로 토큰 초과 방지)
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            response_format={"type": "json_object"},
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1500,
-            temperature=0.2
-        )
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=1000,
+        temperature=0.5
+    )
 
-        output = completion.choices[0].message.content
-        result = json.loads(output)
+    summary = completion.choices[0].message.content
 
-        # ✅ 5) 결과 검증 및 후처리
-        if "results" not in result:
-            print("⚠️ GPT 응답 포맷 이상, 기본 점수 생성")
-            result["results"] = []
+    # 🔥 UID 붙여서 게시글 중복 방지
+    uid = datetime.now().strftime('%Y%m%d%H%M%S')
+    unique_prefix = f"[UID:{uid}] "
+    unique_title = f"AI 뉴스 요약 ({uid})"
 
-        # GPT 응답에 grade가 없거나 점수가 이상한 경우 방어 로직
-        final_results = []
-        for job_result in result["results"]:
-            score = int(job_result.get("score", 0))
-            if score > 100:
-                score = 100
-            elif score < 0:
-                score = 0
+    return {
+        "title": unique_title,
+        "content": unique_prefix + summary,
+        "tags": ["뉴스", "요약", "채용", "IT"],
+        "sources": items[:req.limit]
+    }
 
-            # 등급 자동 계산 (A+~D)
-            if score >= 95:
-                grade = "A+"
-            elif score >= 85:
-                grade = "A"
-            elif score >= 75:
-                grade = "B"
-            elif score >= 65:
-                grade = "C"
-            else:
-                grade = "D"
 
-            job_result["grade"] = job_result.get("grade", grade)
-            final_results.append(job_result)
+# ===== Scheduler =====
+from apscheduler.schedulers.background import BackgroundScheduler
 
-        # ✅ 6) 점수순 정렬 + 상위 10개만 반환
-        final_results.sort(key=lambda x: x.get("score", 0), reverse=True)
-        top10 = final_results[:10]
+SPRING_BOARD_API = "http://backend:8080/api/board/ai/news/publish"
 
-        print(f"✅ 매칭 완료 (필터링된 {len(filtered_jobs)}건 중 상위 10개 반환)")
-        return {"results": top10}
+def generate_auto_board_post():
+    print("⏳ [자동 뉴스 요약 + 게시글 발행 시작]")
 
+    payload = {
+        "query": "채용 OR 공채 OR 노동시장 OR IT OR 기술 OR AI OR 개발자",
+        "days": 30,
+        "limit": 15,
+        "style": "bullet",
+        "botUserId": 2
+    }
+
+    try:
+        res = requests.post(SPRING_BOARD_API, json=payload, timeout=10)
+        print("📨 Spring 응답:", res.status_code, res.text)
     except Exception as e:
-        print("❌ Batch Matching Error:", e)
-        return {"results": []}
+        print("🔥 자동 처리 중 오류:", e)
 
+scheduler = BackgroundScheduler()
+scheduler.add_job(generate_auto_board_post, "interval", hours=1)
+scheduler.start()
+print("⏰ 스케줄러 시작됨: 1시간마다 뉴스 자동 생성")
 
+# AI 게시판 검열
+@app.post("/ai/moderate")
+def moderate(req: dict):
+    text = req.get("content", "")
+
+    prompt = f"""
+너는 커뮤니티 글을 검열하는 AI야.
+
+이 글이 아래 문제를 포함하는지 판단해줘:
+- 욕설/비방
+- 성적/음란성
+- 혐오/차별
+- 범죄 조장
+- 개인정보 노출
+- 스팸/도배
+- 기타 부적절한 행동
+
+결과는 반드시 아래 JSON 형식으로 답해.
+{{
+  "approve": true or false,
+  "reason": "왜 그런 판단을 했는지 한 줄 설명"
+}}
+글 내용:
+{text}
+"""
+
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        response_format={"type":"json_object"},
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=300,
+        temperature=0.1
+    )
+
+    return json.loads(completion.choices[0].message.content)
+# ===== uvicorn =====
 if __name__ == "__main__":
+    import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

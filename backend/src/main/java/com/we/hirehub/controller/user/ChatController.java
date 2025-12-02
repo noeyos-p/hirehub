@@ -106,6 +106,22 @@ public class ChatController {
         return ResponseEntity.ok().build();
     }
 
+    // AI Bot 메시지 전송
+
+    @PostMapping("/help/bot/send")
+    public ResponseEntity<?> sendBotMessage(@RequestBody ChatMessageRequest request) {
+        log.info("🤖 BOT 메시지 전송 - sessionId: {}, content: {}", request.getSessionId(), request.getContent());
+
+        helpService.send(
+                request.getSessionId(),
+                request.getContent(),
+                "BOT",     // 🔥 여기서 role 직접 지정
+                null       // BOT은 Users 엔티티와 연결되지 않음
+        );
+
+        return ResponseEntity.ok().build();
+    }
+
     // ===== Private Helper Methods =====
 
     /**

@@ -101,7 +101,11 @@ public class AuthRestController {
         Users user = usersRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String accessToken = tokenProvider.createToken(user.getEmail(), user.getId());
+        String accessToken = tokenProvider.createToken(
+                user.getEmail(),
+                user.getId(),
+                user.getRole().name()
+        );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "tokenType", "Bearer",
@@ -140,12 +144,12 @@ public class AuthRestController {
         try {
             String email = null;
 
-            // 1) 필터가 심어준 Authentication 우선
+            // 1) Authentication에서 이메일 추출
             if (authentication != null) {
                 email = authentication.getName();
             }
 
-            // 2) 혹시 모를 필터 누락 대비: 헤더에서 직접 토큰 꺼내 파싱
+            // 2) fallback: JWT 직접 파싱
             if (email == null && authz != null && authz.startsWith("Bearer ")) {
                 String token = authz.substring(7);
                 if (tokenProvider.validate(token)) {
@@ -157,19 +161,33 @@ public class AuthRestController {
                 return ResponseEntity.status(401).body(Map.of("message", "UNAUTHORIZED"));
             }
 
-            return authService.findByEmail(email)
-                    .<ResponseEntity<?>>map(u -> ResponseEntity.ok(Map.of(
-                            "id", u.getId(),
-                            "email", u.getEmail(),
-                            "name", u.getName(),
-                            "role", u.getRole() != null ? u.getRole().name() : "USER"
-                    )))
-                    .orElseGet(() -> ResponseEntity.status(401).body(Map.of("message", "USER_NOT_FOUND")));
+            Users u = authService.findByEmail(email).orElse(null);
+            if (u == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "USER_NOT_FOUND"));
+            }
+
+            // ⭐⭐⭐ BOT 계정은 온보딩 체크 없이 바로 인증 처리 ⭐⭐⭐
+            if (u.getRole() != null && u.getRole().name().equals("BOT")) {
+                return ResponseEntity.ok(Map.of(
+                        "id", u.getId(),
+                        "email", u.getEmail(),
+                        "role", u.getRole().name()
+                ));
+            }
+
+            // ⭐ USER/ADMIN 은 기존 로직 유지
+            return ResponseEntity.ok(Map.of(
+                    "id", u.getId(),
+                    "email", u.getEmail(),
+                    "name", u.getName(),
+                    "role", u.getRole() != null ? u.getRole().name() : "USER"
+            ));
+
         } catch (Exception e) {
-            // 어떤 오류든 401로 통일
             return ResponseEntity.status(401).body(Map.of("message", "INVALID_TOKEN"));
         }
     }
+
     private static boolean isBlank(String s){ return s == null || s.isBlank(); }
     private boolean requiresOnboarding(Users u) {
         return isBlank(u.getName())

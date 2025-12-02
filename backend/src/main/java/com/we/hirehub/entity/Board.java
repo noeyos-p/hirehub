@@ -55,4 +55,9 @@ public class Board {
     @Column(length = 20)
     private String role;
 
+    @Column(length = 500)
+    private String tagsCsv; // "채용트렌드,공공기관채용"
+
+    @Column(name = "ai_hash", unique = true)
+    private String aiHash;
 }

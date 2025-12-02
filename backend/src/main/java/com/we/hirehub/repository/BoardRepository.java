@@ -44,4 +44,8 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     Page<Board> findByUsers_Id(Long usersId, Pageable pageable);
 
     List<Board> findByTitleContainingOrContentContaining(String title, String content);
+
+    List<Board> findByRoleOrderByCreateAtDesc(String role);
+
+    boolean existsByAiHash(String aiHash);
 }

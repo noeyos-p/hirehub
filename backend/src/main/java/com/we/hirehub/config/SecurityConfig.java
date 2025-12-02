@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // ✅ 인증 없이 접근 가능한 경로
                         .requestMatchers(
+                                "/api/board/ai/**", // AI 게시글 자동생성
                                 "/api/ai/**",           // AI 챗봇 API
                                 "/api/sms/**", //문자인증
                                 "/api/resume/match", // 👈 공개 허용
