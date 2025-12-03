@@ -4,6 +4,7 @@ import { boardApi, commentApi } from '../../api/boardApi';
 import type { BoardListResponse, CommentResponse } from '../../types/interface';
 import { useAuth } from '../../hooks/useAuth';
 import CommentSection from './CommentSection';
+import PopularPosts from './PopularPosts';
 import { EyeIcon, ArrowLeftIcon, EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
 
 const BoardDetail: React.FC = () => {
@@ -14,7 +15,7 @@ const BoardDetail: React.FC = () => {
   const [comments, setComments] = useState<CommentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // ✅ 드롭다운 메뉴 state
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -127,7 +128,7 @@ const BoardDetail: React.FC = () => {
   // ✅ 게시글 삭제 핸들러
   const handleBoardDelete = async () => {
     setShowDropdown(false);
-    
+
     if (!window.confirm('게시글을 삭제하시겠습니까?')) return;
 
     try {
@@ -187,92 +188,104 @@ const BoardDetail: React.FC = () => {
   const canManageBoard = isAuthenticated && (isOwner || isAdmin);
 
   return (
-    <section className="mb-8">
-      <button
-        onClick={() => navigate('/board')}
-        className="flex items-center text-gray-500 text-sm mb-6 hover:text-gray-700"
-      >
-        <ArrowLeftIcon className="w-4 h-4 mr-1" />
-        목록으로
-      </button>
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
+      <div className="flex flex-col lg:flex-row gap-8 py-6 sm:py-8">
+        {/* Main Content */}
+        <section className="flex-1 min-w-0">
+          <button
+            onClick={() => navigate('/board')}
+            className="flex items-center text-gray-500 text-sm mb-6 hover:text-gray-700 transition"
+          >
+            <ArrowLeftIcon className="w-4 h-4 mr-1" />
+            목록으로
+          </button>
 
-      {/* ✅ 제목과 드롭다운 메뉴 */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-gray-900">{board.title}</h2>
-        
-        {canManageBoard && (
-  <div className="relative" ref={dropdownRef}>
-    <button
-      onClick={() => setShowDropdown(!showDropdown)}
-      className="p-2 cursor-pointer transition -mr-2"
-    >
-      <EllipsisHorizontalIcon className="w-5 h-5 text-gray-600" />  {/* ✅ 가로 점 3개 */}
-    </button>
+          {/* ✅ 제목과 드롭다운 메뉴 */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{board.title}</h2>
 
-    {showDropdown && (
-      <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-        <button
-          onClick={handleBoardEdit}
-          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-        >
-          수정
-        </button>
-        <button
-          onClick={handleBoardDelete}
-          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition"
-        >
-          삭제
-        </button>
-      </div>
-    )}
-  </div>
-)}
-      </div>
+            {canManageBoard && (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="p-2 cursor-pointer transition -mr-2"
+                >
+                  <EllipsisHorizontalIcon className="w-5 h-5 text-gray-600" />
+                </button>
 
-      <div className="flex items-start text-sm text-gray-500 mb-6">
-        <div className="w-10 h-10 rounded-full mr-3 overflow-hidden flex items-center justify-center bg-gray-300">
-          {board.usersProfileImage ? (
-            <img
-              src={board.usersProfileImage}
-              alt={`${board.nickname || board.usersName}'s profile`}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-gray-600 font-medium">
-              {(board.nickname || board.usersName || '익명').charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
-        <div>
-          <p className="font-bold text-gray-800">
-            {board.nickname || board.usersName || '익명'}
-          </p>
-          <p>{formatDateTime(board.createAt)}</p>
-        </div>
-        
-        <div className="flex items-center ml-auto space-x-3 text-gray-400 mt-5">
-          <div className="flex items-center space-x-1">
-            <EyeIcon className="w-4 h-4" />
-            <span>{board.views || 0}</span>
+                {showDropdown && (
+                  <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                    <button
+                      onClick={handleBoardEdit}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={handleBoardDelete}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      </div>
 
-      <div className="border-t border-b border-gray-200 py-6 text-gray-800 leading-relaxed whitespace-pre-line">
-        {board.content}
-      </div>
+          <div className="flex items-start text-sm text-gray-500 mb-6">
+            <div className="w-10 h-10 rounded-full mr-3 overflow-hidden flex items-center justify-center bg-gray-300">
+              {board.usersProfileImage ? (
+                <img
+                  src={board.usersProfileImage}
+                  alt={`${board.nickname || board.usersName}'s profile`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-gray-600 font-medium">
+                  {(board.nickname || board.usersName || '익명').charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div>
+              <p className="font-bold text-gray-800">
+                {board.nickname || board.usersName || '익명'}
+              </p>
+              <p>{formatDateTime(board.createAt)}</p>
+            </div>
 
-      <CommentSection
-        comments={comments}
-        isAuthenticated={isAuthenticated}
-        currentUserId={user?.id}
-        currentUserRole={user?.role}
-        onCommentSubmit={handleCommentSubmit}
-        onReplySubmit={handleReplySubmit}
-        onCommentDelete={handleCommentDelete}
-        onCommentEdit={handleCommentEdit}
-      />
-    </section>
+            <div className="flex items-center ml-auto space-x-3 text-gray-400 mt-5">
+              <div className="flex items-center space-x-1">
+                <EyeIcon className="w-4 h-4" />
+                <span>{board.views || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-b border-gray-200 py-6 text-gray-800 leading-relaxed whitespace-pre-line">
+            {board.content}
+          </div>
+
+          <CommentSection
+            comments={comments}
+            isAuthenticated={isAuthenticated}
+            currentUserId={user?.id}
+            currentUserRole={user?.role}
+            onCommentSubmit={handleCommentSubmit}
+            onReplySubmit={handleReplySubmit}
+            onCommentDelete={handleCommentDelete}
+            onCommentEdit={handleCommentEdit}
+          />
+        </section>
+
+        {/* Sidebar - Popular Posts */}
+        <aside className="hidden lg:block w-full lg:w-80 xl:w-96 flex-shrink-0">
+          <div className="sticky top-20">
+            <PopularPosts />
+          </div>
+        </aside>
+      </div>
+    </div>
   );
 };
 

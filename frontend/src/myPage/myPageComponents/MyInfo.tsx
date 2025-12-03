@@ -100,7 +100,7 @@ const formatPhone = (val?: string | null) => {
 
 const SEOUL_DISTRICTS = [
   "강남구", "강동구", "강북구", "강서구", "관악구", "광진구",
-  "구로구", "금천구",  "노원구", "도봉구", "동대문구", "동작구",
+  "구로구", "금천구", "노원구", "도봉구", "동대문구", "동작구",
   "마포구", "서대문구", "서초구", "성동구", "성북구", "송파구",
   "양천구", "영등포구", "용산구", "은평구", "종로구", "중구", "중랑구",
 ];
@@ -137,9 +137,8 @@ const FieldRow: React.FC<{
     <div className="col-span-3 flex justify-end">
       {onEdit && (
         <button
-          className={`p-1 rounded ${
-            disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-100"
-          }`}
+          className={`p-1 rounded ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-100"
+            }`}
           onClick={disabled ? undefined : onEdit}
         >
           <Pencil className="text-zinc-400" />
@@ -258,13 +257,13 @@ const MyInfo: React.FC = () => {
 
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-4 xl:gap-10">
         {/* 프로필 */}
-        <aside className="xl:col-span-4 flex flex-col sm:flex-row xl:flex-col items-center gap-4 -ml-32">
-          <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+        <aside className="xl:col-span-4 flex flex-col items-center gap-4">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="currentColor"
               viewBox="0 0 24 24"
-              className="w-10 h-10 text-gray-600"
+              className="w-12 h-12 sm:w-14 sm:h-14 text-gray-600"
             >
               <path
                 fillRule="evenodd"
@@ -275,9 +274,9 @@ const MyInfo: React.FC = () => {
           </div>
 
           {editing === "nickname" ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-center">
               <input
-                className="border border-zinc-300 rounded px-3 py-2"
+                className="border border-zinc-300 rounded px-3 py-2 text-center"
                 value={draft.nickname ?? ""}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, nickname: e.target.value }))
@@ -291,8 +290,8 @@ const MyInfo: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-zinc-700 ml-8">
-              <span>{me?.nickname || "닉네임 없음"}</span>
+            <div className="flex items-center gap-2 text-zinc-700 justify-center">
+              <span className="text-lg font-medium">{me?.nickname || "닉네임 없음"}</span>
               <button
                 className="p-1 rounded hover:bg-zinc-100"
                 onClick={() => startEdit("nickname")}

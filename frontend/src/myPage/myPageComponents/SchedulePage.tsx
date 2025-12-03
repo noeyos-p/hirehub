@@ -146,7 +146,7 @@ const SchedulePage: React.FC = () => {
     const isPast = fullDate < todayStr;
     const isToday = fullDate === todayStr;
 
-    let classes = "p-4 rounded cursor-pointer transition-all duration-200 text-base ";
+    let classes = "p-2 sm:p-4 rounded cursor-pointer transition-all duration-200 text-sm sm:text-base ";
     if (isSelected) classes += "font-bold scale-105";
     else if (isPast) classes += "text-gray-400";
     else classes += "hover:bg-gray-200 hover:scale-105";
@@ -284,10 +284,10 @@ const SchedulePage: React.FC = () => {
   );
 
   return (
-    <div className="flex p-4 gap-6">
+    <div className="flex flex-col lg:flex-row p-4 gap-6">
       {/* 좌측 달력 */}
-      <div className="w-2/3 bg-white rounded-lg shadow p-6" style={{ minHeight: "550px" }}>
-        <div className="flex justify-between items-center mb-12">
+      <div className="w-full lg:w-2/3 bg-white rounded-lg shadow p-4 sm:p-6 min-h-[400px] lg:min-h-[550px]">
+        <div className="flex justify-between items-center mb-8 sm:mb-12">
           <div className="flex items-center gap-2">
             <button className="px-3 py-1" onClick={prevMonth}>{"<"}</button>
             <span className="font-semibold text-lg">{selectedYear}년 {monthNames[selectedMonth - 1]}</span>
@@ -307,11 +307,11 @@ const SchedulePage: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 text-center gap-4 mb-6 font-semibold">
+        <div className="grid grid-cols-7 text-center gap-2 sm:gap-4 mb-6 font-semibold text-sm sm:text-base">
           <span className="text-red-500">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span className="text-blue-500">토</span>
         </div>
 
-        <div className="grid grid-cols-7 gap-6 text-center">
+        <div className="grid grid-cols-7 gap-2 sm:gap-6 text-center">
           {calendarDays.map((day, idx) => {
             if (day === null) return <div key={`empty-${idx}`} />;
             const fullDate = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -338,7 +338,7 @@ const SchedulePage: React.FC = () => {
       </div>
 
       {/* 우측 공고 리스트 */}
-      <div className="w-1/3 space-y-4">
+      <div className="w-full lg:w-1/3 space-y-4">
         {filteredNotices.length > 0 ? (
           filteredNotices.map((notice, idx) => (
             <div

@@ -140,7 +140,7 @@ const ChatBot: React.FC = () => {
   // FAQ 로드
   useEffect(() => {
     const controller = new AbortController();
-    
+
     // ✅ FaqController의 실제 경로: /api/faq
     fetch(`${API_BASE_URL}/api/faq`, {
       signal: controller.signal
@@ -164,11 +164,11 @@ const ChatBot: React.FC = () => {
   const isMessageProcessed = useCallback((messageId: string): boolean => {
     const now = Date.now();
     const lastProcessed = processedMessagesRef.current.get(messageId);
-    
+
     if (lastProcessed && now - lastProcessed < 5000) {
       return true;
     }
-    
+
     processedMessagesRef.current.set(messageId, now);
     return false;
   }, []);
@@ -225,7 +225,7 @@ const ChatBot: React.FC = () => {
 
     const sock = new SockJS(wsUrl);
     const client = Stomp.over(() => sock);
-    client.debug = () => {};
+    client.debug = () => { };
 
     const token = localStorage.getItem("accessToken");
     const headers: Record<string, string> = {};
@@ -239,10 +239,10 @@ const ChatBot: React.FC = () => {
         client.subscribe(`/topic/rooms/${roomId}`, (frame) => {
           try {
             const body = JSON.parse(frame.body);
-            
+
             const content = body.content || body.text;
             const role = body.role || 'BOT';
-            
+
             if (!content) return;
 
             const messageId = `${body.type}-${role}-${content}-${Date.now()}`;
@@ -263,8 +263,8 @@ const ChatBot: React.FC = () => {
         clearTimeout(inactivityTimerRef.current);
       }
       try {
-        client.disconnect(() => {});
-      } catch {}
+        client.disconnect(() => { });
+      } catch { }
     };
   }, [roomId, API_BASE_URL, isMessageProcessed]);
 
@@ -274,9 +274,9 @@ const ChatBot: React.FC = () => {
 
     switch (body.type) {
       case "HANDOFF_REQUESTED":
-        setMessages(prev => [...prev, { 
-          role: 'SYS', 
-          text: '상담사 연결을 요청했습니다. 잠시만 기다려주세요.' 
+        setMessages(prev => [...prev, {
+          role: 'SYS',
+          text: '상담사 연결을 요청했습니다. 잠시만 기다려주세요.'
         }]);
         break;
 
@@ -292,9 +292,9 @@ const ChatBot: React.FC = () => {
       case "AGENT_DISCONNECTED":
         console.log("⚠️ 상담사 연결 해제 수신");
         setIsAgentConnected(false);
-        setMessages(prev => [...prev, { 
-          role: 'SYS', 
-          text: body.text || '상담사가 연결을 해제했습니다.' 
+        setMessages(prev => [...prev, {
+          role: 'SYS',
+          text: body.text || '상담사가 연결을 해제했습니다.'
         }]);
         if (inactivityTimerRef.current) {
           clearTimeout(inactivityTimerRef.current);
@@ -330,7 +330,7 @@ const ChatBot: React.FC = () => {
     if (!question.trim()) return;
 
     setIsAiLoading(true);
-    
+
     // 사용자 메시지 추가
     setMessages(prev => [...prev, { role: 'USER', text: question }]);
 
@@ -339,7 +339,7 @@ const ChatBot: React.FC = () => {
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
-      
+
       // 토큰이 있으면 추가
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -359,11 +359,11 @@ const ChatBot: React.FC = () => {
       }
 
       const data = await response.json();
-      
+
       // AI 응답 추가
-      setMessages(prev => [...prev, { 
-        role: 'AI', 
-        text: data.answer || '답변을 생성할 수 없습니다.' 
+      setMessages(prev => [...prev, {
+        role: 'AI',
+        text: data.answer || '답변을 생성할 수 없습니다.'
       }]);
 
     } catch (error) {
@@ -388,11 +388,11 @@ const ChatBot: React.FC = () => {
       stompRef.current.send(
         `/app/support.send/${roomId}`,
         {},
-        JSON.stringify({ 
-          type: "TEXT", 
-          role: "USER", 
+        JSON.stringify({
+          type: "TEXT",
+          role: "USER",
           text: input,
-          userId: userInfo.current.userId 
+          userId: userInfo.current.userId
         })
       );
       resetInactivityTimer();
@@ -417,9 +417,9 @@ const ChatBot: React.FC = () => {
     }
 
     if (!userInfo.current.userId) {
-      setMessages(prev => [...prev, { 
-        role: 'SYS', 
-        text: '로그인 후 상담사 연결을 요청할 수 있습니다.' 
+      setMessages(prev => [...prev, {
+        role: 'SYS',
+        text: '로그인 후 상담사 연결을 요청할 수 있습니다.'
       }]);
       return;
     }
@@ -443,9 +443,9 @@ const ChatBot: React.FC = () => {
       })
     );
 
-    setMessages(prev => [...prev, { 
-      role: 'SYS', 
-      text: '상담사 연결을 요청했습니다.' 
+    setMessages(prev => [...prev, {
+      role: 'SYS',
+      text: '상담사 연결을 요청했습니다.'
     }]);
   }, [roomId, isAgentConnected]);
 
@@ -456,15 +456,15 @@ const ChatBot: React.FC = () => {
     console.log("📤 유저 연결 해제 요청");
 
     setIsAgentConnected(false);
-    setMessages(prev => [...prev, { 
-      role: 'SYS', 
-      text: '상담사 연결을 해제했습니다.' 
+    setMessages(prev => [...prev, {
+      role: 'SYS',
+      text: '상담사 연결을 해제했습니다.'
     }]);
 
     stompRef.current.send(
       `/app/support.disconnect/${roomId}`,
       {},
-      JSON.stringify({ 
+      JSON.stringify({
         userName: userInfo.current.name,
         userNickname: userInfo.current.nickname
       })
@@ -547,23 +547,23 @@ const ChatBot: React.FC = () => {
   }, [isAgentConnected, resetInactivityTimer]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="mx-auto px-14" style={{ maxWidth: '1440px' }}>
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
+      <div className="mx-auto px-4 md:px-14" style={{ maxWidth: '1440px' }}>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-8 gap-4 md:gap-0">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">고객지원센터</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">고객지원센터</h1>
             {isAgentConnected && (
               <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
                 ● 연결됨
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
             <button
               onClick={clearMessages}
-              className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
+              className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
             >
-              🗑️ 대화 내용 삭제
+              🗑️ 대화 삭제
             </button>
             {isAgentConnected ? (
               <button
@@ -572,23 +572,23 @@ const ChatBot: React.FC = () => {
                     disconnectAgent();
                   }
                 }}
-                className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
+                className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
               >
                 해제하기
               </button>
             ) : (
               <button
                 onClick={requestHandoff}
-                className="px-4 py-2 text-sm text-white rounded-lg transition hover:opacity-90"
+                className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-white rounded-lg transition hover:opacity-90"
                 style={{ backgroundColor: '#006AFF' }}
               >
-                상담사 연결하기
+                상담사 연결
               </button>
             )}
           </div>
         </div>
 
-        <div className="bg-gray-100 border border-gray-200 rounded-xl overflow-hidden flex flex-col" style={{ minHeight: '600px' }}>
+        <div className="bg-gray-100 border border-gray-200 rounded-xl overflow-hidden flex flex-col h-[calc(100vh-180px)] md:h-[600px] md:min-h-[600px]">
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((m, idx) => {
               const isUser = m.role === 'USER';
@@ -599,7 +599,7 @@ const ChatBot: React.FC = () => {
                   <div key={idx} className="flex justify-center">
                     <div className="rounded-lg px-4 py-3 shadow-sm max-w-md" style={{ backgroundColor: '#D6E4F0' }}>
                       {m.text.split('\n').map((line, i) => (
-                        <p key={i} className="text-base text-gray-700 text-center">
+                        <p key={i} className="text-sm md:text-base text-gray-700 text-center">
                           {line}
                         </p>
                       ))}
@@ -609,9 +609,9 @@ const ChatBot: React.FC = () => {
               }
 
               return (
-                <div key={idx} className={`flex items-start gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                <div key={idx} className={`flex items-start gap-2 md:gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
                   {!isUser && (
-                    <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                       <img
                         src={m.role === 'ADMIN' ? '/images/agent.png' : '/images/ai-bot.png'}
                         alt={m.role === 'ADMIN' ? 'Admin' : 'AI Bot'}
@@ -628,21 +628,20 @@ const ChatBot: React.FC = () => {
                     </div>
                   )}
 
-                  <div className={`flex flex-col max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex flex-col max-w-[85%] md:max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
                     {!isUser && (
                       <span className="text-xs font-semibold text-gray-700 mb-1 ml-1">
                         {m.role === 'AI' ? 'AI 봇' :
-                         m.role === 'BOT' ? 'HireBot' :
-                         m.role === 'ADMIN' ? '상담사' : '봇'}
+                          m.role === 'BOT' ? 'HireBot' :
+                            m.role === 'ADMIN' ? '상담사' : '봇'}
                       </span>
                     )}
 
                     <div
-                      className={`px-4 py-2.5 text-base rounded-2xl break-words ${
-                        isUser
+                      className={`px-3 py-2 md:px-4 md:py-2.5 text-sm md:text-base rounded-2xl break-words ${isUser
                           ? 'text-white rounded-tr-sm'
                           : 'bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm'
-                      }`}
+                        }`}
                       style={isUser ? { backgroundColor: '#006AFF' } : {}}
                     >
                       {m.text}
@@ -654,7 +653,7 @@ const ChatBot: React.FC = () => {
 
             {isAiLoading && (
               <div className="flex items-start gap-3 justify-start">
-                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                   <img
                     src="/images/ai-bot.png"
                     alt="AI Bot"
@@ -685,13 +684,13 @@ const ChatBot: React.FC = () => {
                 {/* 토글 버튼 */}
                 <button
                   onClick={() => setIsFaqVisible(!isFaqVisible)}
-                  className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors flex-shrink-0 shadow-sm"
+                  className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors flex-shrink-0 shadow-sm"
                   title={isFaqVisible ? 'FAQ 숨기기' : 'FAQ 보기'}
                 >
                   {isFaqVisible ? (
-                    <ChevronDownIcon className="w-6 h-6" />
+                    <ChevronDownIcon className="w-5 h-5 md:w-6 md:h-6" />
                   ) : (
-                    <ChevronUpIcon className="w-6 h-6" />
+                    <ChevronUpIcon className="w-5 h-5 md:w-6 md:h-6" />
                   )}
                 </button>
 
@@ -702,7 +701,7 @@ const ChatBot: React.FC = () => {
                       <div key={category.id} className="w-full max-w-md">
                         <button
                           onClick={() => toggleCategory(category.id)}
-                          className="w-full text-left bg-white text-gray-600 rounded-lg px-4 py-3 shadow-md transition flex items-center justify-between font-semibold hover:bg-gray-50"
+                          className="w-full text-left bg-white text-gray-600 rounded-lg px-3 py-2 md:px-4 md:py-3 shadow-md transition flex items-center justify-between font-semibold hover:bg-gray-50"
                         >
                           <div>
                             <div className="text-sm">📋 {category.category}</div>
@@ -716,12 +715,12 @@ const ChatBot: React.FC = () => {
                         </button>
 
                         {openCategoryId === category.id && (
-                          <div className="mt-2 space-y-2 pl-4">
+                          <div className="mt-2 space-y-2 pl-2 md:pl-4">
                             {category.items.map((faq) => (
                               <div key={faq.id}>
                                 <button
                                   onClick={() => toggleFaq(faq.id)}
-                                  className="w-full text-left bg-white hover:bg-gray-50 rounded-lg px-4 py-3 shadow-sm text-sm text-gray-700 transition flex items-center justify-between"
+                                  className="w-full text-left bg-white hover:bg-gray-50 rounded-lg px-3 py-2 md:px-4 md:py-3 shadow-sm text-sm text-gray-700 transition flex items-center justify-between"
                                 >
                                   <span>💬 {faq.question}</span>
                                   {openFaqId === faq.id ? (
@@ -732,7 +731,7 @@ const ChatBot: React.FC = () => {
                                 </button>
 
                                 {openFaqId === faq.id && (
-                                  <div className="mt-2 bg-blue-50 rounded-lg px-4 py-3 shadow-sm">
+                                  <div className="mt-2 bg-blue-50 rounded-lg px-3 py-2 md:px-4 md:py-3 shadow-sm">
                                     <p className="text-sm text-gray-800">{faq.answer}</p>
                                   </div>
                                 )}
@@ -764,7 +763,7 @@ const ChatBot: React.FC = () => {
                       : "AI 챗봇에게 질문하세요"
                 }
                 disabled={isAiLoading}
-                className="flex-1 px-2 rounded-lg border-0 focus:outline-none text-base disabled:bg-gray-100"
+                className="flex-1 px-2 rounded-lg border-0 focus:outline-none text-sm md:text-base disabled:bg-gray-100"
               />
               <button
                 onClick={sendMessage}
@@ -805,7 +804,7 @@ function getInitialMessages(): Message[] {
 
 function getUserInfo() {
   let userId = localStorage.getItem('userId');
-  
+
   if (userId === "undefined" || !userId) {
     const token = localStorage.getItem('token');
     if (token) {
@@ -815,9 +814,9 @@ function getUserInfo() {
       }
     }
   }
-  
+
   const email = localStorage.getItem('email') || 'user@example.com';
-  
+
   return {
     userId: userId && userId !== "undefined" ? userId : null,
     name: email.split('@')[0],

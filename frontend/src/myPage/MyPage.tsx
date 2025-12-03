@@ -8,7 +8,7 @@ import ResumeDetail from "./myPageComponents/ResumeDetail";
 import MyPosts from "./myPageComponents/MyPosts";
 import FavoriteCompanies from "./myPageComponents/FavoriteCompanies";
 import SchedulePage from "./myPageComponents/SchedulePage";
-import EditMyPost from "./myPageComponents/EditMyPost"; // ✅ 추가
+import EditMyPost from "./myPageComponents/EditMyPost";
 import { myPageApi } from "../api/myPageApi";
 
 const tabs = [
@@ -41,8 +41,26 @@ const MyPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
-      <div className="flex min-h-screen bg-white shadow-sm rounded-lg">
+    <div className="max-w-[1440px] mx-auto px-0 md:px-8 lg:px-12 xl:px-[55px]">
+      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg">
+
+        {/* 모바일 상단 탭 (가로 스크롤) */}
+        <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
+          <div className="flex px-4 py-3 space-x-4">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => navigate(`/myPage/${t.key}`)}
+                className={`text-sm font-medium transition-colors pb-1 border-b-2 ${activeTab === t.key
+                  ? "text-[#006AFF] border-[#006AFF]"
+                  : "text-gray-500 border-transparent hover:text-gray-700"
+                  }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* 좌측 탭 - 태블릿부터 표시 */}
         <aside className="hidden md:block w-[200px] xl:w-[250px] border-r border-gray-200 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pl-6 xl:pl-[44px] bg-white flex-shrink-0 flex flex-col">
@@ -61,25 +79,41 @@ const MyPage: React.FC = () => {
             ))}
           </ul>
 
-          {/* 탈퇴하기 버튼 - 하단에 여백을 두고 위치 */}
-          <button
-            onClick={handleWithdraw}
-            className="text-red-500 text-sm xl:text-[16px] hover:text-red-600 transition text-left mt-112"
-          >
-            탈퇴하기
-          </button>
+          {/* 탈퇴하기 버튼 - 하단에 여백을 두고 위치 (내 정보 탭에서만 표시) */}
+          {activeTab === "MyInfo" && (
+            <button
+              onClick={handleWithdraw}
+              className="text-red-500 text-sm xl:text-[16px] hover:text-red-600 transition text-left mt-112"
+            >
+              탈퇴하기
+            </button>
+          )}
         </aside>
 
         {/* 본문 */}
-        <main className="flex-1 bg-gray-50 p-4 sm:p-5 md:p-6">
-          <Routes>
-            {/* ✅ 인덱스 라우트로 현재 탭 본문 렌더 */}
-            <Route index element={activeComponent} />
-            {/* 이력서 상세 */}
-            <Route path="ResumeDetail" element={<ResumeDetail />} />
-            {/* ✅ 마이페이지 내부 게시글 수정 라우트 */}
-            <Route path="edit/:id" element={<EditMyPost />} />
-          </Routes>
+        <main className="flex-1 bg-gray-50 p-4 sm:p-5 md:p-6 flex flex-col">
+          <div className="flex-1">
+            <Routes>
+              {/* ✅ 인덱스 라우트로 현재 탭 본문 렌더 */}
+              <Route index element={activeComponent} />
+              {/* 이력서 상세 */}
+              <Route path="ResumeDetail" element={<ResumeDetail />} />
+              {/* ✅ 마이페이지 내부 게시글 수정 라우트 */}
+              <Route path="edit/:id" element={<EditMyPost />} />
+            </Routes>
+          </div>
+
+          {/* 모바일 탈퇴하기 버튼 (최하단 배치, 내 정보 탭에서만 표시) */}
+          {activeTab === "MyInfo" && (
+            <div className="md:hidden mt-8 mb-4 flex justify-center">
+              <button
+                onClick={handleWithdraw}
+                className="text-sm font-medium text-red-500 underline decoration-red-500/30 underline-offset-4"
+              >
+                회원 탈퇴하기
+              </button>
+            </div>
+          )}
         </main>
       </div>
     </div>

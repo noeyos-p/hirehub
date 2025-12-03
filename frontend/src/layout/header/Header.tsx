@@ -11,16 +11,22 @@ export default function Header() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
 
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     console.log("🧩 Header 렌더링됨, 현재 user:", user);
     if (user) console.log("🧩 user 내부 구조:", JSON.stringify(user, null, 2));
   }, [user]);
 
-  // 드롭다운 외부 클릭 감지
+  // 드롭다운 및 모바일 메뉴 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setShowMobileMenu(false);
       }
     };
 
@@ -32,6 +38,7 @@ export default function Header() {
     window.dispatchEvent(new Event('userLogout'));
     logout();
     setShowDropdown(false);
+    setShowMobileMenu(false);
     navigate('/login');
   };
 
@@ -42,6 +49,7 @@ export default function Header() {
     }
     navigate(`/jobPostings?search=${encodeURIComponent(searchKeyword)}`, { replace: true });
     setSearchKeyword('');
+    setShowMobileMenu(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -50,9 +58,59 @@ export default function Header() {
     }
   };
 
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showMobileSearch && mobileSearchInputRef.current) {
+      mobileSearchInputRef.current.focus();
+    }
+  }, [showMobileSearch]);
+
+  const handleMobileSearch = () => {
+    if (!searchKeyword.trim()) {
+      alert('검색어를 입력해주세요.');
+      return;
+    }
+    navigate(`/jobPostings?search=${encodeURIComponent(searchKeyword)}`, { replace: true });
+    setSearchKeyword('');
+    setShowMobileSearch(false);
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
-      <div className="w-full max-w-[1440px] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] flex items-center justify-between py-3">
+      <div className="w-full max-w-[1440px] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] flex items-center justify-between py-3 relative">
+
+        {/* 모바일/태블릿 검색바 (펼쳐지는 애니메이션) */}
+        <div
+          className={`lg:hidden absolute top-0 right-12 md:right-0 h-full bg-white flex items-center transition-all duration-300 ease-in-out z-50 ${showMobileSearch ? 'w-[calc(100%-150px)] md:w-[calc(100%-110px)] px-4 border-b border-gray-200' : 'w-0 px-0 overflow-hidden'
+            }`}
+        >
+          <div className="flex-1 relative">
+            <input
+              ref={mobileSearchInputRef}
+              type="text"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleMobileSearch()}
+              placeholder="공고 검색..."
+              className="w-full h-[38px] bg-gray-50 border border-gray-300 rounded-lg px-4 py-1.5 pr-10 text-sm focus:outline-none focus:border-[#006AFF] transition-all"
+            />
+            <button
+              onClick={handleMobileSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+            >
+              <MagnifyingGlassIcon className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          <button
+            onClick={() => setShowMobileSearch(false)}
+            className="ml-3 p-1 text-gray-500 hover:text-gray-800 whitespace-nowrap text-sm font-medium"
+          >
+            취소
+          </button>
+        </div>
+
         <div className="flex items-center space-x-4 sm:space-x-6 md:space-x-8 lg:space-x-10 min-w-0">
           {/* 로고 */}
           <Link to="/" className="flex-shrink-0">
@@ -63,7 +121,7 @@ export default function Header() {
             />
           </Link>
 
-          {/* 네비게이션 메뉴 */}
+          {/* 네비게이션 메뉴 (데스크톱) */}
           <nav className="hidden sm:flex space-x-3 md:space-x-4 lg:space-x-6 xl:space-x-8 text-gray-800 font-medium">
             <Link
               to="/jobPostings"
@@ -95,8 +153,8 @@ export default function Header() {
         </div>
 
         <div className="flex items-center space-x-3 md:space-x-4 xl:space-x-6 min-w-0">
-          {/* 데스크톱 검색창 */}
-          <div className="relative hidden md:block min-w-0">
+          {/* 데스크톱 검색창 (lg 이상에서만 표시) */}
+          <div className="relative hidden lg:block min-w-0">
             <input
               type="text"
               value={searchKeyword}
@@ -110,20 +168,141 @@ export default function Header() {
             </button>
           </div>
 
-          {/* 모바일 로그인 버튼 */}
-          <div className="md:hidden flex items-center space-x-3">
-            <Link
-              to="/login"
-              className="text-sm font-medium text-gray-700 hover:text-[#006AFF] transition whitespace-nowrap px-4 py-1.5 border border-gray-300 rounded-md"
-            >
-              로그인
-            </Link>
-            <button className="p-1">
+          {/* 태블릿용 검색 아이콘 (md ~ lg 사이) */}
+          <button
+            className="hidden md:block lg:hidden p-1"
+            onClick={() => setShowMobileSearch(true)}
+          >
+            <MagnifyingGlassIcon className="w-5 h-5 text-gray-500 hover:text-[#006AFF] transition" />
+          </button>
+
+          {/* 모바일 로그인/메뉴 버튼 */}
+          <div className="md:hidden flex items-center space-x-3" ref={mobileMenuRef}>
+            {!isAuthenticated && (
+              <Link
+                to="/login"
+                className="text-sm font-medium text-gray-700 hover:text-[#006AFF] transition whitespace-nowrap px-4 py-1.5 border border-gray-300 rounded-md"
+              >
+                로그인
+              </Link>
+            )}
+            {/* 검색 아이콘 (클릭 시 검색바 펼침) */}
+            <button className="p-1" onClick={() => setShowMobileSearch(true)}>
               <MagnifyingGlassIcon className="w-5 h-5 text-gray-700" />
             </button>
-            <button className="p-1">
+            <button className="p-1" onClick={() => setShowMobileMenu(!showMobileMenu)}>
               <Bars3Icon className="w-6 h-6 text-gray-700" />
             </button>
+
+            {/* 모바일 햄버거 메뉴 드롭다운 */}
+            {showMobileMenu && (
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 overflow-hidden">
+                {/* 사용자 정보 영역 */}
+                {isAuthenticated && user && (
+                  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <UserCircleIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-gray-900 truncate">
+                          {user.nickname || user.name}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      {user.email === "admin@admin" ? (
+                        <Link
+                          to="/admin"
+                          onClick={() => setShowMobileMenu(false)}
+                          className="flex-1 text-center py-1.5 text-xs font-medium bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-700"
+                        >
+                          관리자
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/myPage/MyInfo"
+                          onClick={() => setShowMobileMenu(false)}
+                          className="flex-1 text-center py-1.5 text-xs font-medium bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-700"
+                        >
+                          마이페이지
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="flex-1 text-center py-1.5 text-xs font-medium bg-white border border-gray-200 rounded hover:bg-red-50 text-red-600"
+                      >
+                        로그아웃
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 비로그인 시 로그인/회원가입 버튼 */}
+                {!isAuthenticated && (
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <div className="flex gap-2">
+                      <Link
+                        to="/login"
+                        onClick={() => setShowMobileMenu(false)}
+                        className="flex-1 text-center py-2 text-sm font-medium bg-[#006AFF] text-white rounded hover:bg-blue-600"
+                      >
+                        로그인
+                      </Link>
+                      <Link
+                        to="/signup"
+                        onClick={() => setShowMobileMenu(false)}
+                        className="flex-1 text-center py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                      >
+                        회원가입
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* 네비게이션 링크 */}
+                <div className="py-2">
+                  <Link
+                    to="/jobPostings"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                  >
+                    채용정보
+                  </Link>
+                  <Link
+                    to="/board"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                  >
+                    자유게시판
+                  </Link>
+                  <Link
+                    to="/cover-letter"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                  >
+                    자소서 수정
+                  </Link>
+                  <Link
+                    to="/job-matching"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                  >
+                    공고매칭
+                  </Link>
+                  <Link
+                    to="/interview-coaching"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                  >
+                    면접코칭
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 데스크톱 로그인/프로필 영역 */}

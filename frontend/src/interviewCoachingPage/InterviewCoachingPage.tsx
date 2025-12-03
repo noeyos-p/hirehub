@@ -377,14 +377,14 @@ ${contextFeedback}
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-[1440px] mx-auto px-[55px]">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <BriefcaseIcon className="w-10 h-10 text-[#006AFF] mr-2" />
-            <h1 className="text-3xl font-bold text-gray-900">AI 면접 코칭</h1>
+            <BriefcaseIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 면접 코칭</h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-sm md:text-base text-gray-600">
             이력서를 기반으로 AI가 맞춤형 면접 질문을 생성하고 피드백을 제공합니다.
           </p>
         </div>

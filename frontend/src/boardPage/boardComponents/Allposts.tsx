@@ -285,7 +285,7 @@ const AllPosts: React.FC = () => {
       {/* 취업 정보글 섹션 */}
       <div className="mb-12 pb-8 border-b border-gray-300">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center">
             취업 정보글
             <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">AI 자동 생성</span>
           </h2>
@@ -311,10 +311,10 @@ const AllPosts: React.FC = () => {
                     <span className="text-white text-lg">🤖</span>
                   </div>
                   <div>
-                    <h3 className="text-md font-semibold text-gray-800">
+                    <h3 className="text-sm sm:text-md font-semibold text-gray-800">
                       {board.title}
                     </h3>
-                    <p className="text-sm text-gray-600 line-clamp-1">
+                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">
                       {board.content.substring(0, 50)}
                       {board.content.length > 50 ? '...' : ''}
                     </p>
@@ -341,7 +341,7 @@ const AllPosts: React.FC = () => {
       {/* 유저 작성 게시물 섹션 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-gray-800">유저 작성글</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">유저 작성글</h2>
           <button
             onClick={handleWriteClick}
             className="bg-[#D6E4F0] hover:bg-[#c0d4e8] text-gray-800 text-[15px] font-medium px-4 py-1.5 rounded-md cursor-pointer"
@@ -410,10 +410,10 @@ const AllPosts: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-md font-semibold text-gray-800">
+                      <h3 className="text-sm sm:text-md font-semibold text-gray-800">
                         {board.title}
                       </h3>
-                      <p className="text-sm text-gray-600 line-clamp-1">
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">
                         {board.content.replace(/<[^>]*>/g, '').substring(0, 50)}
                         {board.content.length > 50 ? '...' : ''}
                       </p>

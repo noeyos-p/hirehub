@@ -180,48 +180,45 @@ export default function CoverLetterPage() {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <DocumentTextIcon className="w-10 h-10 text-[#006AFF] mr-2" />
-            <h1 className="text-3xl font-bold text-gray-900">AI 자기소개서 수정</h1>
+            <DocumentTextIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 자기소개서 수정</h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-sm md:text-base text-gray-600">
             AI가 당신의 자기소개서를 분석하고 더 나은 표현으로 개선해드립니다.
           </p>
         </div>
 
         {/* 입력 모드 선택 탭 */}
         <div className="flex justify-center mb-6">
-          <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1">
+          <div className="inline-flex flex-wrap justify-center rounded-lg border border-gray-300 bg-white p-1 gap-1">
             <button
               onClick={() => handleModeChange('text')}
-              className={`px-4 py-2 rounded-md font-medium transition text-sm ${
-                inputMode === 'text'
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md font-medium transition text-xs sm:text-sm whitespace-nowrap ${inputMode === 'text'
                   ? 'bg-[#006AFF] text-white'
                   : 'text-gray-700 hover:text-[#006AFF]'
-              }`}
+                }`}
             >
-              <ClipboardDocumentIcon className="w-5 h-5 inline-block mr-1" />
+              <ClipboardDocumentIcon className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-1" />
               직접 입력
             </button>
             <button
               onClick={() => handleModeChange('essay')}
-              className={`px-4 py-2 rounded-md font-medium transition text-sm ${
-                inputMode === 'essay'
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md font-medium transition text-xs sm:text-sm whitespace-nowrap ${inputMode === 'essay'
                   ? 'bg-[#006AFF] text-white'
                   : 'text-gray-700 hover:text-[#006AFF]'
-              }`}
+                }`}
             >
-              <DocumentTextIcon className="w-5 h-5 inline-block mr-1" />
+              <DocumentTextIcon className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-1" />
               자기소개서만
             </button>
             <button
               onClick={() => handleModeChange('resume')}
-              className={`px-4 py-2 rounded-md font-medium transition text-sm ${
-                inputMode === 'resume'
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md font-medium transition text-xs sm:text-sm whitespace-nowrap ${inputMode === 'resume'
                   ? 'bg-[#006AFF] text-white'
                   : 'text-gray-700 hover:text-[#006AFF]'
-              }`}
+                }`}
             >
-              <DocumentTextIcon className="w-5 h-5 inline-block mr-1" />
+              <DocumentTextIcon className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-1" />
               이력서 전체
             </button>
           </div>
@@ -229,7 +226,7 @@ export default function CoverLetterPage() {
 
         {/* 이력서 선택 영역 (이력서/자소서 모드일 때만 표시) */}
         {(inputMode === 'resume' || inputMode === 'essay') && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               {inputMode === 'essay' ? '자기소개서 선택' : '이력서 선택'}
             </h2>
@@ -249,11 +246,10 @@ export default function CoverLetterPage() {
                   <button
                     key={resume.id}
                     onClick={() => handleResumeSelect(resume.id)}
-                    className={`p-4 border rounded-lg text-left transition ${
-                      selectedResumeId === resume.id
+                    className={`p-4 border rounded-lg text-left transition ${selectedResumeId === resume.id
                         ? 'border-[#4E98FF] bg-[#00000]'
                         : 'border-gray-200 hover:border-[#4E98FF]'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -283,12 +279,12 @@ export default function CoverLetterPage() {
         {/* 메인 컨텐츠 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 원본 자기소개서 */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
             <div className="flex items-center mb-4">
               <DocumentTextIcon className="w-6 h-6 text-gray-700 mr-2" />
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                 {inputMode === 'text' ? '원본 자기소개서' :
-                 inputMode === 'essay' ? '자기소개서 내용' : '이력서 내용'}
+                  inputMode === 'essay' ? '자기소개서 내용' : '이력서 내용'}
               </h2>
             </div>
             <textarea
@@ -300,11 +296,10 @@ export default function CoverLetterPage() {
                   : '위에서 이력서를 선택하면 내용이 자동으로 입력됩니다...'
               }
               readOnly={inputMode !== 'text'}
-              className={`w-full h-96 p-4 border border-gray-300 rounded-lg resize-none ${
-                inputMode !== 'text'
+              className={`w-full h-64 md:h-96 p-4 border border-gray-300 rounded-lg resize-none text-sm sm:text-base ${inputMode !== 'text'
                   ? 'bg-gray-50 cursor-not-allowed focus:outline-none'
                   : 'focus:ring-2 focus:ring-[#006AFF] focus:border-transparent focus:outline-none'
-              }`}
+                }`}
             />
             <div className="mt-4 flex justify-between items-center">
               <span className="text-sm text-gray-500">

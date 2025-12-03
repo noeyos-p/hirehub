@@ -22,6 +22,7 @@ const UserPostsList: React.FC = () => {
   const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 10;
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   useEffect(() => {
     fetchBoards();
@@ -143,28 +144,68 @@ const UserPostsList: React.FC = () => {
   }
 
   return (
-    <section className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">유저 작성글</h2>
-        <div className="relative ml-[150px]">
+    <section className="mb-8 relative">
+      <div className="flex items-center justify-between mb-4 relative">
+        {/* Title */}
+        <h2 className="text-xl font-bold text-gray-800 whitespace-nowrap flex-shrink-0 mr-4">유저 작성글</h2>
+
+        {/* Desktop Search Center */}
+        <div className="hidden md:block relative flex-1 max-w-md ml-auto mr-4 transition-all duration-300">
           <input
             type="text"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="검색어를 입력하세요"
-            className="border border-gray-300 rounded-lg px-4 py-1.5 pr-9 text-[14px] focus:outline-none focus:border-blue-500 w-100"
+            className="w-full border border-gray-300 rounded-lg px-4 py-1.5 pr-9 text-[14px] focus:outline-none focus:border-blue-500"
           />
           <button onClick={handleSearch} className="absolute right-3 top-2.5">
             <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 cursor-pointer hover:text-gray-700" />
           </button>
         </div>
-        <div className="flex justify-end mr-[6px]">
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-2 relative z-10">
+          {/* Mobile/Tablet Search Icon */}
+          <button
+            onClick={() => setShowMobileSearch(true)}
+            className="md:hidden p-2 text-gray-500 hover:text-gray-700"
+          >
+            <MagnifyingGlassIcon className="w-6 h-6" />
+          </button>
+
+          {/* Write Button */}
           <button
             onClick={handleWriteClick}
-            className="bg-[#006AFF] hover:bg-blue-600 text-white text-[15px] font-medium px-4 py-1.5 rounded-md cursor-pointer"
+            className="bg-[#006AFF] hover:bg-blue-600 text-white text-[15px] font-medium px-4 py-1.5 rounded-md cursor-pointer whitespace-nowrap flex-shrink-0"
           >
             작성하기
+          </button>
+        </div>
+
+        {/* Mobile/Tablet Expanding Search Bar */}
+        <div
+          className={`absolute top-0 right-0 h-full bg-gray-50 flex items-center transition-all duration-300 ease-in-out z-20 ${showMobileSearch ? 'w-[calc(100%-130px)] px-2' : 'w-0 px-0'} overflow-hidden md:hidden`}
+        >
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="검색어를 입력하세요"
+              className="w-full h-10 bg-white border border-gray-300 rounded-lg px-4 py-1.5 pr-9 text-[14px] focus:outline-none focus:border-blue-500"
+              autoFocus={showMobileSearch}
+            />
+            <button onClick={handleSearch} className="absolute right-3 top-2.5">
+              <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 cursor-pointer hover:text-gray-700" />
+            </button>
+          </div>
+          <button
+            onClick={() => setShowMobileSearch(false)}
+            className="ml-2 text-sm text-gray-500 whitespace-nowrap"
+          >
+            취소
           </button>
         </div>
       </div>
