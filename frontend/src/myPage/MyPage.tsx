@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useParams, Routes, Route } from "react-router-dom";
+import { Bars3Icon, XMarkIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
 import MyInfo from "./myPageComponents/MyInfo";
 import FavoriteNotices from "./myPageComponents/FavoriteNotices";
 import AppliedNotices from "./myPageComponents/AppliedNotices";
@@ -26,6 +27,7 @@ const MyPage: React.FC = () => {
   const { tab } = useParams();
   const activeTab = tab || "MyInfo";
   const activeComponent = tabs.find((t) => t.key === activeTab)?.component || <MyInfo />;
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleWithdraw = async () => {
     if (!window.confirm("정말 탈퇴하시겠습니까? 모든 데이터가 완전히 삭제됩니다.")) return;
@@ -44,22 +46,45 @@ const MyPage: React.FC = () => {
     <div className="max-w-[1440px] mx-auto px-0 md:px-8 lg:px-12 xl:px-[55px]">
       <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg">
 
-        {/* 모바일 상단 탭 (가로 스크롤) */}
-        <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          <div className="flex px-4 py-3 space-x-4">
-            {tabs.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => navigate(`/myPage/${t.key}`)}
-                className={`text-sm font-medium transition-colors pb-1 border-b-2 ${activeTab === t.key
-                  ? "text-[#006AFF] border-[#006AFF]"
-                  : "text-gray-500 border-transparent hover:text-gray-700"
-                  }`}
-              >
-                {t.label}
-              </button>
-            ))}
+        {/* 모바일 플로팅 메뉴 (우측 하단 고정) */}
+        <div className="md:hidden fixed bottom-20 right-6 z-50 flex flex-col items-end">
+          {/* 메뉴 리스트 (위로 펼쳐짐) */}
+          <div
+            className={`transition-all duration-300 origin-bottom-right ${isMobileMenuOpen
+              ? "opacity-100 scale-100 translate-y-0"
+              : "opacity-0 scale-95 translate-y-4 pointer-events-none"
+              } absolute bottom-20 right-0 bg-gray-100 rounded-2xl shadow-2xl border border-gray-200 overflow-hidden min-w-[200px]`}
+          >
+            <div className="py-2 flex flex-col">
+              {tabs.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => {
+                    navigate(`/myPage/${t.key}`);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`text-left px-5 py-3 text-sm font-medium transition-colors hover:bg-gray-200 ${activeTab === t.key
+                    ? "text-[#006AFF] bg-blue-50"
+                    : "text-gray-700"
+                    }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* 플로팅 버튼 */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="bg-blue-200 text-gray-700 p-4 rounded-full shadow-lg hover:bg-blue-300 transition-transform active:scale-95 flex items-center justify-center border border-gray-200"
+          >
+            {isMobileMenuOpen ? (
+              <XMarkIcon className="w-6 h-6" />
+            ) : (
+              <Squares2X2Icon className="w-6 h-6" />
+            )}
+          </button>
         </div>
 
         {/* 좌측 탭 - 태블릿부터 표시 */}

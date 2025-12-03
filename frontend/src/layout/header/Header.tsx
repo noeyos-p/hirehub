@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MagnifyingGlassIcon, UserCircleIcon, ChevronDownIcon, Bars3Icon } from "@heroicons/react/24/outline";
+import { Headphones } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -63,7 +64,7 @@ export default function Header() {
 
   useEffect(() => {
     if (showMobileSearch && mobileSearchInputRef.current) {
-      mobileSearchInputRef.current.focus();
+      mobileSearchInputRef.current.focus({ preventScroll: true });
     }
   }, [showMobileSearch]);
 
@@ -83,7 +84,7 @@ export default function Header() {
 
         {/* 모바일/태블릿 검색바 (펼쳐지는 애니메이션) */}
         <div
-          className={`lg:hidden absolute top-0 right-12 md:right-0 h-full bg-white flex items-center transition-all duration-300 ease-in-out z-50 ${showMobileSearch ? 'w-[calc(100%-150px)] md:w-[calc(100%-110px)] px-4 border-b border-gray-200' : 'w-0 px-0 overflow-hidden'
+          className={`lg:hidden absolute top-0 right-0 h-full bg-white flex items-center transition-all duration-300 ease-in-out z-50 ${showMobileSearch ? 'w-[calc(100%-150px)] md:w-[calc(100%-110px)] px-4' : 'w-0 px-0 overflow-hidden'
             }`}
         >
           <div className="flex-1 relative">
@@ -299,6 +300,17 @@ export default function Header() {
                     className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
                     면접코칭
+                  </Link>
+
+                  <hr className="my-2 border-gray-100" />
+
+                  <Link
+                    to="/chatBot"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                  >
+                    <Headphones className="w-5 h-5 mr-2" />
+                    고객 상담 센터
                   </Link>
                 </div>
               </div>
