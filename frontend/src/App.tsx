@@ -20,6 +20,7 @@ import MobileChatPage from './chatPage/MobileChatPage';
 import CoverLetterPage from './coverLetterPage/CoverLetterPage';
 import JobMatchingPage from './jobMatchingPage/JobMatchingPage';
 import InterviewCoachingPage from './interviewCoachingPage/InterviewCoachingPage';
+import PayReturn from './page/PayReturn';
 
 function App() {
   return (
@@ -70,6 +71,10 @@ function App() {
         <Route path="/mobile-chat" element={<MobileChatPage />} />
 
         <Route path="/myPage/resume/ResumeViewer/:id" element={<ResumeViewer />} />
+         
+         {/* 결제로직 */}
+        <Route path="/pay/return" element={<PayReturn />} />
+
       </Routes>
     </BrowserRouter>
   );

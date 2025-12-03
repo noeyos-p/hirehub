@@ -92,4 +92,13 @@ public class JobPosts {
     @Column(columnDefinition = "LONGTEXT")
     private String skill;
 
+    //기술스텍 필터링용
+    @ManyToMany
+    @JoinTable(
+            name = "job_post_tech_stack",
+            joinColumns = @JoinColumn(name = "job_post_id"),
+            inverseJoinColumns = @JoinColumn(name = "tech_stack_id")
+    )
+    private List<TechStack> techStacks = new ArrayList<>();
+
 }

@@ -11,6 +11,7 @@ import FavoriteCompanies from "./myPageComponents/FavoriteCompanies";
 import SchedulePage from "./myPageComponents/SchedulePage";
 import EditMyPost from "./myPageComponents/EditMyPost";
 import { myPageApi } from "../api/myPageApi";
+import PaymentTest from "./myPageComponents/PaymentTest";
 
 const tabs = [
   { key: "MyInfo", label: "내 정보", component: <MyInfo /> },
@@ -20,6 +21,8 @@ const tabs = [
   { key: "AppliedNotices", label: "지원 내역", component: <AppliedNotices /> },
   { key: "MyPosts", label: "작성한 게시물", component: <MyPosts /> },
   { key: "SchedulePage", label: "공고 일정", component: <SchedulePage /> },
+  { key: "PaymentTest", label: "결제 테스트", component: <PaymentTest /> },
+
 ];
 
 const MyPage: React.FC = () => {

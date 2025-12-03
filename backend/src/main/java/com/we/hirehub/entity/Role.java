@@ -9,8 +9,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum Role {
     USER("ROLE_USER"),
+    PREMIUM("ROLE_PREMIUM"),
     ADMIN("ROLE_ADMIN"),
-    BOT("ROLE_BOT");  // 🤖 추가된 봇 계정
+    BOT("ROLE_BOT");
 
     private final String value;
 }

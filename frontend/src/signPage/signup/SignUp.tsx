@@ -83,7 +83,11 @@ const Signup: React.FC = () => {
       }
 
       console.log('📝 온보딩 페이지로 이동');
-      navigate('/signInfo');
+      navigate('/signInfo', {
+        state: {
+          phone,   // ← 인증된 휴대폰 번호
+        },
+      });
 
     } catch (err: any) {
       console.error('❌ 회원가입 에러:', err.response?.data);

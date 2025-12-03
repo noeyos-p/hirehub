@@ -65,6 +65,8 @@ public class Users {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role;
+    private Role role = Role.USER;   // 기본 USER
 
+    @Column(nullable = false)
+    private Integer tokenBalance = 0;
 }

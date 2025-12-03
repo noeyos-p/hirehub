@@ -6,22 +6,24 @@ const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
 
   // 환경 변수가 설정되어 있으면 사용
-  if (envUrl) return envUrl;
+  if (envUrl) {
+    return envUrl.endsWith("/") ? envUrl : envUrl + "/";
+  }
 
   // HTTPS 페이지에서는 현재 origin 사용 (localhost 사용 불가)
   if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
     return window.location.origin;
   }
 
-  // HTTP 개발 환경에서만 localhost 사용
-  return 'http://localhost:8080';
+   // 🔥 슬래시 반드시 포함
+  return "http://localhost:8080/";
 };
 
 const api = axios.create({
   baseURL: getBaseURL(),
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
