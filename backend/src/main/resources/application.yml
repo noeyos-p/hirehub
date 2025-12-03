@@ -7,7 +7,7 @@ ai:
 
 aws:
   s3:
-    bucket: hirehub-s3-bucket
+    bucket: hirehub-s3
   credentials:
     access-key: ${AWS_ACCESS_KEY}
     secret-key: ${AWS_SECRET_KEY}
