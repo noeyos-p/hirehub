@@ -26,6 +26,7 @@ public class AdminSeeder {
                     admin.setEmail("admin@admin");
                     admin.setPassword(passwordEncoder.encode("admin123"));
                     admin.setRole(Role.ADMIN);
+                    admin.setPhoneVerified(true); // 🔥 필수
                     usersRepository.save(admin);
                 }
         );
@@ -40,6 +41,7 @@ public class AdminSeeder {
                     bot.setEmail("bot@bot");
                     bot.setPassword(passwordEncoder.encode("bot123"));
                     bot.setRole(Role.BOT);
+                    bot.setPhoneVerified(true); // 🔥 필수
                     usersRepository.save(bot);
                 }
         );

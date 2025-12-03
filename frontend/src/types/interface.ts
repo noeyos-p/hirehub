@@ -414,7 +414,6 @@ export interface JobPostResponse {
 export interface CompanyResponse {
   id: number;
   name: string;
-  description: string;
   content: string;
   address: string;
   website: string;
@@ -423,6 +422,10 @@ export interface CompanyResponse {
   benefits: string;
   ceo: string;
   photo?: string;
+
+  // ⭐⭐ 반드시 추가
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface ReviewResponse {

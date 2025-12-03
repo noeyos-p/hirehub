@@ -22,6 +22,10 @@ public class CompanyDto {
     private String ceo;
     private String photo;
 
+    // ⭐⭐ 추가된 필드
+    private Double lat;
+    private Double lng;
+
     @Getter
     @Setter
     @NoArgsConstructor
@@ -33,7 +37,6 @@ public class CompanyDto {
         private String industry;
         private String address;
         private String photo;
-
     }
 
     /** Entity -> Dto **/
@@ -51,9 +54,13 @@ public class CompanyDto {
                 .industry(entity.getIndustry())
                 .ceo(entity.getCeo())
                 .photo(entity.getPhoto())
+                // ⭐⭐ 추가된 부분
+                .lat(entity.getLat())
+                .lng(entity.getLng())
                 .build();
     }
 
+    /** Dto -> Entity **/
     public static Company toEntity(CompanyDto dto) {
         if (dto == null) return null;
 
@@ -68,10 +75,13 @@ public class CompanyDto {
                 .industry(dto.getIndustry())
                 .ceo(dto.getCeo())
                 .photo(dto.getPhoto())
+                // ⭐⭐ 추가된 부분
+                .lat(dto.getLat())
+                .lng(dto.getLng())
                 .build();
     }
 
-
+    /** 업데이트 **/
     public static void updateEntity(CompanyDto dto, Company entity) {
         if (dto == null || entity == null) return;
 
@@ -84,6 +94,9 @@ public class CompanyDto {
         entity.setIndustry(dto.getIndustry());
         entity.setCeo(dto.getCeo());
         entity.setPhoto(dto.getPhoto());
-    }
 
+        // ⭐⭐ 추가된 부분
+        entity.setLat(dto.getLat());
+        entity.setLng(dto.getLng());
+    }
 }

@@ -3,6 +3,7 @@ package com.we.hirehub.controller.admin;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.service.common.S3Service;
 import com.we.hirehub.service.admin.CompanyAdminService;
+import com.we.hirehub.service.support.KakaoMapService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public class CompanyAdminController {
 
     private final CompanyAdminService companyService;
     private final S3Service s3Service;
+    private final KakaoMapService kakaoMapService;
 
     // =================== 조회 ===================
     @GetMapping
@@ -100,6 +102,7 @@ public class CompanyAdminController {
             }
 
             Company updatedCompany = companyService.updateCompany(companyId, updateData);
+
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

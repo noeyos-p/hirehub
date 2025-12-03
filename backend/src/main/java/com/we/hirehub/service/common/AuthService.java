@@ -47,11 +47,11 @@ public class AuthService {
         if (usersRepository.existsByPhoneAndEmailNot(req.getPhone(), req.getEmail())) {
             throw new IllegalStateException("이미 가입된 전화번호입니다.");
         }
-
-        // 🔥 SMS 인증 여부 체크
-//        if (!smsCodeService.isVerified(req.getPhone())) {
-//            throw new IllegalStateException("휴대폰 인증이 필요합니다.");
-//        }
+//
+//         🔥 SMS 인증 여부 체크
+        if (!smsCodeService.isVerified(req.getPhone())) {
+            throw new IllegalStateException("휴대폰 인증이 필요합니다.");
+        }
 
         String encoded = passwordEncoder.encode(req.getPassword());
 

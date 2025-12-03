@@ -4,7 +4,7 @@ import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { useParams, useNavigate } from "react-router-dom";
 import { jobPostApi } from "../../api/jobPostApi";
 import type { CompanyResponse, ReviewResponse } from "../../types/interface";
-
+import KakaoMap from "../../page/KakaoMap";
 
 interface CompanyDetailProps {
   onBack: () => void;
@@ -378,6 +378,12 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
             {/* 기업 정보 박스 */}
             <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
               <h3 className="text-lg font-semibold mb-4">기업 정보</h3>
+              {/* 지도 영역 */}
+              {company.lat != null && company.lng != null && (
+                <div className="mt-4">
+                  <KakaoMap lat={company.lat} lng={company.lng} />
+                </div>
+              )}
               <div className="space-y-4">
                 <div>
                   <p className="text-gray-500 mb-1 text-sm">주소</p>
