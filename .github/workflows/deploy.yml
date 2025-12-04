@@ -88,6 +88,8 @@ jobs:
             JWT_SECRET=${{ secrets.JWt_SECRET }}
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
+            NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
             FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
