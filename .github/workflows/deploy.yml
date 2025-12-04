@@ -40,13 +40,25 @@ jobs:
 
       - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v6
+        if: matrix.name != 'frontend'
         with:
           context: ${{ matrix.context }}
           push: true
           no-cache: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:${{ github.sha }}
 
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        if: matrix.name == 'frontend'
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          no-cache: true
           build-args: |
-            ${{ matrix.name == 'frontend' && 'VITE_KAKAO_MAP_JS_KEY=' }}${{ matrix.name == 'frontend' && secrets.VITE_KAKAO_MAP_JS_KEY }}
+            VITE_KAKAO_MAP_JS_KEY=${{ secrets.VITE_KAKAO_MAP_JS_KEY }}
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:${{ github.sha }}
@@ -93,7 +105,10 @@ jobs:
             BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
             FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
             FASTAPI_IMAGE=${{ secrets.FASTAPI_IMAGE }}
+            FASTAPI_NAVER_CLIENT_ID=${{ secrets.FASTAPI_NAVER_CLIENT_ID }}
+            FASTAPI_NAVER_CLIENT_SECRET=${{ secrets.FASTAPI_NAVER_CLIENT_SECRET }}
+            FASTAPI_OPENAI_API_KEY=${{ secrets.FASTAPI_OPENAI_API_KEY }}
             EOF
 
             echo "🚀 Docker Compose 실행…"
-            docker compose -f infra/docker-compose.prod.yml --env-file .env.prod up -d —remove-orphans
+            docker compose -f infra/docker-compose.prod.yml --env-file .env.prod up -d --remove-orphans
