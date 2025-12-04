@@ -253,7 +253,7 @@ const AllPosts: React.FC = () => {
   };
 
   const handlePostClick = (id: number) => {
-    navigate(`/board/${id}`);
+    navigate(`/board/${id}`, { state: { from: '/board' } });
   };
 
   const handleJobInfoClick = (board: BoardListResponse) => {

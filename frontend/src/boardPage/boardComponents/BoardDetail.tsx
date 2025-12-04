@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { boardApi, commentApi } from '../../api/boardApi';
 import type { BoardListResponse, CommentResponse } from '../../types/interface';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,6 +9,7 @@ import { EyeIcon, ArrowLeftIcon, EllipsisHorizontalIcon } from "@heroicons/react
 
 const BoardDetail: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { user, isAuthenticated } = useAuth();
   const [board, setBoard] = useState<BoardListResponse | null>(null);
@@ -170,7 +171,7 @@ const BoardDetail: React.FC = () => {
     return (
       <section className="mb-8">
         <button
-          onClick={() => navigate('/board')}
+          onClick={() => navigate('/board/user-posts')}
           className="flex items-center text-gray-500 text-sm mb-6 hover:text-gray-700"
         >
           <ArrowLeftIcon className="w-4 h-4 mr-1" />
@@ -193,7 +194,7 @@ const BoardDetail: React.FC = () => {
         {/* Main Content */}
         <section className="flex-1 min-w-0">
           <button
-            onClick={() => navigate('/board')}
+            onClick={() => navigate('/board/user-posts')}
             className="flex items-center text-gray-500 text-sm mb-6 hover:text-gray-700 transition"
           >
             <ArrowLeftIcon className="w-4 h-4 mr-1" />

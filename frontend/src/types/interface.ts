@@ -428,6 +428,19 @@ export interface CompanyResponse {
   lng: number | null;
 }
 
+export interface ChartData {
+  year: string;
+  sales: number;
+  avgSalary: number;
+  newSalary: number;
+}
+
+export interface CompanyStatsResponse {
+  chartData: ChartData[];
+  totalEmployees: number;
+  currentAvgAge: number;
+}
+
 export interface ReviewResponse {
   id: number;
   usersId: number;

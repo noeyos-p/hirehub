@@ -110,7 +110,7 @@ const UserPostsList: React.FC = () => {
   };
 
   const handlePostClick = (id: number) => {
-    navigate(`/board/${id}`);
+    navigate(`/board/${id}`, { state: { from: '/board/user-posts' } });
   };
 
   const goToFirstPage = () => setCurrentPage(1);

@@ -254,8 +254,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
 
             <p className="text-sm sm:text-base text-gray-600 mb-4 md:mb-6">{company.content}</p>
 
-            {/* 기업 분석 차트 (Mock Data) */}
-            <CompanyCharts />
+            {/* 기업 분석 차트 */}
+            <CompanyCharts companyId={company.id} />
 
             {/* 리뷰 섹션 */}
             <div className="mt-6 md:mt-10">

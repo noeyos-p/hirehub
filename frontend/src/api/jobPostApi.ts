@@ -5,7 +5,8 @@ import type {
     ReviewResponse,
     ResumeResponse,
     CreateReviewRequest,
-    ApplyRequest
+    ApplyRequest,
+    CompanyStatsResponse
 } from '../types/interface';
 
 export const jobPostApi = {
@@ -30,6 +31,11 @@ export const jobPostApi = {
 
     getCompanyById: async (id: number): Promise<CompanyResponse> => {
         const response = await api.get(`/api/companies/${id}`);
+        return response.data;
+    },
+
+    getCompanyStats: async (companyId: number): Promise<CompanyStatsResponse> => {
+        const response = await api.get(`/api/companies/${companyId}/stats`);
         return response.data;
     },
 
