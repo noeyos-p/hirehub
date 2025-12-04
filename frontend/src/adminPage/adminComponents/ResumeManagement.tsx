@@ -1,6 +1,6 @@
 // src/admin/resume/ResumeManagement.tsx
 import React, { useEffect, useState } from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import { adminApi } from "../../api/adminApi";
 import type { AdminResumeDto } from "../../types/interface";
 
@@ -362,6 +362,38 @@ const ResumeManagement: React.FC = () => {
   const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // ✅ 선택 관련 상태 및 함수 추가
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const allSelected = resumes.length > 0 && selectedIds.length === resumes.length;
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(resumes.map((r) => r.id));
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length}개의 이력서를 삭제하시겠습니까?`)) return;
+
+    try {
+      for (const id of selectedIds) {
+        await adminApi.deleteResume(id);
+      }
+      alert("선택된 이력서가 삭제되었습니다.");
+      setSelectedIds([]);
+      fetchResumes(currentPage);
+    } catch (err) {
+      console.error("선택삭제 오류:", err);
+      alert("선택삭제 중 오류가 발생했습니다.");
+    }
+  };
+
   const fetchResumes = async (page: number = 0) => {
     try {
       setIsLoading(true);
@@ -411,9 +443,45 @@ const ResumeManagement: React.FC = () => {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">이력서 관리</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">이력서 관리</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">전체 {totalElements}개</p>
         </div>
+      </div>
+
+      {/* ✅ 전체선택 + 선택삭제 영역 */}
+      <div className="flex items-center gap-3 mb-4 min-h-[36px]">
+        <label className="relative flex items-center gap-2 cursor-pointer group flex-shrink-0">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+            className="sr-only peer"
+          />
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+            allSelected
+              ? 'bg-blue-600 border-blue-600'
+              : 'bg-white border-gray-300 group-hover:border-blue-400'
+          }`}>
+            {allSelected && (
+              <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-700 flex-shrink-0">전체 선택</span>
+        </label>
+
+        {selectedIds.length > 0 && (
+          <button
+            onClick={handleBulkDelete}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium flex-shrink-0"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            선택삭제 ({selectedIds.length})
+          </button>
+        )}
       </div>
 
       {isLoading && resumes.length === 0 && (
@@ -431,8 +499,35 @@ const ResumeManagement: React.FC = () => {
               <div
                 key={resume.id}
                 onClick={() => handleResumeClick(resume.id)}
-                className="flex justify-between items-center border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
+                className={`relative flex justify-between items-center border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${
+                  selectedIds.includes(resume.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                }`}
               >
+                {/* ✅ 개별 선택 체크박스 */}
+                <div
+                  className="absolute top-3 right-3 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <label className="relative flex items-center justify-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(resume.id)}
+                      onChange={() => toggleSelect(resume.id)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                      selectedIds.includes(resume.id)
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-white border-gray-300 hover:border-blue-400'
+                    }`}>
+                      {selectedIds.includes(resume.id) && (
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </label>
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <div className="text-sm font-semibold text-gray-800 dark:text-white truncate">
@@ -461,42 +556,58 @@ const ResumeManagement: React.FC = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 mt-6">
+        <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
+          <button
+            onClick={() => handlePageChange(0)}
+            disabled={currentPage === 0}
+            className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronDoubleLeftIcon className="w-5 h-5" />
+          </button>
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 0}
-            className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            이전
+            <ChevronLeftIcon className="w-5 h-5" />
           </button>
-
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            let pageNum: number;
-            if (totalPages <= 5) pageNum = i;
-            else if (currentPage < 3) pageNum = i;
-            else if (currentPage > totalPages - 3) pageNum = totalPages - 5 + i;
-            else pageNum = currentPage - 2 + i;
-
-            return (
-              <button
-                key={pageNum}
-                onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 rounded-lg ${currentPage === pageNum
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-              >
-                {pageNum + 1}
-              </button>
-            );
-          })}
-
+          {(() => {
+            const pages = [];
+            const maxVisible = 5;
+            let startPage = Math.max(0, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages - 1, startPage + maxVisible - 1);
+            if (endPage - startPage + 1 < maxVisible) {
+              startPage = Math.max(0, endPage - maxVisible + 1);
+            }
+            for (let i = startPage; i <= endPage; i++) {
+              pages.push(
+                <button
+                  key={i}
+                  onClick={() => handlePageChange(i)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
+                    ? 'bg-white text-[#006AFF] border-[#006AFF]'
+                    : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
+                    }`}
+                >
+                  {i + 1}
+                </button>
+              );
+            }
+            return pages;
+          })()}
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages - 1}
-            className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            다음
+            <ChevronRightIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => handlePageChange(totalPages - 1)}
+            disabled={currentPage === totalPages - 1}
+            className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronDoubleRightIcon className="w-5 h-5" />
           </button>
         </div>
       )}

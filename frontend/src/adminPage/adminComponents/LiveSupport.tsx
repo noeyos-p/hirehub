@@ -513,119 +513,202 @@ const LiveSupport: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">실시간 상담</h2>
-        <button
-          onClick={clearLogs}
-          className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded transition"
-        >
-          🗑️ 대화 내용 삭제
-        </button>
-      </div>
-
-      {/* 디버그 정보 */}
-      <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
-        <div>WebSocket 상태: {stompRef.current?.connected ? '✅ 연결됨' : '❌ 미연결'}</div>
-        <div>대기 큐: {queue.length}건</div>
-        <div>활성 방: {activeRoom || '없음'}</div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        {/* 대기 큐 */}
-        <div className="col-span-1 bg-white border rounded p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold">대기 요청</h3>
-            <span className="text-xs text-gray-500">{queue.length}건</span>
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
+      <div className="mx-auto px-4 md:px-14" style={{ maxWidth: '1440px' }}>
+        {/* 헤더 */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-8 gap-4 md:gap-0">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">실시간 상담</h1>
           </div>
-          {queue.length === 0 ? (
-            <div className="text-sm text-gray-500">대기중인 요청이 없습니다.</div>
-          ) : (
-            <ul className="space-y-2">
-              {queue.map((q) => (
-                <li key={q.roomId} className="border rounded p-2 bg-gray-50">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium truncate">
-                        {q.userName} ({q.userNickname})
-                      </div>
-                      <div className="text-xs text-gray-500 truncate">{q.roomId}</div>
-                    </div>
-                    <button
-                      onClick={() => accept(q.roomId)}
-                      className="text-xs px-3 py-1 rounded bg-black text-white whitespace-nowrap hover:bg-gray-800"
-                    >
-                      수락
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* 활성 방 */}
-        <div className="col-span-2 bg-white border rounded p-3 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold">대화창</h3>
-            <div className="text-xs text-gray-500">
-              {activeRoom ? `roomId: ${activeRoom}` : "선택된 방 없음"}
-            </div>
-          </div>
-
-          {activeRoom && (
-            <div className={`mb-2 px-3 py-2 rounded text-sm ${isUserConnected
-              ? 'bg-green-100 text-green-800 border border-green-300'
-              : 'bg-red-100 text-red-800 border border-red-300'
-              }`}>
-              {isUserConnected ? '✅ 유저 연결됨' : '❌ 유저 연결 해제됨'}
-            </div>
-          )}
-
-          <div className="flex-1 border rounded p-2 overflow-y-auto text-sm bg-gray-50 min-h-[400px]">
-            {logs.length === 0 ? (
-              <div className="text-gray-500">대화 로그가 없습니다.</div>
-            ) : (
-              logs.map((l, i) => <div key={i} className="py-0.5">{l}</div>)
-            )}
-          </div>
-
-          <div className="mt-2 space-y-2">
-            <div className="flex gap-2">
-              <input
-                className="flex-1 border rounded px-2 py-2 text-sm"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && isUserConnected) sendToRoom();
-                }}
-                placeholder={
-                  activeRoom
-                    ? (isUserConnected ? "메시지를 입력하세요" : "유저가 연결 해제되었습니다")
-                    : "방 수락 후 입력 가능"
-                }
-                disabled={!activeRoom || !isUserConnected}
-              />
-              <button
-                onClick={sendToRoom}
-                disabled={!activeRoom || !input.trim() || !isUserConnected}
-                className={`px-4 py-2 rounded text-sm ${activeRoom && input.trim() && isUserConnected
-                  ? "bg-black text-white hover:bg-gray-800"
-                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  }`}
-              >
-                보내기
-              </button>
-            </div>
-
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button
+              onClick={clearLogs}
+              className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
+            >
+              🗑️ 대화 삭제
+            </button>
             {activeRoom && isUserConnected && (
               <button
-                onClick={disconnectFromUser}
-                className="w-full px-4 py-2 rounded text-sm bg-red-500 hover:bg-red-600 text-white"
+                onClick={() => {
+                  if (window.confirm('연결을 해제하시겠습니까?')) {
+                    disconnectFromUser();
+                  }
+                }}
+                className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
               >
-                연결 해제
+                해제하기
               </button>
             )}
+          </div>
+        </div>
+
+        {/* 메인 컨텐츠 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 대기 큐 */}
+          <div className="md:col-span-1">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 h-full">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-800">대기 요청</h3>
+                <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                  {queue.length}건
+                </span>
+              </div>
+
+              {queue.length === 0 ? (
+                <div className="text-sm text-gray-500 text-center py-8">
+                  대기중인 요청이 없습니다.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                  {queue.map((q) => (
+                    <div key={q.roomId} className="border border-gray-200 rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold text-gray-800 truncate">
+                            {q.userName}
+                          </div>
+                          <div className="text-xs text-gray-600 truncate">
+                            ({q.userNickname})
+                          </div>
+                          <div className="text-xs text-gray-400 truncate mt-1">
+                            {q.roomId}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => accept(q.roomId)}
+                          className="text-xs px-3 py-2 rounded-lg text-white whitespace-nowrap hover:opacity-90 transition"
+                          style={{ backgroundColor: '#006AFF' }}
+                        >
+                          수락
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 대화창 */}
+          <div className="md:col-span-2">
+            <div className="bg-gray-100 border border-gray-200 rounded-xl overflow-hidden flex flex-col h-[calc(100vh-300px)] md:h-[600px]">
+              {/* 대화창 헤더 */}
+              <div className="bg-white p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-semibold text-gray-800">대화창</h3>
+                    {activeRoom && isUserConnected && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+                        ● 연결됨
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 메시지 영역 */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {logs.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-gray-400">
+                      <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      <p className="text-sm">대화 로그가 없습니다</p>
+                      <p className="text-xs mt-1">대기 큐에서 상담을 수락하세요</p>
+                    </div>
+                  </div>
+                ) : (
+                  logs.map((l, i) => {
+                    const isSystem = l.startsWith('[시스템]') || l.startsWith('[SYS]');
+                    const isAdmin = l.startsWith('[나]') || l.startsWith('[ADMIN]');
+                    const isUser = l.startsWith('[USER]');
+
+                    if (isSystem) {
+                      return (
+                        <div key={i} className="flex justify-center">
+                          <div className="rounded-lg px-4 py-2 shadow-sm max-w-md" style={{ backgroundColor: '#D6E4F0' }}>
+                            <p className="text-sm text-gray-700 text-center">{l.replace(/\[(시스템|SYS)\]\s*/, '')}</p>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={i} className={`flex items-start gap-3 ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                        {!isAdmin && (
+                          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                              <path fillRule="evenodd" d="M12 2a5 5 0 100 10 5 5 0 000-10zM4 20a8 8 0 0116 0H4z" clipRule="evenodd"/>
+                            </svg>
+                          </div>
+                        )}
+
+                        <div className={`flex flex-col max-w-[75%] ${isAdmin ? 'items-end' : 'items-start'}`}>
+                          {!isAdmin && (
+                            <span className="text-xs font-semibold text-gray-700 mb-1 ml-1">
+                              {isUser ? '유저' : '알 수 없음'}
+                            </span>
+                          )}
+
+                          <div
+                            className={`px-4 py-2.5 text-sm rounded-2xl break-words shadow-sm ${
+                              isAdmin
+                                ? 'text-white rounded-tr-sm'
+                                : 'bg-gray-50 text-gray-800 rounded-tl-sm'
+                            }`}
+                            style={isAdmin ? { backgroundColor: '#006AFF' } : {}}
+                          >
+                            {l.replace(/\[(나|ADMIN|USER|.*?)\]\s*/, '')}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* 입력 영역 */}
+              <div className="p-3 bg-white border-t border-gray-200">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && isUserConnected) sendToRoom();
+                    }}
+                    placeholder={
+                      activeRoom
+                        ? (isUserConnected ? "메시지를 입력하세요" : "유저가 연결 해제되었습니다")
+                        : "방 수락 후 입력 가능"
+                    }
+                    disabled={!activeRoom || !isUserConnected}
+                    className="flex-1 px-3 py-2 rounded-lg border-0 bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-200 disabled:text-gray-400"
+                  />
+                  <button
+                    onClick={sendToRoom}
+                    disabled={!activeRoom || !input.trim() || !isUserConnected}
+                    className="p-2 text-gray-500 hover:text-blue-500 disabled:text-gray-300 transition-colors"
+                    title="메시지 전송"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-6 h-6 rotate-[5deg]"
+                    >
+                      <path d="M22 2L11 13" />
+                      <path d="M22 2L15 22l-4-9-9-4 20-7z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

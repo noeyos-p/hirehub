@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TrashIcon, PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, PencilIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import api from "../../api/api";
 
 interface Review {
@@ -22,6 +22,38 @@ const ReviewManagement: React.FC = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editReview, setEditReview] = useState<Review | null>(null);
+
+  // ✅ 선택 관련 상태 및 함수 추가
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const allSelected = reviews.length > 0 && selectedIds.length === reviews.length;
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(reviews.map((r) => r.id));
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length}개의 리뷰를 삭제하시겠습니까?`)) return;
+
+    try {
+      for (const id of selectedIds) {
+        await api.delete(`/api/admin/reviews/${id}`);
+      }
+      alert("선택된 리뷰가 삭제되었습니다.");
+      setSelectedIds([]);
+      fetchReviews(currentPage);
+    } catch (err) {
+      console.error("선택삭제 오류:", err);
+      alert("선택삭제 중 오류가 발생했습니다.");
+    }
+  };
 
   const pageSize = 10;
 
@@ -127,42 +159,59 @@ const ReviewManagement: React.FC = () => {
   const renderPagination = () => {
     if (totalPages <= 1) return null;
 
-    const startPage = Math.max(0, currentPage - 2);
-    const endPage = Math.min(totalPages, startPage + 5);
-
     return (
-      <div className="flex justify-center items-center gap-2 mt-6">
+      <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
+        <button
+          onClick={() => fetchReviews(0)}
+          disabled={currentPage === 0}
+          className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronDoubleLeftIcon className="w-5 h-5" />
+        </button>
         <button
           onClick={() => fetchReviews(currentPage - 1)}
           disabled={currentPage === 0}
-          className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          이전
+          <ChevronLeftIcon className="w-5 h-5" />
         </button>
-
-        {Array.from({ length: endPage - startPage }, (_, i) => {
-          const page = startPage + i;
-          return (
-            <button
-              key={page}
-              onClick={() => fetchReviews(page)}
-              className={`px-4 py-2 rounded-lg border ${
-                currentPage === page
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              {page + 1}
-            </button>
-          );
-        })}
-
+        {(() => {
+          const pages = [];
+          const maxVisible = 5;
+          let startPage = Math.max(0, currentPage - Math.floor(maxVisible / 2));
+          let endPage = Math.min(totalPages - 1, startPage + maxVisible - 1);
+          if (endPage - startPage + 1 < maxVisible) {
+            startPage = Math.max(0, endPage - maxVisible + 1);
+          }
+          for (let i = startPage; i <= endPage; i++) {
+            pages.push(
+              <button
+                key={i}
+                onClick={() => fetchReviews(i)}
+                className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
+                  ? 'bg-white text-[#006AFF] border-[#006AFF]'
+                  : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
+                  }`}
+              >
+                {i + 1}
+              </button>
+            );
+          }
+          return pages;
+        })()}
         <button
           onClick={() => fetchReviews(currentPage + 1)}
           disabled={currentPage === totalPages - 1}
-          className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          다음
+          <ChevronRightIcon className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => fetchReviews(totalPages - 1)}
+          disabled={currentPage === totalPages - 1}
+          className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronDoubleRightIcon className="w-5 h-5" />
         </button>
       </div>
     );
@@ -171,7 +220,7 @@ const ReviewManagement: React.FC = () => {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">리뷰 관리</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">리뷰 관리</h2>
 
         <div className="flex items-center border border-gray-300 rounded-full px-3 py-1 w-64">
           <input
@@ -187,6 +236,42 @@ const ReviewManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* ✅ 전체선택 + 선택삭제 영역 */}
+      <div className="flex items-center gap-3 mb-4 min-h-[36px]">
+        <label className="relative flex items-center gap-2 cursor-pointer group flex-shrink-0">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+            className="sr-only peer"
+          />
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+            allSelected
+              ? 'bg-blue-600 border-blue-600'
+              : 'bg-white border-gray-300 group-hover:border-blue-400'
+          }`}>
+            {allSelected && (
+              <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-700 flex-shrink-0">전체 선택</span>
+        </label>
+
+        {selectedIds.length > 0 && (
+          <button
+            onClick={handleBulkDelete}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium flex-shrink-0"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            선택삭제 ({selectedIds.length})
+          </button>
+        )}
+      </div>
+
       {loading && <div className="text-center py-8 text-gray-500">로딩 중...</div>}
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
@@ -194,7 +279,34 @@ const ReviewManagement: React.FC = () => {
         <>
           <div className="grid grid-cols-2 gap-4">
             {filteredReviews.map((review) => (
-              <div key={review.id} className="flex justify-between items-center border border-gray-100 bg-white rounded-md px-4 py-3 hover:bg-gray-50 transition">
+              <div key={review.id} className={`relative flex justify-between items-center border border-gray-100 bg-white rounded-md px-4 py-3 hover:bg-gray-50 transition ${
+                selectedIds.includes(review.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+              }`}>
+                {/* ✅ 개별 선택 체크박스 */}
+                <div
+                  className="absolute top-3 right-3 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <label className="relative flex items-center justify-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(review.id)}
+                      onChange={() => toggleSelect(review.id)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                      selectedIds.includes(review.id)
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-white border-gray-300 hover:border-blue-400'
+                    }`}>
+                      {selectedIds.includes(review.id) && (
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </label>
+                </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <div className="text-sm font-semibold text-gray-800">{review.companyName}</div>
@@ -203,7 +315,7 @@ const ReviewManagement: React.FC = () => {
                   <div className="text-sm text-gray-600">작성자: {review.nickname || "익명"}</div>
                   <div className="text-sm text-gray-700 mt-1 line-clamp-1">{review.content}</div>
                 </div>
-                <div className="flex space-x-3">
+                <div className="flex space-x-3 mr-8">
                   <PencilIcon onClick={() => handleEdit(review)} className="w-5 h-5 text-gray-400 hover:text-gray-700 cursor-pointer" />
                   <TrashIcon onClick={() => handleDelete(review.id)} className="w-5 h-5 text-gray-400 hover:text-red-500 cursor-pointer" />
                 </div>

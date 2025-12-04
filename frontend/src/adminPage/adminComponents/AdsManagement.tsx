@@ -4,6 +4,8 @@ import {
   PhotoIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
 import api from "../../api/api"; // ✅ 공통 axios 인스턴스
 
@@ -158,25 +160,39 @@ const AdsManagement: React.FC = () => {
 
   return (
     <div className="p-8 h-full">
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">광고 관리</h2>
+      <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">광고 관리</h2>
       {/* ✅ 전체선택 + 선택삭제 */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 mb-4 min-h-[36px]">
+        <label className="relative flex items-center gap-2 cursor-pointer group flex-shrink-0">
           <input
             type="checkbox"
             checked={allSelected}
             onChange={toggleSelectAll}
-            className="w-4 h-4 accent-blue-600"
+            className="sr-only peer"
           />
-          <span className="text-sm text-gray-700">전체 선택</span>
-        </div>
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+            allSelected
+              ? 'bg-blue-600 border-blue-600'
+              : 'bg-white border-gray-300 group-hover:border-blue-400'
+          }`}>
+            {allSelected && (
+              <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-700 flex-shrink-0">전체 선택</span>
+        </label>
 
         {selectedIds.length > 0 && (
           <button
             onClick={handleBulkDelete}
-            className="bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 text-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium flex-shrink-0"
           >
-            선택 삭제 ({selectedIds.length})
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            선택삭제 ({selectedIds.length})
           </button>
         )}
       </div>
@@ -238,22 +254,38 @@ const AdsManagement: React.FC = () => {
                   <div
                     key={ad.id}
                     onClick={() => handleAdClick(ad)}
-                    className={`relative bg-gray-50 rounded-lg border-2 transition cursor-pointer overflow-hidden ${selectedAd?.id === ad.id
+                    className={`relative bg-gray-50 rounded-lg border-2 transition cursor-pointer overflow-hidden ${
+                      selectedAd?.id === ad.id
                         ? "border-blue-500 shadow-lg"
+                        : selectedIds.includes(ad.id)
+                        ? "ring-2 ring-blue-500 ring-offset-2"
                         : "border-gray-200 hover:border-gray-300 hover:shadow-md"
                       }`}
                   >
-                    {/* ✅ 개별 선택 체크박스 — 카드 상단 좌측에 절대 위치 */}
+                    {/* ✅ 개별 선택 체크박스 */}
                     <div
-                      className="absolute top-2 left-2 bg-white bg-opacity-80 backdrop-blur-sm rounded shadow-sm p-0.5 z-10"
+                      className="absolute top-2 right-2 z-10"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(ad.id)}
-                        onChange={() => toggleSelect(ad.id)}
-                        className="w-4 h-4 accent-blue-600"
-                      />
+                      <label className="relative flex items-center justify-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(ad.id)}
+                          onChange={() => toggleSelect(ad.id)}
+                          className="sr-only peer"
+                        />
+                        <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all bg-white ${
+                          selectedIds.includes(ad.id)
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'border-gray-300 hover:border-blue-400'
+                        }`}>
+                          {selectedIds.includes(ad.id) && (
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </label>
                     </div>
 
                     <div className="h-48 flex items-center justify-center bg-gray-100">
@@ -289,34 +321,58 @@ const AdsManagement: React.FC = () => {
 
           {/* 페이지네이션 */}
           {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-center gap-2">
+            <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronDoubleLeftIcon className="w-5 h-5" />
+              </button>
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="p-2 rounded-md bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ChevronLeftIcon className="w-4 h-4 text-gray-600" />
+                <ChevronLeftIcon className="w-5 h-5" />
               </button>
-
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => handlePageChange(i + 1)}
-                  className={`px-3 py-1 rounded-md text-sm transition ${currentPage === i + 1
-                      ? "bg-blue-500 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-100"
-                    }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-
+              {(() => {
+                const pages = [];
+                const maxVisible = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                if (endPage - startPage + 1 < maxVisible) {
+                  startPage = Math.max(1, endPage - maxVisible + 1);
+                }
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <button
+                      key={i}
+                      onClick={() => handlePageChange(i)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
+                        ? 'bg-white text-[#006AFF] border-[#006AFF]'
+                        : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
+                        }`}
+                    >
+                      {i}
+                    </button>
+                  );
+                }
+                return pages;
+              })()}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-md bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ChevronRightIcon className="w-4 h-4 text-gray-600" />
+                <ChevronRightIcon className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+                className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronDoubleRightIcon className="w-5 h-5" />
               </button>
             </div>
           )}

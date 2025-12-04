@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TrashIcon, PhotoIcon, PencilIcon, XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, PhotoIcon, PencilIcon, XMarkIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import { adminApi } from "../../api/adminApi";
 import type { AdminCompany, AdminPageInfo } from "../../types/interface";
 
@@ -367,85 +367,59 @@ const CompanyManagement: React.FC = () => {
     const { totalPages, currentPage } = pageInfo;
     if (totalPages <= 1) return null;
 
-    const pageNumbers: (number | string)[] = [];
-    const maxVisiblePages = 5;
-
-    if (totalPages <= maxVisiblePages + 2) {
-      // 페이지가 적으면 모두 표시
-      for (let i = 0; i < totalPages; i++) {
-        pageNumbers.push(i);
-      }
-    } else {
-      // 많으면 생략(...) 사용
-      if (currentPage <= 2) {
-        // 앞부분
-        for (let i = 0; i < maxVisiblePages; i++) {
-          pageNumbers.push(i);
-        }
-        pageNumbers.push('...');
-        pageNumbers.push(totalPages - 1);
-      } else if (currentPage >= totalPages - 3) {
-        // 뒷부분
-        pageNumbers.push(0);
-        pageNumbers.push('...');
-        for (let i = totalPages - maxVisiblePages; i < totalPages; i++) {
-          pageNumbers.push(i);
-        }
-      } else {
-        // 중간부분
-        pageNumbers.push(0);
-        pageNumbers.push('...');
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pageNumbers.push(i);
-        }
-        pageNumbers.push('...');
-        pageNumbers.push(totalPages - 1);
-      }
-    }
-
     return (
-      <div className="flex justify-center items-center gap-2 mt-8">
-        {/* 이전 버튼 */}
+      <div className="mt-8 flex items-center justify-center gap-2 mb-[12px]">
+        <button
+          onClick={() => handlePageChange(0)}
+          disabled={currentPage === 0}
+          className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronDoubleLeftIcon className="w-5 h-5" />
+        </button>
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 0}
-          className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          &lt;
+          <ChevronLeftIcon className="w-5 h-5" />
         </button>
-
-        {/* 페이지 번호 */}
-        {pageNumbers.map((page, index) => {
-          if (page === '...') {
-            return (
-              <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
-                ...
-              </span>
+        {(() => {
+          const pages = [];
+          const maxVisible = 5;
+          let startPage = Math.max(0, currentPage - Math.floor(maxVisible / 2));
+          let endPage = Math.min(totalPages - 1, startPage + maxVisible - 1);
+          if (endPage - startPage + 1 < maxVisible) {
+            startPage = Math.max(0, endPage - maxVisible + 1);
+          }
+          for (let i = startPage; i <= endPage; i++) {
+            pages.push(
+              <button
+                key={i}
+                onClick={() => handlePageChange(i)}
+                className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
+                  ? 'bg-white text-[#006AFF] border-[#006AFF]'
+                  : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
+                  }`}
+              >
+                {i + 1}
+              </button>
             );
           }
-
-          const pageNum = page as number;
-          return (
-            <button
-              key={pageNum}
-              onClick={() => handlePageChange(pageNum)}
-              className={`px-4 py-2 rounded-lg border transition-colors ${currentPage === pageNum
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-            >
-              {pageNum + 1}
-            </button>
-          );
-        })}
-
-        {/* 다음 버튼 */}
+          return pages;
+        })()}
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages - 1}
-          className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          &gt;
+          <ChevronRightIcon className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => handlePageChange(totalPages - 1)}
+          disabled={currentPage === totalPages - 1}
+          className="p-2.5 rounded-md bg-white border border-gray-300 hover:text-[#006AFF] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronDoubleRightIcon className="w-5 h-5" />
         </button>
       </div>
     );
@@ -455,7 +429,7 @@ const CompanyManagement: React.FC = () => {
     <div className="p-8 h-full bg-gray-50">
       {/* 타이틀 */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">기업 관리</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">기업 관리</h2>
         <button
           onClick={openCreateModal}
           className="bg-blue-100 text-blue-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-200 flex items-center gap-1"
@@ -464,21 +438,37 @@ const CompanyManagement: React.FC = () => {
         </button>
       </div>
       {/* ✅ 전체선택 + 선택삭제 영역 */}
-      <div className="flex items-center gap-2 mb-4">
-        <input
-          type="checkbox"
-          checked={allSelected}
-          onChange={toggleSelectAll}
-          className="w-4 h-4 accent-blue-600"
-        />
-        <span className="text-sm text-gray-700">전체 선택</span>
+      <div className="flex items-center gap-3 mb-4 min-h-[36px]">
+        <label className="relative flex items-center gap-2 cursor-pointer group flex-shrink-0">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+            className="sr-only peer"
+          />
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+            allSelected
+              ? 'bg-blue-600 border-blue-600'
+              : 'bg-white border-gray-300 group-hover:border-blue-400'
+          }`}>
+            {allSelected && (
+              <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-700 flex-shrink-0">전체 선택</span>
+        </label>
 
         {selectedIds.length > 0 && (
           <button
             onClick={handleBulkDelete}
-            className="ml-3 bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 text-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium flex-shrink-0"
           >
-            선택 삭제
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            선택삭제 ({selectedIds.length})
           </button>
         )}
       </div>
@@ -494,22 +484,35 @@ const CompanyManagement: React.FC = () => {
             {companies.map((company) => (
               <div
                 key={company.id}
-                className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer"
+                className={`relative bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer ${
+                  selectedIds.includes(company.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                }`}
                 onClick={() => setSelectedCompany(company)}
               >
-                {/* ✅ 개별 체크박스 추가 */}
-                <div className="flex justify-between items-center mb-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(company.id)}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      toggleSelect(company.id);
-                    }}
-                    className="w-4 h-4 accent-blue-600"
-                  />
-                  <span className="text-xs text-gray-500">ID: {company.id}</span>
-
+                {/* ✅ 개별 선택 체크박스 */}
+                <div
+                  className="absolute top-3 right-3 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <label className="relative flex items-center justify-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(company.id)}
+                      onChange={() => toggleSelect(company.id)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                      selectedIds.includes(company.id)
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-white border-gray-300 hover:border-blue-400'
+                    }`}>
+                      {selectedIds.includes(company.id) && (
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </label>
                 </div>
                 {company.photo ? (
                   <img src={company.photo} alt={company.name} className="w-full h-48 object-cover rounded-md mb-3" />
