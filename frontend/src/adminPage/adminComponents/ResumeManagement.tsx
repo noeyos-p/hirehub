@@ -206,8 +206,8 @@ const ResumeDetailModal: React.FC<ResumeDetailModalProps> = ({ resume, isOpen, o
             <span>이메일: {resume.users.email}</span>
             <span
               className={`px-2 py-1 rounded text-xs ${resume.locked
-                  ? "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
-                  : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
+                ? "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
+                : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
                 }`}
             >
               {resume.locked ? "지원됨" : "지원안됨"}
@@ -369,7 +369,9 @@ const ResumeManagement: React.FC = () => {
       const res = await adminApi.getResumes({ page, size: 10, sort: "createAt,desc" });
 
       if (res.success) {
-        const mapped = (res.data || []).map(normalizeResume);
+        // Backend returns 'content' for Page<Resume>, but frontend interface expects 'data'
+        const list = res.data || (res as any).content || [];
+        const mapped = list.map(normalizeResume);
         setResumes(mapped);
         setTotalPages(res.totalPages);
         setTotalElements(res.totalElements);
@@ -441,8 +443,8 @@ const ResumeManagement: React.FC = () => {
                     </div>
                     <span
                       className={`px-2 py-0.5 rounded text-xs ${resume.locked
-                          ? "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
-                          : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
+                        ? "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
+                        : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
                         }`}
                     >
                       {resume.locked ? "지원됨" : "지원안됨"}
