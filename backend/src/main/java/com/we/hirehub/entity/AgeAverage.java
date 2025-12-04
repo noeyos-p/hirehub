@@ -18,4 +18,8 @@ public class AgeAverage {
     // 나이
     @Column(nullable = false)
     private Long age;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 }

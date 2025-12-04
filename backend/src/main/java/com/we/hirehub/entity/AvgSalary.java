@@ -22,4 +22,8 @@ public class AvgSalary {
     // 평균 연봉
     @Column(nullable = false)
     private String salary;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 }

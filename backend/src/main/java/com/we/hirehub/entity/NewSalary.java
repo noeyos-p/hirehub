@@ -22,4 +22,8 @@ public class NewSalary {
     // 신입 평균 연봉
     @Column(nullable = false)
     private String salary;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 }

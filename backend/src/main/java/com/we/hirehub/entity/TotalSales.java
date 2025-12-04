@@ -22,4 +22,8 @@ public class TotalSales {
     // 매출액
     @Column(nullable = false)
     private String sales;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 }
