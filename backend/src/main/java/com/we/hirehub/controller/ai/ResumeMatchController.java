@@ -13,6 +13,7 @@ import com.we.hirehub.repository.JobPostsRepository;
 import com.we.hirehub.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +29,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ResumeMatchController {
 
+    @Value("${ai.server-url:http://localhost:8000}")
+    private String aiServerUrl;
 
     private final ResumeRepository resumeRepository;
     private final JobPostsRepository jobPostsRepository;
@@ -80,7 +83,7 @@ public class ResumeMatchController {
             try {
                 log.info("📦 Sending AI batch request ({}~{})", i + 1, Math.min(i + batchSize, jobs.size()));
 
-                Map aiResponse = rest.postForObject("http://localhost:8000/ai/match-batch", body, Map.class);
+                Map aiResponse = rest.postForObject(aiServerUrl + "/ai/match-batch", body, Map.class);
                 if (aiResponse == null || !aiResponse.containsKey("results")) continue;
 
                 List<Map<String, Object>> batchResults = (List<Map<String, Object>>) aiResponse.get("results");

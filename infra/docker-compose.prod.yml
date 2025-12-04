@@ -10,12 +10,15 @@ services:
       SPRING_PROFILES_ACTIVE: aws
       RDS_ENDPOINT: ${RDS_ENDPOINT}
       JWT_SECRET: ${JWT_SECRET}
+      AI_SERVER_URL: http://fastapi:8000
       JAVA_OPTS: "--add-opens java.base/java.lang=ALL-UNNAMED"
     restart: unless-stopped
     ports:
       - "8080:8080"
     networks:
       - hirehub-network
+    depends_on:
+      - fastapi
 
   frontend:
     image: ${FRONTEND_IMAGE}
