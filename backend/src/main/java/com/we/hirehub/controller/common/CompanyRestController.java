@@ -2,10 +2,12 @@ package com.we.hirehub.controller.common;
 
 import com.we.hirehub.dto.support.CompanyDto;
 import com.we.hirehub.dto.common.PagedResponse;
+import com.we.hirehub.dto.common.CompanyStatsDto;
 import com.we.hirehub.dto.user.FavoriteDto;
 import com.we.hirehub.entity.Company;
 import com.we.hirehub.repository.CompanyRepository;
 import com.we.hirehub.service.support.CompanyService;
+import com.we.hirehub.service.common.CompanyStatsService;
 import com.we.hirehub.service.user.MyPageFavoritesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +30,7 @@ public class CompanyRestController {
     private final MyPageFavoritesService myPageFavoritesService;
     private final CompanyRepository companyRepository;
     private final CompanyService companyService;
+    private final CompanyStatsService companyStatsService;
 
 
     // ... (기존 회사 상세/목록 등의 엔드포인트들)
@@ -98,6 +101,17 @@ public class CompanyRestController {
             return ResponseEntity.ok(dto);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build(); // 없으면 404
+        }
+    }
+
+    // ✅ 회사 통계 조회 (차트 데이터)
+    @GetMapping("/{companyId}/stats")
+    public ResponseEntity<CompanyStatsDto> getCompanyStats(@PathVariable Long companyId) {
+        try {
+            CompanyStatsDto stats = companyStatsService.getCompanyStats(companyId);
+            return ResponseEntity.ok(stats);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 }
