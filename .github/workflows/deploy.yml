@@ -43,6 +43,9 @@ jobs:
           context: ${{ matrix.context }}
           push: true
           no-cache: true # ✅ 이 줄 추가
+          build-args: |
+            ${{ matrix.name == 'frontend' && format('VITE_KAKAO_MAP_JS_KEY={0}', secrets.VITE_KAKAO_MAP_JS_KEY) || '' }}
+            ${{ matrix.name == 'frontend' && format('VITE_API_BASE_URL={0}', secrets.VITE_API_BASE_URL) || '' }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:${{ github.sha }}
