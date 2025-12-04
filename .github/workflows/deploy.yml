@@ -25,6 +25,7 @@ jobs:
           - name: fastapi
             context: fastapi
             imagename: hirehub-fastapi
+
     steps:
       - uses: actions/checkout@v4
 
@@ -42,10 +43,10 @@ jobs:
         with:
           context: ${{ matrix.context }}
           push: true
-          no-cache: true # ✅ 이 줄 추가
+          no-cache: true
+
           build-args: |
-            ${{ matrix.name == 'frontend' && format('VITE_KAKAO_MAP_JS_KEY={0}', secrets.VITE_KAKAO_MAP_JS_KEY) || '' }}
-            ${{ matrix.name == 'frontend' && format('VITE_API_BASE_URL={0}', secrets.VITE_API_BASE_URL) || '' }}
+            ${{ matrix.name == 'frontend' && 'VITE_KAKAO_MAP_JS_KEY=' }}${{ matrix.name == 'frontend' && secrets.VITE_KAKAO_MAP_JS_KEY }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:${{ github.sha }}
@@ -63,19 +64,19 @@ jobs:
           script: |
             set -e
 
-            echo "🧹 도커 빌드 캐시 및 오래된 이미지 정리..."
+            echo "🧹 도커 빌드 캐시 및 오래된 이미지 정리…"
             docker builder prune -a -f || true
             docker image prune -a -f || true
 
-            echo "🛠️ Docker 이미지 pull..."
+            echo "🛠️ Docker 이미지 pull…"
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-backend:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-frontend:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hirehub-fastapi:latest
 
-            echo "📂 디렉터리 준비..."
+            echo "📂 디렉터리 준비…"
             cd ~/app || { mkdir -p ~/app; cd ~/app; }
 
-            echo "🧩 .env.prod 파일 생성..."
+            echo "🧩 .env.prod 파일 생성…"
             cat <<EOF > .env.prod
             RDS_ENDPOINT=${{ secrets.RDS_ENDPOINT }}
             SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}
@@ -92,12 +93,7 @@ jobs:
             BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
             FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
             FASTAPI_IMAGE=${{ secrets.FASTAPI_IMAGE }}
-            VITE_KAKAO_MAP_JS_KEY=${{ secrets.VITE_KAKAO_MAP_JS_KEY }}
-            KAKAOMAP_REST_API_KEY=${{ secrets.KAKAOMAP_REST_API_KEY }}
-            FASTAPI_NAVER_CLIENT_ID=${{ secrets.FASTAPI_NAVER_CLIENT_ID }}
-            FASTAPI_NAVER_CLIENT_SECRET=${{ secrets.FASTAPI_NAVER_CLIENT_SECRET }}
-            FASTAPI_OPENAI_API_KEY=${{ secrets.FASTAPI_OPENAI_API_KEY }}
             EOF
 
-            echo "🚀 Docker Compose 실행..."
-            docker compose -f infra/docker-compose.prod.yml --env-file .env.prod up -d --remove-orphans
+            echo "🚀 Docker Compose 실행…"
+            docker compose -f infra/docker-compose.prod.yml —env-file .env.prod up -d —remove-orphans
