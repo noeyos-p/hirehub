@@ -39,8 +39,6 @@ services:
   fastapi:
     image: ${FASTAPI_IMAGE}
     container_name: fastapi
-    env_file:
-      - .env.prod
     ports:
       - "8000:8000"
     restart: unless-stopped
