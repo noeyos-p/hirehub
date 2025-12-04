@@ -100,8 +100,13 @@ const RealTimeChat: React.FC = () => {
 
       console.log('WebSocket 연결 시도, 토큰 존재:', !!token);
 
-      // SockJS는 http:// 또는 https:// URL을 받아서 자동으로 WebSocket으로 업그레이드
-      const wsUrl = API_BASE_URL ? `${API_BASE_URL}/ws` : '/ws';
+      // SockJS URL 구성 - 반드시 trailing slash 제거
+      let wsUrl = '/ws';
+      if (API_BASE_URL) {
+        // Remove trailing slash and construct URL
+        const baseUrl = API_BASE_URL.replace(/\/+$/, '');
+        wsUrl = `${baseUrl}/ws`;
+      }
       console.log('SockJS URL:', wsUrl);
 
       const client = new Client({
