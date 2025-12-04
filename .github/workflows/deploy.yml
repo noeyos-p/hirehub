@@ -43,6 +43,9 @@ jobs:
           context: ${{ matrix.context }}
           push: true
           no-cache: true # ✅ 이 줄 추가
+          build-args: |
+            ${{ matrix.name == 'frontend' && format('VITE_KAKAO_MAP_JS_KEY={0}', secrets.VITE_KAKAO_MAP_JS_KEY) || '' }}
+            ${{ matrix.name == 'frontend' && format('VITE_API_BASE_URL={0}', secrets.VITE_API_BASE_URL) || '' }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.imagename }}:${{ github.sha }}
@@ -89,8 +92,6 @@ jobs:
             BACKEND_IMAGE=${{ secrets.BACKEND_IMAGE }}
             FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }}
             FASTAPI_IMAGE=${{ secrets.FASTAPI_IMAGE }}
-            VITE_KAKAO_MAP_JS_KEY=${{ secrets.VITE_KAKAO_MAP_JS_KEY }}
-            KAKAOMAP_REST_API_KEY=${{ secrets.KAKAOMAP_REST_API_KEY }}
             EOF
 
             echo "🚀 Docker Compose 실행..."
