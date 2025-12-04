@@ -10,15 +10,12 @@ services:
       SPRING_PROFILES_ACTIVE: aws
       RDS_ENDPOINT: ${RDS_ENDPOINT}
       JWT_SECRET: ${JWT_SECRET}
-      AI_SERVER_URL: http://fastapi:8000
       JAVA_OPTS: "--add-opens java.base/java.lang=ALL-UNNAMED"
     restart: unless-stopped
     ports:
       - "8080:8080"
     networks:
       - hirehub-network
-    depends_on:
-      - fastapi
 
   frontend:
     image: ${FRONTEND_IMAGE}
@@ -39,6 +36,12 @@ services:
   fastapi:
     image: ${FASTAPI_IMAGE}
     container_name: fastapi
+    env_file:
+      - .env.prod
+    environment:
+      NAVER_CLIENT_ID: ${FASTAPI_NAVER_CLIENT_ID}
+      NAVER_CLIENT_SECRET: ${FASTAPI_NAVER_CLIENT_SECRET}
+      OPENAI_API_KEY: ${FASTAPI_OPENAI_API_KEY}
     ports:
       - "8000:8000"
     restart: unless-stopped
