@@ -96,4 +96,4 @@ jobs:
             EOF
 
             echo "🚀 Docker Compose 실행…"
-            docker compose -f infra/docker-compose.prod.yml —env-file .env.prod up -d —remove-orphans
+            docker compose -f infra/docker-compose.prod.yml --env-file .env.prod up -d —remove-orphans
