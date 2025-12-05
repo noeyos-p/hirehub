@@ -67,6 +67,6 @@ public class Users {
     @Column(nullable = false)
     private Role role = Role.USER;   // 기본 USER
 
-    @Column(nullable = false)
+    @Builder.Default
     private Integer tokenBalance = 0;
 }

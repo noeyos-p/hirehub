@@ -156,6 +156,9 @@ export interface Company {
   industry: string;
   ceo: string;
   photo: string | null; // AWS S3 URL
+  count?: string;        // 사원수
+  companyType?: string;  // 기업구분
+  benefitsList?: string[]; // 복리후생 리스트
 
   // OneToMany relationships (optional - only when fetching with relations)
   jobPosts?: JobPosts[];
@@ -650,12 +653,15 @@ export interface AdminCompany {
   name: string;
   content: string;
   address: string;
-  since: string;
+  since: number;
   benefits: string;
   website: string;
   industry: string;
   ceo: string;
   photo?: string;
+  benefitsList?: string[];
+  count?: string;        // 사원수
+  companyType?: string;  // 기업구분
 }
 
 export interface AdminJob {

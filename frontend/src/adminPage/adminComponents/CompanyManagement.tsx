@@ -40,14 +40,26 @@ const CompanyManagement: React.FC = () => {
     name: "",
     content: "",
     address: "",
-    since: "",
+    since: new Date().getFullYear(),
     benefits: "",
     website: "",
     industry: "",
     ceo: "",
     photo: "",
+    count: "",
+    companyType: "",
   });
+  const [postcode, setPostcode] = useState("");
+  const [detailAddress, setDetailAddress] = useState("");
+  const [editPostcode, setEditPostcode] = useState("");
+  const [editDetailAddress, setEditDetailAddress] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+
+  // 복리후생 관리
+  const [benefitsList, setBenefitsList] = useState<string[]>([]);
+  const [benefitInput, setBenefitInput] = useState("");
+  const [editBenefitsList, setEditBenefitsList] = useState<string[]>([]);
+  const [editBenefitInput, setEditBenefitInput] = useState("");
 
   const pageSize = 6;
   const handleBulkDelete = async () => {
@@ -100,19 +112,76 @@ const CompanyManagement: React.FC = () => {
     fetchCompanies(0);
   }, []);
 
+  // ✅ 우편번호 검색 함수 (신규 등록)
+  const handlePostcodeSearch = () => {
+    new (window as any).daum.Postcode({
+      oncomplete: function (data: any) {
+        // 도로명 주소와 지번 주소 중 선택
+        const fullAddress = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+        setPostcode(data.zonecode);
+        setNewCompany({ ...newCompany, address: `[${data.zonecode}] ${fullAddress}` });
+      }
+    }).open();
+  };
+
+  // ✅ 우편번호 검색 함수 (수정)
+  const handleEditPostcodeSearch = () => {
+    new (window as any).daum.Postcode({
+      oncomplete: function (data: any) {
+        const fullAddress = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+        setEditPostcode(data.zonecode);
+        if (editFormData) {
+          setEditFormData({ ...editFormData, address: `[${data.zonecode}] ${fullAddress}` });
+        }
+      }
+    }).open();
+  };
+
+  // ✅ 복리후생 추가 (신규)
+  const addBenefit = () => {
+    if (benefitInput.trim()) {
+      setBenefitsList([...benefitsList, benefitInput.trim()]);
+      setBenefitInput("");
+    }
+  };
+
+  // ✅ 복리후생 삭제 (신규)
+  const removeBenefit = (index: number) => {
+    setBenefitsList(benefitsList.filter((_, i) => i !== index));
+  };
+
+  // ✅ 복리후생 추가 (수정)
+  const addEditBenefit = () => {
+    if (editBenefitInput.trim()) {
+      setEditBenefitsList([...editBenefitsList, editBenefitInput.trim()]);
+      setEditBenefitInput("");
+    }
+  };
+
+  // ✅ 복리후생 삭제 (수정)
+  const removeEditBenefit = (index: number) => {
+    setEditBenefitsList(editBenefitsList.filter((_, i) => i !== index));
+  };
+
   // ✅ 신규 등록 버튼 클릭 시
   const openCreateModal = () => {
     setNewCompany({
       name: "",
       content: "",
       address: "",
-      since: "",
+      since: new Date().getFullYear(),
       benefits: "",
       website: "",
       industry: "",
       ceo: "",
       photo: "",
+      count: "",
+      companyType: "",
     });
+    setPostcode("");
+    setDetailAddress("");
+    setBenefitsList([]);
+    setBenefitInput("");
     setPreview(null);
     setIsCreateModalOpen(true);
   };
@@ -122,27 +191,58 @@ const CompanyManagement: React.FC = () => {
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // 상세주소를 포함한 최종 주소 생성
+      const finalAddress = detailAddress
+        ? `${newCompany.address} ${detailAddress}`
+        : newCompany.address;
+
+      console.log("📤 [기업 등록 요청 데이터]", {
+        ...newCompany,
+        address: finalAddress,
+        benefitsList: benefitsList
+      });
+
       // id 없이 전송 (insert 처리)
-      const res = await adminApi.createCompany(newCompany);
+      const res = await adminApi.createCompany({
+        ...newCompany,
+        address: finalAddress,
+        benefitsList: benefitsList
+      });
+
+      console.log("📥 [서버 응답]", res);
+
       if (res.success) {
         const createdCompany = res.data;
+        console.log("✅ 기업 등록 성공:", createdCompany);
+
         // 이미지 업로드가 있다면 바로 업로드
         if (preview) {
-          const formData = new FormData();
-          const blob = await fetch(preview).then((r) => r.blob());
-          formData.append("file", new File([blob], "company-photo.png", { type: "image/png" }));
-          formData.append("companyId", createdCompany.id.toString());
-          await adminApi.uploadCompanyImage(createdCompany.id, formData);
+          try {
+            const formData = new FormData();
+            const blob = await fetch(preview).then((r) => r.blob());
+            formData.append("file", new File([blob], "company-photo.png", { type: "image/png" }));
+            formData.append("companyId", createdCompany.id.toString());
+            await adminApi.uploadCompanyImage(createdCompany.id, formData);
+          } catch (imgErr) {
+            console.error("❌ 이미지 업로드 실패:", imgErr);
+          }
         }
         alert("기업 등록 완료!");
         setIsCreateModalOpen(false);
         fetchCompanies(0);
       } else {
+        console.error("❌ 등록 실패 응답:", res);
         alert("등록 실패: " + (res.message || "서버 오류"));
       }
-    } catch (err) {
-      console.error("등록 실패:", err);
-      alert("등록 중 오류가 발생했습니다.");
+    } catch (err: any) {
+      console.error("❌❌❌ [기업 등록 오류] ❌❌❌");
+      console.error("Error object:", err);
+      console.error("Error message:", err?.message);
+      console.error("Error response:", err?.response);
+      console.error("Error response data:", err?.response?.data);
+      console.error("Error response status:", err?.response?.status);
+      console.error("Full error:", JSON.stringify(err, null, 2));
+      alert("등록 중 오류가 발생했습니다: " + (err?.response?.data?.message || err?.message || "알 수 없는 오류"));
     }
   };
 
@@ -187,10 +287,8 @@ const CompanyManagement: React.FC = () => {
           {[
             { label: "회사명", key: "name" },
             { label: "대표자명", key: "ceo" },
-            { label: "주소", key: "address" },
             { label: "업종", key: "industry" },
             { label: "홈페이지", key: "website" },
-            { label: "복리후생", key: "benefits" },
           ].map((f) => (
             <div key={f.key}>
               <label className="block text-sm font-medium">{f.label}</label>
@@ -203,12 +301,120 @@ const CompanyManagement: React.FC = () => {
               />
             </div>
           ))}
+
+          {/* ✅ 사원수 */}
+          <div>
+            <label className="block text-sm font-medium">사원수</label>
+            <input
+              type="text"
+              value={newCompany.count}
+              onChange={(e) => setNewCompany({ ...newCompany, count: e.target.value })}
+              placeholder="예: 50명, 100-500명"
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+
+          {/* ✅ 기업구분 */}
+          <div>
+            <label className="block text-sm font-medium">기업구분</label>
+            <select
+              value={newCompany.companyType}
+              onChange={(e) => setNewCompany({ ...newCompany, companyType: e.target.value })}
+              className="w-full border rounded px-3 py-2"
+            >
+              <option value="">선택</option>
+              <option value="대기업">대기업</option>
+              <option value="중견기업">중견기업</option>
+              <option value="중소기업">중소기업</option>
+            </select>
+          </div>
+
+          {/* ✅ 주소 검색 */}
+          <div>
+            <label className="block text-sm font-medium mb-1">주소</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={postcode}
+                placeholder="우편번호"
+                readOnly
+                className="w-32 border rounded px-3 py-2 bg-gray-50"
+              />
+              <button
+                type="button"
+                onClick={handlePostcodeSearch}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                우편번호 검색
+              </button>
+            </div>
+            <input
+              type="text"
+              value={newCompany.address}
+              placeholder="주소"
+              readOnly
+              className="w-full border rounded px-3 py-2 bg-gray-50 mb-2"
+              required
+            />
+            <input
+              type="text"
+              value={detailAddress}
+              onChange={(e) => setDetailAddress(e.target.value)}
+              placeholder="상세주소"
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+
+          {/* ✅ 복리후생 입력 */}
+          <div>
+            <label className="block text-sm font-medium mb-1">복리후생</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={benefitInput}
+                onChange={(e) => setBenefitInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
+                placeholder="복리후생 입력 (예: 4대보험, 연차)"
+                className="flex-1 border rounded px-3 py-2"
+              />
+              <button
+                type="button"
+                onClick={addBenefit}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                추가
+              </button>
+            </div>
+            {benefitsList.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {benefitsList.map((benefit, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                  >
+                    {benefit}
+                    <button
+                      type="button"
+                      onClick={() => removeBenefit(index)}
+                      className="text-blue-900 hover:text-red-600 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-sm font-medium">설립년도</label>
             <input
-              type="date"
+              type="number"
               value={newCompany.since}
-              onChange={(e) => setNewCompany({ ...newCompany, since: e.target.value })}
+              onChange={(e) => setNewCompany({ ...newCompany, since: parseInt(e.target.value) || new Date().getFullYear() })}
+              min="1900"
+              max={new Date().getFullYear()}
+              placeholder="예: 2020"
               className="w-full border rounded px-3 py-2"
               required
             />
@@ -254,6 +460,24 @@ const CompanyManagement: React.FC = () => {
   const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
     e.stopPropagation();
     setEditFormData({ ...company });
+
+    // 주소 파싱: [우편번호] 기본주소 상세주소 형태로 저장되어 있다면
+    const addressMatch = company.address.match(/\[(\d+)\]\s*(.+)/);
+    if (addressMatch) {
+      setEditPostcode(addressMatch[1]);
+      // 기본주소와 상세주소를 분리하기 위해 마지막 공백 기준으로 분리 시도
+      const addressPart = addressMatch[2];
+      setEditFormData({ ...company, address: `[${addressMatch[1]}] ${addressPart}` });
+      setEditDetailAddress(""); // 초기화
+    } else {
+      setEditPostcode("");
+      setEditDetailAddress("");
+    }
+
+    // 복리후생 리스트 초기화
+    setEditBenefitsList(company.benefitsList || []);
+    setEditBenefitInput("");
+
     setIsEditModalOpen(true);
   };
 
@@ -262,17 +486,43 @@ const CompanyManagement: React.FC = () => {
     if (!editFormData) return;
 
     try {
-      const res = await adminApi.updateCompany(editFormData.id, editFormData);
+      // 상세주소를 포함한 최종 주소 생성
+      const finalAddress = editDetailAddress
+        ? `${editFormData.address} ${editDetailAddress}`
+        : editFormData.address;
+
+      console.log("📤 [기업 수정 요청 데이터]", {
+        ...editFormData,
+        address: finalAddress,
+        benefitsList: editBenefitsList
+      });
+
+      const res = await adminApi.updateCompany(editFormData.id, {
+        ...editFormData,
+        address: finalAddress,
+        benefitsList: editBenefitsList
+      });
+
+      console.log("📥 [서버 응답]", res);
+
       if (res.success) {
+        console.log("✅ 기업 수정 성공");
         alert("수정 완료");
         setIsEditModalOpen(false);
         fetchCompanies(currentPage);
       } else {
+        console.error("❌ 수정 실패 응답:", res);
         alert("수정 실패: " + (res.message || "서버 오류"));
       }
-    } catch (err) {
-      console.error("수정 실패:", err);
-      alert("수정에 실패했습니다.");
+    } catch (err: any) {
+      console.error("❌❌❌ [기업 수정 오류] ❌❌❌");
+      console.error("Error object:", err);
+      console.error("Error message:", err?.message);
+      console.error("Error response:", err?.response);
+      console.error("Error response data:", err?.response?.data);
+      console.error("Error response status:", err?.response?.status);
+      console.error("Full error:", JSON.stringify(err, null, 2));
+      alert("수정에 실패했습니다: " + (err?.response?.data?.message || err?.message || "알 수 없는 오류"));
     }
   };
 
@@ -524,7 +774,14 @@ const CompanyManagement: React.FC = () => {
                 <h3 className="font-bold text-lg mb-2">{company.name}</h3>
                 <p className="text-sm text-gray-600 mb-1">{company.industry}</p>
                 <p className="text-sm text-gray-600 mb-1">대표: {company.ceo}</p>
-                <p className="text-sm text-gray-600 mb-1">주소: {company.address}</p>
+                {company.companyType && (
+                  <p className="text-sm text-gray-600 mb-1">
+                    <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs mr-1">
+                      {company.companyType}
+                    </span>
+                  </p>
+                )}
+                {company.count && <p className="text-sm text-gray-600 mb-1">사원수: {company.count}</p>}
                 <p className="text-sm text-gray-600 mb-1">설립: {company.since}</p>
 
                 <div className="flex gap-2 mt-4">
@@ -599,9 +856,27 @@ const CompanyManagement: React.FC = () => {
             <div className="space-y-3 text-gray-700">
               <p><strong>대표자명:</strong> {selectedCompany.ceo}</p>
               <p><strong>설립년도:</strong> {selectedCompany.since}</p>
+              {selectedCompany.companyType && <p><strong>기업구분:</strong> {selectedCompany.companyType}</p>}
+              {selectedCompany.count && <p><strong>사원수:</strong> {selectedCompany.count}</p>}
               <p><strong>주소:</strong> {selectedCompany.address}</p>
               <p><strong>업종:</strong> {selectedCompany.industry}</p>
-              <p><strong>복리후생:</strong> {selectedCompany.benefits}</p>
+              <div>
+                <p className="font-semibold text-gray-700 mb-2">복리후생</p>
+                {selectedCompany.benefitsList && selectedCompany.benefitsList.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCompany.benefitsList.map((benefit, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                      >
+                        {benefit}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">등록된 복리후생이 없습니다.</p>
+                )}
+              </div>
               <p><strong>홈페이지:</strong> <a href={selectedCompany.website} target="_blank" className="text-blue-600 underline">{selectedCompany.website}</a></p>
               <div>
                 <p className="font-semibold text-gray-700">회사 소개</p>
@@ -642,12 +917,37 @@ const CompanyManagement: React.FC = () => {
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
+              {/* ✅ 주소 검색 (수정) */}
               <div>
-                <label className="block text-sm font-medium">주소</label>
+                <label className="block text-sm font-medium mb-1">주소</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={editPostcode}
+                    placeholder="우편번호"
+                    readOnly
+                    className="w-32 border rounded px-3 py-2 bg-gray-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleEditPostcodeSearch}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    우편번호 검색
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={editFormData.address}
-                  onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                  placeholder="주소"
+                  readOnly
+                  className="w-full border rounded px-3 py-2 bg-gray-50 mb-2"
+                />
+                <input
+                  type="text"
+                  value={editDetailAddress}
+                  onChange={(e) => setEditDetailAddress(e.target.value)}
+                  placeholder="상세주소"
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
@@ -669,21 +969,80 @@ const CompanyManagement: React.FC = () => {
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
+              {/* ✅ 사원수 (수정) */}
               <div>
-                <label className="block text-sm font-medium">복리후생</label>
+                <label className="block text-sm font-medium">사원수</label>
                 <input
                   type="text"
-                  value={editFormData.benefits}
-                  onChange={(e) => setEditFormData({ ...editFormData, benefits: e.target.value })}
+                  value={editFormData.count || ""}
+                  onChange={(e) => setEditFormData({ ...editFormData, count: e.target.value })}
+                  placeholder="예: 50명, 100-500명"
                   className="w-full border rounded px-3 py-2"
                 />
+              </div>
+              {/* ✅ 기업구분 (수정) */}
+              <div>
+                <label className="block text-sm font-medium">기업구분</label>
+                <select
+                  value={editFormData.companyType || ""}
+                  onChange={(e) => setEditFormData({ ...editFormData, companyType: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="">선택</option>
+                  <option value="대기업">대기업</option>
+                  <option value="중견기업">중견기업</option>
+                  <option value="중소기업">중소기업</option>
+                </select>
+              </div>
+              {/* ✅ 복리후생 입력 (수정) */}
+              <div>
+                <label className="block text-sm font-medium mb-1">복리후생</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={editBenefitInput}
+                    onChange={(e) => setEditBenefitInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addEditBenefit())}
+                    placeholder="복리후생 입력 (예: 4대보험, 연차)"
+                    className="flex-1 border rounded px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={addEditBenefit}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    추가
+                  </button>
+                </div>
+                {editBenefitsList.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {editBenefitsList.map((benefit, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                      >
+                        {benefit}
+                        <button
+                          type="button"
+                          onClick={() => removeEditBenefit(index)}
+                          className="text-blue-900 hover:text-red-600 font-bold"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium">설립년도</label>
                 <input
-                  type="date"
+                  type="number"
                   value={editFormData.since}
-                  onChange={(e) => setEditFormData({ ...editFormData, since: e.target.value })}
+                  onChange={(e) => setEditFormData({ ...editFormData, since: parseInt(e.target.value) || new Date().getFullYear() })}
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  placeholder="예: 2020"
                   className="w-full border rounded px-3 py-2"
                 />
               </div>

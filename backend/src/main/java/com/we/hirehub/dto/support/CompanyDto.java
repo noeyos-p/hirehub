@@ -3,7 +3,8 @@ package com.we.hirehub.dto.support;
 import com.we.hirehub.entity.Company;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -15,8 +16,7 @@ public class CompanyDto {
     private String name;
     private String content;
     private String address;
-    private LocalDate since;
-    private String benefits;
+    private Integer since;
     private String website;
     private String industry;
     private String ceo;
@@ -25,6 +25,7 @@ public class CompanyDto {
     // ⭐⭐ 추가된 필드
     private Double lat;
     private Double lng;
+    private List<String> benefitsList;
 
     @Getter
     @Setter
@@ -49,7 +50,6 @@ public class CompanyDto {
                 .content(entity.getContent())
                 .address(entity.getAddress())
                 .since(entity.getSince())
-                .benefits(entity.getBenefits())
                 .website(entity.getWebsite())
                 .industry(entity.getIndustry())
                 .ceo(entity.getCeo())
@@ -57,7 +57,17 @@ public class CompanyDto {
                 // ⭐⭐ 추가된 부분
                 .lat(entity.getLat())
                 .lng(entity.getLng())
+                .benefitsList(List.of()) // benefitsList는 별도로 설정 필요
                 .build();
+    }
+
+    /** Entity -> Dto (benefitsList 포함) **/
+    public static CompanyDto toDto(Company entity, List<String> benefitsList) {
+        CompanyDto dto = toDto(entity);
+        if (dto != null) {
+            dto.setBenefitsList(benefitsList != null ? benefitsList : List.of());
+        }
+        return dto;
     }
 
     /** Dto -> Entity **/
@@ -70,7 +80,6 @@ public class CompanyDto {
                 .content(dto.getContent())
                 .address(dto.getAddress())
                 .since(dto.getSince())
-                .benefits(dto.getBenefits())
                 .website(dto.getWebsite())
                 .industry(dto.getIndustry())
                 .ceo(dto.getCeo())
@@ -89,7 +98,6 @@ public class CompanyDto {
         entity.setContent(dto.getContent());
         entity.setAddress(dto.getAddress());
         entity.setSince(dto.getSince());
-        entity.setBenefits(dto.getBenefits());
         entity.setWebsite(dto.getWebsite());
         entity.setIndustry(dto.getIndustry());
         entity.setCeo(dto.getCeo());

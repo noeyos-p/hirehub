@@ -12,7 +12,6 @@ public class CompanyAiMapper {
                 "name", company.getName(),
                 "industry", company.getIndustry(),
                 "address", company.getAddress(),
-                "benefits", company.getBenefits(),
                 "website", company.getWebsite(),
                 "since", company.getSince().toString(),
                 "content", company.getContent()   // ← 회사 소개

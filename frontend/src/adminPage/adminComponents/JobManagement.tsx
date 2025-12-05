@@ -41,6 +41,8 @@ const JobManagement: React.FC = () => {
   const [companyPage, setCompanyPage] = useState(0);
   const [companyTotalPages, setCompanyTotalPages] = useState(0);
   const companiesPerPage = 5;
+  const [companySearchKeyword, setCompanySearchKeyword] = useState("");
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
 
   const [newJob, setNewJob] = useState<NewJob>({
     title: "",
@@ -115,12 +117,13 @@ const JobManagement: React.FC = () => {
     }
   };
 
-  // ✅ 회사 목록 불러오기 (페이지네이션)
-  const fetchCompanies = async (page: number) => {
+  // ✅ 회사 목록 불러오기 (페이지네이션 + 검색)
+  const fetchCompanies = async (page: number, keyword: string = "") => {
     try {
       const res = await adminApi.getCompanies({
         page,
         size: companiesPerPage,
+        keyword: keyword || undefined,
       });
       if (res.success) {
         setCompanies(res.data || []);
@@ -133,11 +136,25 @@ const JobManagement: React.FC = () => {
     }
   };
 
+  // ✅ 회사 검색
+  const handleCompanySearch = (keyword: string) => {
+    setCompanyPage(0);
+    fetchCompanies(0, keyword);
+    setShowCompanyDropdown(true);
+  };
+
+  // ✅ 회사 선택
+  const handleSelectCompany = (comp: AdminCompany) => {
+    setNewJob({ ...newJob, company: { id: comp.id, name: comp.name } });
+    setShowCompanyDropdown(false);
+    setCompanySearchKeyword("");
+  };
+
   // ✅ 회사 페이지 변경
   const handleCompanyPageChange = (page: number) => {
     const safePage = Math.max(0, page);
     setCompanyPage(safePage);
-    fetchCompanies(safePage);
+    fetchCompanies(safePage, companySearchKeyword);
   };
 
   // ✅ 신규 등록 버튼 클릭 시
@@ -440,8 +457,18 @@ const JobManagement: React.FC = () => {
   return (
     <div className="p-8 h-full bg-gray-50">
       {/* 타이틀 */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">공고 관리</h2>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">공고 관리</h2>
+          {/* ✅ 신규 공고 등록 버튼 */}
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>신규 공고 등록</span>
+          </button>
+        </div>
         {/* ✅ 검색 폼 */}
         <form
           onSubmit={(e) => {
@@ -878,44 +905,74 @@ const JobManagement: React.FC = () => {
                   <div className="text-sm text-gray-500 mb-2">회사를 선택해주세요.</div>
                 )}
 
-                {/* 회사 목록 리스트 */}
-                <div className="grid grid-cols-1 gap-2 mb-2">
-                  {companies.map((comp) => (
-                    <div
-                      key={comp.id}
-                      onClick={() => setNewJob({ ...newJob, company: { id: comp.id, name: comp.name } })}
-                      className={`p-2 border rounded cursor-pointer hover:bg-blue-50 ${newJob.company?.id === comp.id ? "border-blue-500 bg-blue-50" : "bg-white"
-                        }`}
-                    >
-                      <div className="text-sm font-bold">{comp.name}</div>
-                    </div>
-                  ))}
-                </div>
+                {/* 회사 검색 - Autocomplete */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={companySearchKeyword}
+                    onChange={(e) => {
+                      setCompanySearchKeyword(e.target.value);
+                      if (e.target.value.length >= 2) {
+                        handleCompanySearch(e.target.value);
+                      } else {
+                        setShowCompanyDropdown(false);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (companies.length > 0) setShowCompanyDropdown(true);
+                    }}
+                    placeholder="회사명 또는 업종으로 검색 (2글자 이상)"
+                    className="w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
 
-                {/* 회사 페이지네이션 */}
-                {companyTotalPages > 1 && (
-                  <div className="flex justify-center gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => handleCompanyPageChange(companyPage - 1)}
-                      disabled={companyPage === 0}
-                      className="px-2 py-1 text-xs border rounded disabled:opacity-50"
-                    >
-                      이전
-                    </button>
-                    <span className="text-xs flex items-center">
-                      {companyPage + 1} / {companyTotalPages}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleCompanyPageChange(companyPage + 1)}
-                      disabled={companyPage === companyTotalPages - 1}
-                      className="px-2 py-1 text-xs border rounded disabled:opacity-50"
-                    >
-                      다음
-                    </button>
-                  </div>
-                )}
+                  {/* 드롭다운 목록 */}
+                  {showCompanyDropdown && companies.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border rounded shadow-lg max-h-60 overflow-y-auto">
+                      {companies.map((comp) => (
+                        <div
+                          key={comp.id}
+                          onClick={() => handleSelectCompany(comp)}
+                          className="p-3 cursor-pointer hover:bg-blue-50 border-b last:border-b-0"
+                        >
+                          <div className="font-medium text-sm">{comp.name}</div>
+                          <div className="text-xs text-gray-500">{comp.industry} | {comp.ceo}</div>
+                        </div>
+                      ))}
+
+                      {/* 페이지네이션 */}
+                      {companyTotalPages > 1 && (
+                        <div className="flex justify-center gap-2 p-2 bg-gray-50 border-t">
+                          <button
+                            type="button"
+                            onClick={() => handleCompanyPageChange(companyPage - 1)}
+                            disabled={companyPage === 0}
+                            className="px-2 py-1 text-xs border rounded disabled:opacity-50 bg-white"
+                          >
+                            이전
+                          </button>
+                          <span className="text-xs flex items-center">
+                            {companyPage + 1} / {companyTotalPages}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCompanyPageChange(companyPage + 1)}
+                            disabled={companyPage === companyTotalPages - 1}
+                            className="px-2 py-1 text-xs border rounded disabled:opacity-50 bg-white"
+                          >
+                            다음
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 검색 결과 없음 */}
+                  {showCompanyDropdown && companies.length === 0 && companySearchKeyword.length >= 2 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border rounded shadow-lg p-4 text-center text-sm text-gray-500">
+                      검색 결과가 없습니다.
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -1033,6 +1090,7 @@ const JobManagement: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

@@ -3,8 +3,6 @@ package com.we.hirehub.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
-
 /** 완료 */
 
 @Entity
@@ -33,11 +31,7 @@ public class Company {
 
     // 설립년도
     @Column(nullable = false)
-    private LocalDate since;
-
-    // 복리후생
-    @Column(nullable = false)
-    private String benefits;
+    private Integer since;
 
     // 홈페이지
     @Column(nullable = false)

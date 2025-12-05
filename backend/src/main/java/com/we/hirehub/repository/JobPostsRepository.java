@@ -5,10 +5,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface JobPostsRepository extends JpaRepository<JobPosts, Long> {
@@ -55,4 +57,15 @@ public interface JobPostsRepository extends JpaRepository<JobPosts, Long> {
     );
 
     List<JobPosts> findByIdBetween(Long startId, Long endId); // ✅ 추가
+
+    // ✅ [추가] techStacks를 fetch join으로 함께 조회 (N+1 문제 해결)
+    @EntityGraph(attributePaths = {"techStacks", "company"})
+    @Query("SELECT j FROM JobPosts j")
+    List<JobPosts> findAllWithTechStacks();
+
+    @EntityGraph(attributePaths = {"techStacks", "company"})
+    Optional<JobPosts> findWithTechStacksById(Long id);
+
+    @EntityGraph(attributePaths = {"techStacks", "company"})
+    List<JobPosts> findWithTechStacksByTitleContaining(String keyword);
 }

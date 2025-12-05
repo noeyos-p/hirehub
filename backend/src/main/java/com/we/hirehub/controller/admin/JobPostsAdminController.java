@@ -2,7 +2,8 @@ package com.we.hirehub.controller.admin;
 
 import com.we.hirehub.dto.support.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
-import com.we.hirehub.repository.JobPostsRepository; // ✅ [추가]
+import com.we.hirehub.entity.TechStack;
+import com.we.hirehub.repository.JobPostsRepository;
 import com.we.hirehub.service.common.S3Service;
 import com.we.hirehub.service.admin.JobPostsAdminService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 관리자 - 공고 관리 API
@@ -55,10 +58,42 @@ public class JobPostsAdminController {
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
             Page<JobPostsDto> jobPosts = jobPostsService.getAllJobPosts(pageable, keyword); // ✅ [수정]
 
+            // 각 공고에 techStackList 추가
+            List<Map<String, Object>> jobPostsWithTechStacks = jobPosts.getContent().stream()
+                .map(jobPost -> {
+                    Map<String, Object> jobData = new HashMap<>();
+                    jobData.put("id", jobPost.getId());
+                    jobData.put("title", jobPost.getTitle());
+                    jobData.put("content", jobPost.getContent());
+                    jobData.put("startAt", jobPost.getStartAt());
+                    jobData.put("endAt", jobPost.getEndAt());
+                    jobData.put("location", jobPost.getLocation());
+                    jobData.put("careerLevel", jobPost.getCareerLevel());
+                    jobData.put("education", jobPost.getEducation());
+                    jobData.put("position", jobPost.getPosition());
+                    jobData.put("type", jobPost.getType());
+                    jobData.put("salary", jobPost.getSalary());
+                    jobData.put("photo", jobPost.getPhoto());
+                    jobData.put("company", jobPost.getCompany());
+                    jobData.put("mainJob", jobPost.getMainJob());
+                    jobData.put("qualification", jobPost.getQualification());
+                    jobData.put("preference", jobPost.getPreference());
+                    jobData.put("hireType", jobPost.getHireType());
+
+                    List<String> techStackList = jobPostsService.getTechStacksByJobPostId(jobPost.getId())
+                        .stream()
+                        .map(TechStack::getName)
+                        .collect(Collectors.toList());
+                    jobData.put("techStackList", techStackList);
+
+                    return jobData;
+                })
+                .collect(Collectors.toList());
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", (keyword == null || keyword.isBlank()) ? "공고 조회 성공" : "검색 결과");
-            response.put("data", jobPosts.getContent());
+            response.put("data", jobPostsWithTechStacks);
             response.put("totalElements", jobPosts.getTotalElements());
             response.put("totalPages", jobPosts.getTotalPages());
             response.put("currentPage", page);
@@ -80,29 +115,73 @@ public class JobPostsAdminController {
      * POST /api/admin/job-management
      */
     @PostMapping
-    public ResponseEntity<?> createJobPost(@RequestBody JobPosts jobPost) {
+    public ResponseEntity<?> createJobPost(@RequestBody Map<String, Object> requestData) {
         log.info("=== 🚀 공고 등록 요청 받음 ===");
 
         try {
+            JobPosts jobPost = new JobPosts();
+            jobPost.setTitle((String) requestData.get("title"));
+            jobPost.setContent((String) requestData.get("content"));
+            jobPost.setStartAt(requestData.get("startAt") != null ? java.time.LocalDate.parse(requestData.get("startAt").toString()) : null);
+            jobPost.setEndAt(requestData.get("endAt") != null ? java.time.LocalDate.parse(requestData.get("endAt").toString()) : null);
+            jobPost.setLocation((String) requestData.get("location"));
+            jobPost.setCareerLevel((String) requestData.get("careerLevel"));
+            jobPost.setEducation((String) requestData.get("education"));
+            jobPost.setPosition((String) requestData.get("position"));
+            jobPost.setType((String) requestData.get("type"));
+            jobPost.setSalary((String) requestData.get("salary"));
+            jobPost.setPhoto((String) requestData.get("photo"));
+            jobPost.setMainJob((String) requestData.get("mainJob"));
+            jobPost.setQualification((String) requestData.get("qualification"));
+            jobPost.setPreference((String) requestData.get("preference"));
+            jobPost.setHireType((String) requestData.get("hireType"));
+
+            // Company 설정
+            if (requestData.get("company") != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> companyData = (Map<String, Object>) requestData.get("company");
+                com.we.hirehub.entity.Company company = new com.we.hirehub.entity.Company();
+                company.setId(Long.parseLong(companyData.get("id").toString()));
+                jobPost.setCompany(company);
+            }
+
             if (jobPost.getTitle() == null || jobPost.getTitle().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(createErrorResponse("공고 제목이 필요합니다"));
             }
 
-            // ✅ photo 값이 비어 있으면 null 처리 (덮어쓰기 방지)
+            // ✅ photo 값이 비어 있으면 null 처리
             if (jobPost.getPhoto() != null && jobPost.getPhoto().trim().isEmpty()) {
                 jobPost.setPhoto(null);
             }
 
             JobPostsDto createdJobPost = jobPostsService.createJobPost(jobPost);
 
+            // techStackList 처리
+            @SuppressWarnings("unchecked")
+            List<String> techStackList = (List<String>) requestData.get("techStackList");
+            JobPosts savedJobPost = new JobPosts();
+            savedJobPost.setId(createdJobPost.getId());
+            jobPostsService.saveTechStacks(techStackList, savedJobPost);
+
+            // techStackList 포함하여 응답
+            List<String> savedTechStacks = jobPostsService.getTechStacksByJobPostId(createdJobPost.getId())
+                .stream()
+                .map(TechStack::getName)
+                .collect(Collectors.toList());
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.putAll((Map<String, Object>) new com.fasterxml.jackson.databind.ObjectMapper().convertValue(createdJobPost, Map.class));
+            responseData.put("techStackList", savedTechStacks);
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "공고 등록 성공");
-            response.put("data", createdJobPost);
+            response.put("data", responseData);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (Exception e) {
+            log.error("공고 등록 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(createErrorResponse(e.getMessage()));
         }
@@ -158,7 +237,7 @@ public class JobPostsAdminController {
     @PutMapping("/{jobPostId}")
     public ResponseEntity<?> updateJobPost(
             @PathVariable Long jobPostId,
-            @RequestBody JobPostsDto updateData) {
+            @RequestBody Map<String, Object> requestData) {
 
         try {
             if (jobPostId == null || jobPostId <= 0) {
@@ -166,12 +245,48 @@ public class JobPostsAdminController {
                         .body(createErrorResponse("유효한 공고 ID가 필요합니다"));
             }
 
-            JobPostsDto updatedJobPost = jobPostsService.updateJobPost(jobPostId, updateData);
+            JobPostsDto updateDto = new JobPostsDto();
+            if (requestData.containsKey("title")) updateDto.setTitle((String) requestData.get("title"));
+            if (requestData.containsKey("content")) updateDto.setContent((String) requestData.get("content"));
+            if (requestData.containsKey("startAt")) updateDto.setStartAt(requestData.get("startAt") != null ? java.time.LocalDate.parse(requestData.get("startAt").toString()) : null);
+            if (requestData.containsKey("endAt")) updateDto.setEndAt(requestData.get("endAt") != null ? java.time.LocalDate.parse(requestData.get("endAt").toString()) : null);
+            if (requestData.containsKey("location")) updateDto.setLocation((String) requestData.get("location"));
+            if (requestData.containsKey("careerLevel")) updateDto.setCareerLevel((String) requestData.get("careerLevel"));
+            if (requestData.containsKey("education")) updateDto.setEducation((String) requestData.get("education"));
+            if (requestData.containsKey("position")) updateDto.setPosition((String) requestData.get("position"));
+            if (requestData.containsKey("type")) updateDto.setType((String) requestData.get("type"));
+            if (requestData.containsKey("salary")) updateDto.setSalary((String) requestData.get("salary"));
+            if (requestData.containsKey("photo")) updateDto.setPhoto((String) requestData.get("photo"));
+            if (requestData.containsKey("mainJob")) updateDto.setMainJob((String) requestData.get("mainJob"));
+            if (requestData.containsKey("qualification")) updateDto.setQualification((String) requestData.get("qualification"));
+            if (requestData.containsKey("preference")) updateDto.setPreference((String) requestData.get("preference"));
+            if (requestData.containsKey("hireType")) updateDto.setHireType((String) requestData.get("hireType"));
+
+            JobPostsDto updatedJobPost = jobPostsService.updateJobPost(jobPostId, updateDto);
+
+            // techStackList 처리
+            if (requestData.containsKey("techStackList")) {
+                @SuppressWarnings("unchecked")
+                List<String> techStackList = (List<String>) requestData.get("techStackList");
+                JobPosts savedJobPost = new JobPosts();
+                savedJobPost.setId(jobPostId);
+                jobPostsService.updateTechStacks(jobPostId, techStackList, savedJobPost);
+            }
+
+            // techStackList 포함하여 응답
+            List<String> savedTechStacks = jobPostsService.getTechStacksByJobPostId(jobPostId)
+                .stream()
+                .map(TechStack::getName)
+                .collect(Collectors.toList());
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.putAll((Map<String, Object>) new com.fasterxml.jackson.databind.ObjectMapper().convertValue(updatedJobPost, Map.class));
+            responseData.put("techStackList", savedTechStacks);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "공고 정보 수정 완료");
-            response.put("data", updatedJobPost);
+            response.put("data", responseData);
 
             log.info("공고 정보 수정 완료 - jobPostId: {}", jobPostId);
             return ResponseEntity.ok(response);

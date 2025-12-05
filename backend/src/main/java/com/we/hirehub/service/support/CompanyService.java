@@ -2,6 +2,7 @@ package com.we.hirehub.service.support;
 
 import com.we.hirehub.dto.support.CompanyDto;
 import com.we.hirehub.entity.Company;
+import com.we.hirehub.repository.BenefitsRepository;
 import com.we.hirehub.repository.CompanyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,9 @@ public class CompanyService {
     private CompanyRepository companyRepository;
 
     @Autowired
+    private BenefitsRepository benefitsRepository;
+
+    @Autowired
     private KakaoMapService kakaoMapService;   // ⭐ 새로 추가된 의존성 (기존코드 손상 없음)
 
     // ---------------------------
@@ -25,7 +29,13 @@ public class CompanyService {
     // ---------------------------
     public List<CompanyDto> getAllCompanies() {
         return companyRepository.findAll().stream()
-                .map(CompanyDto::toDto)
+                .map(company -> {
+                    List<String> benefits = benefitsRepository.findByCompanyId(company.getId())
+                        .stream()
+                        .map(b -> b.getName())
+                        .collect(Collectors.toList());
+                    return CompanyDto.toDto(company, benefits);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -35,7 +45,11 @@ public class CompanyService {
     public CompanyDto createCompany(CompanyDto companyDto) {
         Company company = CompanyDto.toEntity(companyDto);
         company = companyRepository.save(company);
-        return CompanyDto.toDto(company);
+        List<String> benefits = benefitsRepository.findByCompanyId(company.getId())
+            .stream()
+            .map(b -> b.getName())
+            .collect(Collectors.toList());
+        return CompanyDto.toDto(company, benefits);
     }
 
     // ---------------------------

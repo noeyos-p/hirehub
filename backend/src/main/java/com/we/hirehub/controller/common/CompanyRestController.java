@@ -5,6 +5,7 @@ import com.we.hirehub.dto.common.PagedResponse;
 import com.we.hirehub.dto.common.CompanyStatsDto;
 import com.we.hirehub.dto.user.FavoriteDto;
 import com.we.hirehub.entity.Company;
+import com.we.hirehub.repository.BenefitsRepository;
 import com.we.hirehub.repository.CompanyRepository;
 import com.we.hirehub.service.support.CompanyService;
 import com.we.hirehub.service.common.CompanyStatsService;
@@ -19,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/companies")
@@ -28,6 +30,7 @@ public class CompanyRestController {
 
     // ✅ 누락됐던 서비스 주입
     private final MyPageFavoritesService myPageFavoritesService;
+    private final BenefitsRepository benefitsRepository;
     private final CompanyRepository companyRepository;
     private final CompanyService companyService;
     private final CompanyStatsService companyStatsService;
@@ -97,7 +100,11 @@ public class CompanyRestController {
     public ResponseEntity<CompanyDto> getCompanyById(@PathVariable Long companyId) {
         try {
             Company company = companyService.getCompanyById(companyId); // 리스트 첫 번째 반환
-            CompanyDto dto = CompanyDto.toDto(company); // DTO 변환
+            List<String> benefits = benefitsRepository.findByCompanyId(companyId)
+                .stream()
+                .map(b -> b.getName())
+                .collect(Collectors.toList());
+            CompanyDto dto = CompanyDto.toDto(company, benefits); // DTO 변환
             return ResponseEntity.ok(dto);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build(); // 없으면 404

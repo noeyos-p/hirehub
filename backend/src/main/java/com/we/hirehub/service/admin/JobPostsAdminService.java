@@ -2,7 +2,9 @@ package com.we.hirehub.service.admin;
 
 import com.we.hirehub.dto.support.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
-import com.we.hirehub.repository.JobPostsRepository; // ✅ [수정] JobPostRepository → JobPostsRepository 로 변경
+import com.we.hirehub.entity.TechStack;
+import com.we.hirehub.repository.JobPostsRepository;
+import com.we.hirehub.repository.TechStackRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -20,8 +23,8 @@ import java.time.LocalDate;
 @Transactional(readOnly = true)
 public class JobPostsAdminService {
 
-    // ✅ [수정] 타입명 통일 (JobPostRepository → JobPostsRepository)
     private final JobPostsRepository jobPostsRepository;
+    private final TechStackRepository techStackRepository;
 
     // ✅ [추가] 전체 조회 + 검색 통합 버전
     public Page<JobPostsDto> getAllJobPosts(Pageable pageable, String keyword) {
@@ -94,7 +97,38 @@ public class JobPostsAdminService {
         if (!jobPostsRepository.existsById(jobPostId)) {
             throw new IllegalArgumentException("존재하지 않는 공고입니다: " + jobPostId);
         }
+        // 기술스택 먼저 삭제
+        techStackRepository.deleteByJobPostId(jobPostId);
         jobPostsRepository.deleteById(jobPostId);
+    }
+
+    // ✅ 기술스택 조회
+    public List<TechStack> getTechStacksByJobPostId(Long jobPostId) {
+        return techStackRepository.findByJobPostId(jobPostId);
+    }
+
+    // ✅ 기술스택 저장
+    @Transactional
+    public void saveTechStacks(List<String> techStackList, JobPosts jobPost) {
+        if (techStackList != null && !techStackList.isEmpty()) {
+            for (String techName : techStackList) {
+                TechStack techStack = TechStack.builder()
+                    .name(techName)
+                    .jobPost(jobPost)
+                    .build();
+                techStackRepository.save(techStack);
+            }
+        }
+    }
+
+    // ✅ 기술스택 업데이트 (기존 삭제 후 새로 추가)
+    @Transactional
+    public void updateTechStacks(Long jobPostId, List<String> techStackList, JobPosts jobPost) {
+        // 기존 기술스택 삭제
+        techStackRepository.deleteByJobPostId(jobPostId);
+
+        // 새로운 기술스택 추가
+        saveTechStacks(techStackList, jobPost);
     }
 
     // ✅ 이미지 삭제 또는 수정 시 photo 업데이트

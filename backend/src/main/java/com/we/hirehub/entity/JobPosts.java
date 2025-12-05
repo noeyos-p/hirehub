@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 /** 완료 */
 
@@ -37,7 +35,7 @@ public class JobPosts {
     @Column(name = "end_at", nullable = false)
     private LocalDate endAt;
 
-    // 선호하는 지역
+    // 위치
     @Column(nullable = false)
     private String location;
 
@@ -69,10 +67,11 @@ public class JobPosts {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Integer views = 0; // 조회수 기본값 0
+    private Long views = 0L; // 조회수 기본값 0
 
-    // 메인 공고 우선순위
+    // 주요업무
     @Column(name = "main_job")
     private String mainJob;
 
@@ -87,18 +86,4 @@ public class JobPosts {
     // 채용유형
     @Column(name = "hire_type")
     private String hireType;
-
-    // 기술 스택
-    @Column(columnDefinition = "LONGTEXT")
-    private String skill;
-
-    //기술스텍 필터링용
-    @ManyToMany
-    @JoinTable(
-            name = "job_post_tech_stack",
-            joinColumns = @JoinColumn(name = "job_post_id"),
-            inverseJoinColumns = @JoinColumn(name = "tech_stack_id")
-    )
-    private List<TechStack> techStacks = new ArrayList<>();
-
 }

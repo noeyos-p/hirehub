@@ -9,17 +9,18 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "tech_stack")
-public class TechStack {
+@Table(name = "benefits")
+public class Benefits {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String name;   // 예: React, Spring, Docker, AWS 등
+    private String name;   // 예: 4대보험, 퇴직금, 연차, 워크샵, 자기계발비 등
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_post_id")
-    private JobPosts jobPost;
+    @JoinColumn(name = "company_id")
+
+    private Company company;
 }
