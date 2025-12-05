@@ -123,7 +123,6 @@ const JobManagement: React.FC = () => {
       const res = await adminApi.getCompanies({
         page,
         size: companiesPerPage,
-        keyword: keyword || undefined,
       });
       if (res.success) {
         setCompanies(res.data || []);
