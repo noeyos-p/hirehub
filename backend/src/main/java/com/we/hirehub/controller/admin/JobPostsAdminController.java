@@ -141,6 +141,7 @@ public class JobPostsAdminController {
             jobPost.setQualification((String) requestData.get("qualification"));
             jobPost.setPreference((String) requestData.get("preference"));
             jobPost.setHireType((String) requestData.get("hireType"));
+            jobPost.setViews(0L); // 조회수 기본값 설정
 
             // Company 설정
             if (requestData.get("company") != null) {
