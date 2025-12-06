@@ -412,6 +412,10 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                   <p className="font-medium text-gray-900">{company.benefits}</p>
                 </div>
                 <div>
+                  <p className="text-gray-500 mb-1 text-sm">인원</p>
+                  <p className="font-medium text-gray-900">{company.count || "비공개"}</p>
+                </div>
+                <div>
                   <p className="text-gray-500 mb-1 text-sm">대표자명</p>
                   <p className="font-medium text-gray-900">{company.ceo}</p>
                 </div>

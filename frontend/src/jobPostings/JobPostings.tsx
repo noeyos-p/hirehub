@@ -718,7 +718,7 @@ const JobPostings: React.FC = () => {
                         {job.position} / {job.careerLevel}
                       </p>
                       <p className="text-gray-400 text-[11px] text-right mt-1.5">
-                        ~{job.endAt?.replace(/-/g, '.')}
+                        {!job.startAt && !job.endAt ? '상시채용' : `~${job.endAt?.replace(/-/g, '.')}`}
                       </p>
                     </div>
 
@@ -795,7 +795,7 @@ const JobPostings: React.FC = () => {
                     </div>
                     {/* 날짜 */}
                     <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
-                      {job.startAt?.replace(/-/g, ".")} - {job.endAt?.replace(/-/g, ".")}
+                      {!job.startAt && !job.endAt ? '상시채용' : `~${job.endAt?.replace(/-/g, ".")}`}
                     </p>
                   </div>
                 </div>
