@@ -425,6 +425,8 @@ export interface CompanyResponse {
   benefits: string;
   ceo: string;
   photo?: string;
+  count?: string;        // 사원수
+  companyType?: string;  // 기업구분
 
   // ⭐⭐ 반드시 추가
   lat: number | null;
