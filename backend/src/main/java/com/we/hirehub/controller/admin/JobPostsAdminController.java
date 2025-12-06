@@ -1,5 +1,6 @@
 package com.we.hirehub.controller.admin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.we.hirehub.dto.support.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.entity.TechStack;
@@ -37,6 +38,7 @@ public class JobPostsAdminController {
     private final JobPostsAdminService jobPostsService;
     private final JobPostsRepository jobPostRepository; // ✅ [추가]
     private final S3Service s3Service;
+    private final ObjectMapper objectMapper; // ✅ Spring's auto-configured ObjectMapper with JSR310 support
 
     // ============ 조회 ============
 
@@ -177,7 +179,7 @@ public class JobPostsAdminController {
                 .collect(Collectors.toList());
 
             Map<String, Object> responseData = new HashMap<>();
-            responseData.putAll((Map<String, Object>) new com.fasterxml.jackson.databind.ObjectMapper().convertValue(createdJobPost, Map.class));
+            responseData.putAll(objectMapper.convertValue(createdJobPost, Map.class));
             responseData.put("techStackList", savedTechStacks);
 
             Map<String, Object> response = new HashMap<>();
@@ -298,7 +300,7 @@ public class JobPostsAdminController {
                 .collect(Collectors.toList());
 
             Map<String, Object> responseData = new HashMap<>();
-            responseData.putAll((Map<String, Object>) new com.fasterxml.jackson.databind.ObjectMapper().convertValue(updatedJobPost, Map.class));
+            responseData.putAll(objectMapper.convertValue(updatedJobPost, Map.class));
             responseData.put("techStackList", savedTechStacks);
 
             Map<String, Object> response = new HashMap<>();
