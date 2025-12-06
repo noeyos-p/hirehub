@@ -72,7 +72,6 @@ public class JobPostsAdminController {
                     jobData.put("education", jobPost.getEducation());
                     jobData.put("position", jobPost.getPosition());
                     jobData.put("type", jobPost.getType());
-                    jobData.put("salary", jobPost.getSalary());
                     jobData.put("photo", jobPost.getPhoto());
                     jobData.put("company", jobPost.getCompany());
                     jobData.put("mainJob", jobPost.getMainJob());
@@ -122,14 +121,21 @@ public class JobPostsAdminController {
             JobPosts jobPost = new JobPosts();
             jobPost.setTitle((String) requestData.get("title"));
             jobPost.setContent((String) requestData.get("content"));
-            jobPost.setStartAt(requestData.get("startAt") != null ? java.time.LocalDate.parse(requestData.get("startAt").toString()) : null);
-            jobPost.setEndAt(requestData.get("endAt") != null ? java.time.LocalDate.parse(requestData.get("endAt").toString()) : null);
+
+            // startAt 처리: null이거나 빈 문자열이면 null로 설정
+            String startAtStr = (String) requestData.get("startAt");
+            jobPost.setStartAt(startAtStr != null && !startAtStr.trim().isEmpty()
+                ? java.time.LocalDate.parse(startAtStr) : null);
+
+            // endAt 처리: null이거나 빈 문자열이면 null로 설정
+            String endAtStr = (String) requestData.get("endAt");
+            jobPost.setEndAt(endAtStr != null && !endAtStr.trim().isEmpty()
+                ? java.time.LocalDate.parse(endAtStr) : null);
             jobPost.setLocation((String) requestData.get("location"));
             jobPost.setCareerLevel((String) requestData.get("careerLevel"));
             jobPost.setEducation((String) requestData.get("education"));
             jobPost.setPosition((String) requestData.get("position"));
             jobPost.setType((String) requestData.get("type"));
-            jobPost.setSalary((String) requestData.get("salary"));
             jobPost.setPhoto((String) requestData.get("photo"));
             jobPost.setMainJob((String) requestData.get("mainJob"));
             jobPost.setQualification((String) requestData.get("qualification"));
@@ -248,14 +254,25 @@ public class JobPostsAdminController {
             JobPostsDto updateDto = new JobPostsDto();
             if (requestData.containsKey("title")) updateDto.setTitle((String) requestData.get("title"));
             if (requestData.containsKey("content")) updateDto.setContent((String) requestData.get("content"));
-            if (requestData.containsKey("startAt")) updateDto.setStartAt(requestData.get("startAt") != null ? java.time.LocalDate.parse(requestData.get("startAt").toString()) : null);
-            if (requestData.containsKey("endAt")) updateDto.setEndAt(requestData.get("endAt") != null ? java.time.LocalDate.parse(requestData.get("endAt").toString()) : null);
+
+            // startAt 처리
+            if (requestData.containsKey("startAt")) {
+                String startAtStr = (String) requestData.get("startAt");
+                updateDto.setStartAt(startAtStr != null && !startAtStr.trim().isEmpty()
+                    ? java.time.LocalDate.parse(startAtStr) : null);
+            }
+
+            // endAt 처리
+            if (requestData.containsKey("endAt")) {
+                String endAtStr = (String) requestData.get("endAt");
+                updateDto.setEndAt(endAtStr != null && !endAtStr.trim().isEmpty()
+                    ? java.time.LocalDate.parse(endAtStr) : null);
+            }
             if (requestData.containsKey("location")) updateDto.setLocation((String) requestData.get("location"));
             if (requestData.containsKey("careerLevel")) updateDto.setCareerLevel((String) requestData.get("careerLevel"));
             if (requestData.containsKey("education")) updateDto.setEducation((String) requestData.get("education"));
             if (requestData.containsKey("position")) updateDto.setPosition((String) requestData.get("position"));
             if (requestData.containsKey("type")) updateDto.setType((String) requestData.get("type"));
-            if (requestData.containsKey("salary")) updateDto.setSalary((String) requestData.get("salary"));
             if (requestData.containsKey("photo")) updateDto.setPhoto((String) requestData.get("photo"));
             if (requestData.containsKey("mainJob")) updateDto.setMainJob((String) requestData.get("mainJob"));
             if (requestData.containsKey("qualification")) updateDto.setQualification((String) requestData.get("qualification"));

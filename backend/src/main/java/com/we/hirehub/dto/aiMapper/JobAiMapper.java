@@ -22,7 +22,6 @@ public class JobAiMapper {
         map.put("education", job.getEducation());
         map.put("position", job.getPosition());
         map.put("type", job.getType());
-        map.put("salary", job.getSalary());
 
         return map;
     }

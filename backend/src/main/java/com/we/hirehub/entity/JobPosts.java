@@ -28,11 +28,11 @@ public class JobPosts {
     private String content;
 
     // 시작일
-    @Column(name = "start_at", nullable = false)
+    @Column(name = "start_at")
     private LocalDate startAt;
 
     // 마감일
-    @Column(name = "end_at", nullable = false)
+    @Column(name = "end_at")
     private LocalDate endAt;
 
     // 위치
@@ -54,10 +54,6 @@ public class JobPosts {
     // 고용형태
     @Column(nullable = false)
     private String type;
-
-    // 급여
-    @Column(nullable = false)
-    private String salary;
 
     // 공고사진
     @Column(columnDefinition = "LONGTEXT") // 사용이유 : AWS S3 url 사용
@@ -83,7 +79,7 @@ public class JobPosts {
     @Column(columnDefinition = "LONGTEXT")
     private String preference;
 
-    // 채용유형
+    // 채용전형
     @Column(name = "hire_type")
     private String hireType;
 }

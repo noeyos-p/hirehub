@@ -675,12 +675,16 @@ export interface AdminJob {
   education: string;
   position: string;
   type: string;
-  salary: string;
   photo?: string;
   company?: {
     id: number;
     name: string;
   };
+  mainJob?: string;           // 주요업무
+  qualification?: string;      // 자격요건
+  preference?: string;         // 우대사항
+  hireType?: string;          // 채용전형
+  techStackList?: string[];   // 기술 스택 목록
 }
 
 export interface AdminReview {

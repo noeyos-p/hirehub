@@ -25,7 +25,6 @@ public class JobPostsDto {
     private String position;
     private String type;
     private String photo;
-    private String salary;
     private String companyName;
     private Long companyId;
     private String companyPhoto;
@@ -67,7 +66,6 @@ public class JobPostsDto {
                 .position(entity.getPosition())
                 .type(entity.getType())
                 .photo(entity.getPhoto())
-                .salary(entity.getSalary())
                 .companyName(entity.getCompany().getName())
                 .companyId(entity.getCompany().getId())
                 .companyPhoto(entity.getCompany().getPhoto())
@@ -97,7 +95,6 @@ public class JobPostsDto {
                 .position(dto.getPosition())
                 .type(dto.getType())
                 .photo(dto.getPhoto())
-                .salary(dto.getSalary())
                 .company(company)
                 .views(dto.getViews())
                 // ✅ 추가된 필드 매핑
@@ -118,7 +115,6 @@ public class JobPostsDto {
         if (dto.getEducation() != null) entity.setEducation(dto.getEducation());
         if (dto.getPosition() != null) entity.setPosition(dto.getPosition());
         if (dto.getType() != null) entity.setType(dto.getType());
-        if (dto.getSalary() != null) entity.setSalary(dto.getSalary());
         if (dto.getStartAt() != null) entity.setStartAt(dto.getStartAt());
         if (dto.getEndAt() != null) entity.setEndAt(dto.getEndAt());
         if (dto.getPhoto() != null) entity.setPhoto(dto.getPhoto());
