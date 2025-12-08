@@ -9,11 +9,11 @@ declare global {
 
 const KakaoMap = ({ lat, lng }: { lat: number; lng: number }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const KAKAO_KEY = import.meta.env.VITE_KAKAO_MAP_JS_KEY;
+const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_MAP_JS_KEY;
 
   useEffect(() => {
     const script = document.createElement("script");
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false`;
+script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false`;
     script.async = true;
 
     script.onload = () => {
