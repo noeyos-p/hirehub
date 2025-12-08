@@ -51,7 +51,7 @@ export default function JobMatchingPage() {
     setMatching(true);
 
     try {
-      const res = await api.post("/api/resume/match", { resumeId: selectedResumeId });
+      const res = await api.post("/api/match", { resumeId: selectedResumeId });
 
       console.log("✅ 매칭 서버 응답:", res.status);
       console.log("📦 매칭 데이터:", res.data);

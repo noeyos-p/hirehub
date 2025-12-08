@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,231 +35,239 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final UsersRepository usersRepository;
     private final CommentRepository commentRepository;
-    private final AiBoardControlRepository aiBoardControlRepository;
+    private final AiBoardControlRepository controlRepo;
+    private final ModerationService moderationService;
+    private final AsyncModerationService asyncModerationService;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    // ========== 검열 반영 & 기록 ==========
+    private void applyModeration(Board board, ModerationService.ModerationResult mres) {
+        boolean before = Boolean.TRUE.equals(board.getHidden());
+        boolean approved = mres.approved();
 
-    @Value("${ai.server-url:http://localhost:8000}")
-    private String aiServerUrl;
+        board.setHidden(!approved);
 
+        log.info("🧩 [MODERATION] boardId={}, before={}, after={}, approved={}, reason={}",
+                board.getId(), before, board.getHidden(), approved, mres.reason());
 
-    /** 게시글 생성 (AI 검열 포함) */
-    @Transactional
-    public BoardDto createBoard(Long userId, BoardDto dto) {
-
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-
-        // 1️⃣ FastAPI 검열 요청
-        boolean approved = true;
-        String reason = null;
-
-        try {
-            String url = aiServerUrl + "/ai/moderate"; // FastAPI 검열 API
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, String> payload = Map.of("content", dto.getContent());
-            HttpEntity<Map<String, String>> entity = new HttpEntity<>(payload, headers);
-
-            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
-            Map body = response.getBody();
-
-            approved = (boolean) body.get("approve");
-            reason = (String) body.get("reason");
-
-        } catch (Exception e) {
-            log.warn("⚠️ AI 검열 서버 오류, 임시 승인 처리: {}", e.getMessage());
-            approved = true; // FastAPI 장애 시 글을 막지는 않음
-        }
-
-        // 2️⃣ 게시글 저장
-        Board board = dto.toEntity(user);
-        board.setHidden(!approved); // AI가 비허용 → 숨김
-        Board saved = boardRepository.save(board);
-
-        // 3️⃣ 숨김 처리라면 AiBoardControl 기록 저장
         if (!approved) {
-            AiBoardControl control = AiBoardControl.builder()
-                    .board(saved)
-                    .reason(reason)
-                    .build();
-
-            aiBoardControlRepository.save(control);
+            try {
+                AiBoardControl control = AiBoardControl.builder()
+                        .board(board)
+                        .reason(mres.reason())
+                        .role(board.getRole() == null ? "USER" : board.getRole())
+                        .build();
+                controlRepo.save(control);
+                log.info("📝 [AI_CONTROL] 저장완료 - boardId={}, reason={}", board.getId(), mres.reason());
+            } catch (Exception e) {
+                log.error("⚠️ [AI_CONTROL] 저장 실패 - boardId={}", board.getId(), e);
+            }
         }
-
-        List<Comments> comments = new ArrayList<>();
-        return BoardDto.toDto(saved, comments);
     }
 
+    // ========== ⚡ 생성 (즉시 등록, AI 검열 안 기다림) ==========
+    @Transactional
+    public BoardDto createBoard(Long userId, BoardDto dto) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자 없음"));
 
-    /** 게시글 수정 */
+        Board board = dto.toEntity(user);
+        board.setHidden(false); // 초기값 공개
+
+        Board saved = boardRepository.save(board);
+        log.info("✅ [CREATE] boardId={} 즉시 저장완료", saved.getId());
+
+        // 🔥 비동기 검열 예약 (5초 후, 트랜잭션과 완전 독립)
+        asyncModerationService.moderateBoardAsync(saved.getId(), 5);
+
+        return BoardDto.toDto(saved, List.of());
+    }
+
+    // ========== 수정 (즉시 반영, 비동기 재검열) ==========
     @Transactional
     public BoardDto updateBoard(Long boardId, BoardDto dto) {
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new RuntimeException("게시글 없음"));
+
         dto.updateEntity(board);
-        Board saved = boardRepository.save(board);
+        boardRepository.save(board);
 
-        List<Comments> comments = commentRepository.findByBoardId(saved.getId());
-        return BoardDto.toDto(saved, comments);
+        log.info("✅ [UPDATE] boardId={} 수정완료", boardId);
+
+        // 🔥 비동기 재검열 (5초 후)
+        asyncModerationService.moderateBoardAsync(boardId, 5);
+
+        List<Comments> comments = commentRepository.findByBoardId(boardId);
+        return BoardDto.toDto(board, comments);
     }
 
-
-    /** 게시글 삭제 */
+    // ========== 단건 재검열 (즉시 실행 - 관리자 기능) ==========
     @Transactional
-    public void deleteBoard(Long boardId) {
+    public BoardDto recheckOne(Long boardId) {
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
-        boardRepository.delete(board);
+                .orElseThrow(() -> new RuntimeException("게시글 없음"));
+
+        log.info("🔄 [RECHECK] boardId={} 재검열 시작", boardId);
+
+        // ✅ 동기 버전 사용 (관리자가 즉시 결과 확인 필요)
+        var mres = moderationService.moderate(board.getTitle(), board.getContent());
+        applyModeration(board, mres);
+        boardRepository.save(board);
+
+        List<Comments> comments = commentRepository.findByBoardId(boardId);
+        return BoardDto.toDto(board, comments);
     }
 
+    // ========== 목록 ==========
+    @Transactional(readOnly = true)
+    public List<BoardDto> getAllBoards() {
+        return boardRepository.findByHiddenFalseOrderByCreateAtDesc()
+                .stream()
+                .map(b -> BoardDto.toDto(b, commentRepository.findByBoardId(b.getId())))
+                .toList();
+    }
 
-    /** 단일 조회(+조회수 증가) */
+    @Transactional(readOnly = true)
+    public List<BoardDto> getPopularBoards() {
+        return boardRepository.findTop6ByHiddenFalseOrderByViewsDesc()
+                .stream()
+                .map(b -> BoardDto.toDto(b, commentRepository.findByBoardId(b.getId())))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BoardDto> getBoardsByUser(Long userId) {
+        return boardRepository.findByUsers_IdAndHiddenFalseOrderByCreateAtDesc(userId)
+                .stream()
+                .map(b -> BoardDto.toDto(b, commentRepository.findByBoardId(b.getId())))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BoardDto> getBoardsByRole(String role) {
+        return boardRepository.findByRoleOrderByCreateAtDesc(role)
+                .stream()
+                .filter(b -> !Boolean.TRUE.equals(b.getHidden()))
+                .map(b -> BoardDto.toDto(b, commentRepository.findByBoardId(b.getId())))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BoardDto> searchBoards(String keyword) {
+        return boardRepository.searchVisibleBoards(keyword)
+                .stream()
+                .map(b -> BoardDto.toDto(b, commentRepository.findByBoardId(b.getId())))
+                .toList();
+    }
+
+    // ========== 조회/증가 ==========
     @Transactional
     public BoardDto getBoard(Long boardId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
-        board.setViews(board.getViews() + 1L);
+        if (Boolean.TRUE.equals(board.getHidden())) {
+            throw new RuntimeException("숨김 처리된 게시글입니다.");
+        }
+        board.setViews(board.getViews() == null ? 1 : board.getViews() + 1);
         boardRepository.save(board);
 
-        List<Comments> comments = commentRepository.findByBoardId(board.getId());
+        List<Comments> comments = commentRepository.findByBoardId(boardId);
         return BoardDto.toDto(board, comments);
     }
 
-
-    /** 전체 최신순 */
-    @Transactional(readOnly = true)
-    public List<BoardDto> getAllBoards() {
-        return boardRepository.findAllByOrderByCreateAtDesc()
-                .stream()
-                .map(board -> {
-                    List<Comments> comments = commentRepository.findByBoardId(board.getId());
-                    return BoardDto.toDto(board, comments);
-                })
-                .collect(Collectors.toList());
-    }
-
-
-    /** 인기 Top6 */
-    @Transactional(readOnly = true)
-    public List<BoardDto> getPopularBoards() {
-        return boardRepository.findTop6ByOrderByViewsDesc()
-                .stream()
-                .map(board -> {
-                    List<Comments> comments = commentRepository.findByBoardId(board.getId());
-                    return BoardDto.toDto(board, comments);
-                })
-                .collect(Collectors.toList());
-    }
-
-
-    /** 조회수만 증가 */
     @Transactional
     public BoardDto incrementView(Long boardId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
-        board.setViews(board.getViews() + 1L);
-        Board saved = boardRepository.save(board);
+        if (Boolean.TRUE.equals(board.getHidden())) {
+            throw new RuntimeException("숨김 처리된 게시글입니다.");
+        }
+        board.setViews(board.getViews() == null ? 1 : board.getViews() + 1);
+        boardRepository.save(board);
 
-        List<Comments> comments = commentRepository.findByBoardId(saved.getId());
-        return BoardDto.toDto(saved, comments);
+        List<Comments> comments = commentRepository.findByBoardId(boardId);
+        return BoardDto.toDto(board, comments);
     }
 
-
-    /** ✅ 내 게시글 목록(최신순) */
-    @Transactional(readOnly = true)
-    public List<BoardDto> getBoardsByUser(Long userId) {
-        return boardRepository.findByUsers_IdOrderByCreateAtDesc(userId)
-                .stream()
-                .map(board -> {
-                    List<Comments> comments = commentRepository.findByBoardId(board.getId());
-                    return BoardDto.toDto(board, comments);
-                })
-                .collect(Collectors.toList());
-    }
-
-
-    /** 엔티티 조회(권한 확인용) */
+    // ========== 엔티티 조회 ==========
     @Transactional(readOnly = true)
     public Board getBoardEntity(Long boardId) {
         return boardRepository.findById(boardId)
                 .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
     }
 
-
-    /** 검색 */
-    public List<BoardDto> searchBoards(String keyword) {
-        List<Board> boards = boardRepository.findByTitleContainingOrContentContaining(keyword, keyword);
-        return boards.stream()
-                .map(board -> {
-                    List<Comments> comments = commentRepository.findByBoardId(board.getId());
-                    return BoardDto.toDto(board, comments);
-                })
-                .collect(Collectors.toList());
+    // ========== 댓글 조회 ==========
+    @Transactional(readOnly = true)
+    public List<Comments> getCommentsByBoardId(Long boardId) {
+        return commentRepository.findByBoardId(boardId);
     }
 
+    // ========== 배치 재검열 (관리자 기능) ==========
+    @Transactional
+    public int recheckBatchRecent(int days, int page, int size) {
+        LocalDateTime after = LocalDateTime.now().minusDays(days);
+        var list = boardRepository.findByHiddenFalseAndCreateAtAfter(after, PageRequest.of(page, size));
+        int cnt = 0;
+        for (Board b : list) {
+            var mres = moderationService.moderate(b.getTitle(), b.getContent());
+            applyModeration(b, mres);
+            boardRepository.save(b);
+            cnt++;
+        }
+        log.info("🔄 [BATCH_RECENT] days={}, processed={}", days, cnt);
+        return cnt;
+    }
 
-    /** ✅ AI 자동 게시글 생성 */
+    @Transactional
+    public int recheckBatchAll(int page, int size) {
+        var list = boardRepository.findByHiddenFalse(PageRequest.of(page, size));
+        int cnt = 0;
+        for (Board b : list) {
+            var mres = moderationService.moderate(b.getTitle(), b.getContent());
+            applyModeration(b, mres);
+            boardRepository.save(b);
+            cnt++;
+        }
+        log.info("🔄 [BATCH_ALL] processed={}", cnt);
+        return cnt;
+    }
+
+    // ========== 삭제 ==========
+    @Transactional
+    public void deleteBoard(Long boardId) {
+        controlRepo.deleteByBoardId(boardId);
+        boardRepository.deleteById(boardId);
+        log.info("🗑️ 게시글 삭제 완료 id={}", boardId);
+    }
+
+    // ========== AI 자동 게시글 ==========
     @Transactional
     public Board createAiPost(String title, String content, List<String> tags, Long writerIdOrNull) {
-        try {
-            // 1️⃣ AI 작성자 세팅 (기본값 2L)
-            Long writerId = (writerIdOrNull != null ? writerIdOrNull : 2L);
-            Users writer = usersRepository.findById(writerId)
-                    .orElseThrow(() -> new RuntimeException("AI 작성자 계정이 존재하지 않습니다. id=" + writerId));
+        Long writerId = (writerIdOrNull != null ? writerIdOrNull : 2L);
+        Users writer = usersRepository.findById(writerId)
+                .orElseThrow(() -> new RuntimeException("AI 작성자 계정이 존재하지 않습니다. id=" + writerId));
 
-            // 2️⃣ 중복 체크용 Hash 생성 (제목 + 본문 앞부분)
-            String key = title + ":" + content + ":" + LocalDateTime.now().toString();
-            String hash = DigestUtils.md5DigestAsHex(key.getBytes(StandardCharsets.UTF_8));
+        String key = title + ":" + content + ":" + LocalDateTime.now();
+        String hash = DigestUtils.md5DigestAsHex(key.getBytes(StandardCharsets.UTF_8));
 
-            // 3️⃣ 이미 동일 Hash 있는지 확인 (DB 중복 방지)
-            if (boardRepository.existsByAiHash(hash)) {
-                throw new DuplicateKeyException("중복 AI 게시글(뉴스) 감지됨 → 저장 안 함");
-            }
-
-            // 4️⃣ 태그 CSV 변환
-            String tagsCsv = (tags != null && !tags.isEmpty())
-                    ? String.join(",", tags)
-                    : null;
-
-            // 5️⃣ 엔티티 생성
-            Board board = new Board();
-            board.setTitle(title);
-            board.setContent(content);
-            board.setTagsCsv(tagsCsv);
-            board.setRole("BOT");               // AI 게시글
-            board.setAiHash(hash);              // 중복 방지용 해시
-            board.setHidden(false);
-            board.setViews(0L);
-            board.setCreateAt(LocalDateTime.now());
-            board.setUpdateAt(LocalDateTime.now());
-            board.setUsers(writer);
-
-            // 6️⃣ 저장
-            Board saved = boardRepository.save(board);
-            log.info("🤖 AI 게시글 생성 완료: {}", title);
-            return saved;
-
-        } catch (DuplicateKeyException e) {
-            log.warn("⚠️ 중복 게시글 감지됨: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("❌ AI 게시글 생성 중 오류 발생", e);
-            throw new RuntimeException("AI 게시글 생성 실패: " + e.getMessage());
+        if (boardRepository.existsByAiHash(hash)) {
+            throw new DuplicateKeyException("중복 AI 게시글 감지");
         }
-    }
 
+        Board b = new Board();
+        b.setTitle(title);
+        b.setContent(content);
+        b.setTagsCsv((tags != null && !tags.isEmpty()) ? String.join(",", tags) : null);
+        b.setRole("BOT");
+        b.setAiHash(hash);
+        b.setHidden(false);
+        b.setViews(0L);
+        b.setCreateAt(LocalDateTime.now());
+        b.setUpdateAt(LocalDateTime.now());
+        b.setUsers(writer);
 
-    /** ✅ 역할별 게시글 조회 (BOT 전용 등) */
-    @Transactional(readOnly = true)
-    public List<BoardDto> getBoardsByRole(String role) {
-        return boardRepository.findByRoleOrderByCreateAtDesc(role)
-                .stream()
-                .map(board -> {
-                    List<Comments> comments = commentRepository.findByBoardId(board.getId());
-                    return BoardDto.toDto(board, comments);
-                })
-                .toList();
+        Board saved = boardRepository.save(b);
+        log.info("🤖 AI 게시글 생성 완료: {}", title);
+
+        return saved;
     }
 }

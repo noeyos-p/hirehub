@@ -78,4 +78,12 @@ public class JobPosts {
     // 채용전형
     @Column(name = "hire_type")
     private String hireType;
+
+    // summary
+    @Lob
+    private String summary; // 3~5줄 요약 저장
+
+    // 임베딩
+    @Column(columnDefinition = "JSON")
+    private String embedding; // JSON 문자열로 저장 (vector)
 }

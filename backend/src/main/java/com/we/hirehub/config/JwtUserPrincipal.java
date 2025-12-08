@@ -10,13 +10,18 @@ import java.util.Collection;
 public class JwtUserPrincipal extends User {
     private final Long userId;
     private final String email;
+    private final String role;   // ★ 추가
 
     public JwtUserPrincipal(Long userId, String email, String role, Collection<? extends GrantedAuthority> auths) {
         super(email, "", auths);
         this.userId = userId;
         this.email = email;
+        this.role = role;   // ★ 추가 저장
     }
 
     public Long getUserId() { return userId; }
     public String getEmail() { return email; }
+    public String getRole() {      // ★ BoardRestController에서 사용
+        return role;
+    }
 }

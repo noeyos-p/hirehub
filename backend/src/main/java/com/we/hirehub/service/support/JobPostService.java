@@ -5,11 +5,14 @@ import com.we.hirehub.entity.Company;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.repository.CompanyRepository;
 import com.we.hirehub.repository.JobPostsRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j  // ✅ 로그 추가
@@ -17,6 +20,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JobPostService {
 
+    private final RestTemplate restTemplate = new RestTemplate();
     private final JobPostsRepository jobPostRepository;
     private final CompanyRepository companyRepository;
 
@@ -68,5 +72,38 @@ public class JobPostService {
         JobPosts saved = jobPostRepository.save(job);
 
         return JobPostsDto.toDto(saved);
+    }
+
+    @Transactional
+    public JobPosts saveWithAi(JobPosts post) {
+        // 공고 본문(제목+내용 등) 합친 텍스트
+        String full = buildFullText(post);
+
+        Map<String, Object> body = Map.of("content", full);
+        var res = restTemplate.postForEntity(
+                "http://fastapi:8000/internal/job/prepare",
+                body, Map.class);
+
+        Map<String, Object> data = res.getBody();
+        post.setSummary((String) data.get("summary"));
+        // embedding -> JSON 문자열 저장
+        post.setEmbedding(toJson(data.get("embedding")));
+
+        return jobPostRepository.save(post);
+    }
+
+    private String buildFullText(JobPosts p) {
+        StringBuilder sb = new StringBuilder();
+        // 네가 가진 필드들 적절히 연결
+        // ex) sb.append(p.getTitle()).append("\n").append(p.getDescription());
+        return sb.toString();
+    }
+
+    private String toJson(Object obj) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

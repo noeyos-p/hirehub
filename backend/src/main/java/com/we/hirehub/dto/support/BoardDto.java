@@ -28,6 +28,7 @@ public class BoardDto {
     private LocalDateTime createAt;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updateAt;
+    private Boolean hidden; // ← ★ 반드시 추가해야 함
 
     /** Entity -> DTO **/
     public static BoardDto toDto(Board board, List<Comments> comments) {
@@ -59,6 +60,7 @@ public class BoardDto {
                 .createAt(board.getCreateAt())
                 .updateAt(board.getUpdateAt())
                 .views(board.getViews() != null ? board.getViews() : 0L)
+                .hidden(board.getHidden()) // ← ★ 반드시 포함
                 .comments(commentsDtos)
                 .build();
     }
@@ -70,8 +72,10 @@ public class BoardDto {
                 .content(this.content)
                 .users(user)
                 .createAt(LocalDateTime.now())
-                .updateAt(null)  // 생성시에는 수정일 없음
+                .updateAt(null) // 생성시에는 수정일 없음
                 .views(0L)
+                .hidden(false) // <= 반드시 명확하게 false 로 초기화
+                .role("USER")
                 .build();
     }
 

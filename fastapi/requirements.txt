@@ -1,9 +1,23 @@
+# === Core ===
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-openai==1.51.0
-httpx==0.27.2
-pydantic==2.9.2
-python-dotenv==1.0.1
 requests==2.32.3
-apscheduler==3.10.4
+httpx==0.27.2
+python-dotenv==1.0.1
+pydantic==2.9.2
+typing-extensions>=4.12.0
 certifi==2025.11.12
+
+# === Google Gemini (Generative AI) ===
+google-generativeai==0.8.3
+protobuf>=4.25.3
+google-api-core>=2.17.1
+google-auth>=2.35.0
+
+# === Scheduler / Utilities ===
+apscheduler==3.10.4
+
+# === Optional (recommended for performance/logging) ===
+uvloop>=0.19.0
+httptools>=0.6.1
+orjson>=3.10.0

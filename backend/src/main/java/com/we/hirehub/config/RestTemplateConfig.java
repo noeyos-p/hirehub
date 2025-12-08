@@ -4,7 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
+
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Configuration
@@ -18,6 +21,11 @@ public class RestTemplateConfig {
         factory.setConnectTimeout(10000);  // 10초
         factory.setReadTimeout(30000);     // 30초
 
-        return new RestTemplate(factory);
+        RestTemplate rt = new RestTemplate(factory);
+
+        // 🔥 UTF-8 인코딩 강제 설정 (가장 중요!)
+        rt.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+
+        return rt;
     }
 }
