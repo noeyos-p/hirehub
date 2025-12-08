@@ -417,7 +417,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                   <p className="text-gray-500 mb-1 text-sm">인원</p>
                   <p className="font-medium text-gray-900">
                     {(!company.count || company.count === "0" || company.count === "0명")
-                      ? "사원수 비공개"
+                      ? "비공개"
                       : company.count}
                   </p>
                 </div>

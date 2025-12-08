@@ -63,7 +63,9 @@ const CompanyCharts: React.FC<CompanyChartsProps> = ({ companyId }) => {
                     </div>
                     <div>
                         <p className="text-sm text-gray-500 font-medium">총 사원 수</p>
-                        <p className="text-2xl font-bold text-gray-800">{totalEmployees.toLocaleString()}명</p>
+                        <p className="text-2xl font-bold text-gray-800">
+                            {totalEmployees && totalEmployees > 0 ? `${totalEmployees.toLocaleString()}명` : "비공개"}
+                        </p>
                     </div>
                 </div>
                 <div className="bg-orange-50 rounded-xl p-5 flex items-center space-x-4 border border-orange-100">

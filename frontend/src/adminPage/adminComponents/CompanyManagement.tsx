@@ -194,9 +194,9 @@ const CompanyManagement: React.FC = () => {
     e.preventDefault();
     try {
       // 상세주소를 포함한 최종 주소 생성
-    const finalAddress =
-  newCompany.address +
-  (detailAddress ? ` ${detailAddress}` : "");
+      const finalAddress =
+        newCompany.address +
+        (detailAddress ? ` ${detailAddress}` : "");
 
       console.log("📤 [기업 등록 요청 데이터]", {
         ...newCompany,
@@ -459,41 +459,41 @@ const CompanyManagement: React.FC = () => {
   };
 
 
- /** ✅ 회사 수정 */
-const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
-  e.stopPropagation();
+  /** ✅ 회사 수정 */
+  const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
+    e.stopPropagation();
 
-  let addr = company.address || "";
+    let addr = company.address || "";
 
-  // 1️⃣ 우편번호 분리
-  let extractedPostcode = "";
-  const postcodeMatch = addr.match(/^\[(\d{5})\]\s*(.*)$/);
-  if (postcodeMatch) {
-    extractedPostcode = postcodeMatch[1];
-    addr = postcodeMatch[2]; // 나머지 주소만 남김
-  }
+    // 1️⃣ 우편번호 분리
+    let extractedPostcode = "";
+    const postcodeMatch = addr.match(/^\[(\d{5})\]\s*(.*)$/);
+    if (postcodeMatch) {
+      extractedPostcode = postcodeMatch[1];
+      addr = postcodeMatch[2]; // 나머지 주소만 남김
+    }
 
-  // 2️⃣ 도로명 + 상세주소 분리
-  const roadRegex = /^(.+(?:로|길|대로)\s?\d+)\s+(.*)$/;
-  const match = addr.match(roadRegex);
+    // 2️⃣ 도로명 + 상세주소 분리
+    const roadRegex = /^(.+(?:로|길|대로)\s?\d+)\s+(.*)$/;
+    const match = addr.match(roadRegex);
 
-  const road = match ? match[1] : addr;
-  const detail = match ? match[2] : "";
+    const road = match ? match[1] : addr;
+    const detail = match ? match[2] : "";
 
-  // 3️⃣ 단 한 번만 호출해서 모든 값 저장
-  setEditPostcode(extractedPostcode);          // 우편번호
-  setEditDetailAddress(detail.trim());        // 상세주소
-//복리후생
-  setEditBenefitsList(company.benefitsList || []);
-  setEditBenefitInput("");
+    // 3️⃣ 단 한 번만 호출해서 모든 값 저장
+    setEditPostcode(extractedPostcode);          // 우편번호
+    setEditDetailAddress(detail.trim());        // 상세주소
+    //복리후생
+    setEditBenefitsList(company.benefitsList || []);
+    setEditBenefitInput("");
 
-  setEditFormData({
-    ...company,
-    address: road,                            // 도로명 주소만 저장
-  });
+    setEditFormData({
+      ...company,
+      address: road,                            // 도로명 주소만 저장
+    });
 
-  setIsEditModalOpen(true);
-};
+    setIsEditModalOpen(true);
+  };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -812,7 +812,7 @@ const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
                   </label>
                 </div>
                 {company.photo ? (
-                  <img src={company.photo} alt={company.name} className="w-full h-48 object-cover rounded-md mb-3" />
+                  <img src={company.photo} alt={company.name} className="w-full h-48 object-contain bg-gray-50 rounded-md mb-3 border border-gray-100" />
                 ) : (
                   <div className="w-full h-48 bg-gray-200 rounded-md mb-3 flex items-center justify-center">
                     <PhotoIcon className="w-12 h-12 text-gray-400" />
@@ -884,7 +884,7 @@ const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
             </div>
 
             {selectedCompany.photo ? (
-              <img src={selectedCompany.photo} alt={selectedCompany.name} className="w-full h-64 object-cover rounded-lg mb-4" />
+              <img src={selectedCompany.photo} alt={selectedCompany.name} className="w-full h-64 object-contain bg-gray-50 rounded-lg mb-4 border border-gray-100" />
             ) : (
               <div className="w-full h-64 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
                 <PhotoIcon className="w-16 h-16 text-gray-400" />
