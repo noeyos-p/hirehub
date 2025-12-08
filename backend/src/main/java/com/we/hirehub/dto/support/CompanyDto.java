@@ -27,6 +27,7 @@ public class CompanyDto {
     private Double lat;
     private Double lng;
     private List<String> benefitsList;
+    private String benefits; // 복리후생 (단일 문자열)
     private String count; // 사원수
 
     @Getter
@@ -69,6 +70,11 @@ public class CompanyDto {
         CompanyDto dto = toDto(entity);
         if (dto != null) {
             dto.setBenefitsList(benefitsList != null ? benefitsList : List.of());
+            if (benefitsList != null && !benefitsList.isEmpty()) {
+                dto.setBenefits(String.join(", ", benefitsList));
+            } else {
+                dto.setBenefits("");
+            }
         }
         return dto;
     }

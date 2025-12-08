@@ -411,7 +411,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                 </div>
                 <div>
                   <p className="text-gray-500 mb-1 text-sm">복리후생</p>
-                  <p className="font-medium text-gray-900">{company.benefits}</p>
+                  <p className="font-medium text-gray-900">{company.benefits || (company.benefitsList ? company.benefitsList.join(", ") : "-")}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-1 text-sm">인원</p>
