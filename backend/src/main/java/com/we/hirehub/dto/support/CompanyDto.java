@@ -4,7 +4,6 @@ import com.we.hirehub.entity.Company;
 import lombok.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -15,14 +14,16 @@ public class CompanyDto {
     private Long id;
     private String name;
     private String content;
-    private String address;
+
+    private String address;         // 기본주소
+    private String detailAddress;   // ⭐ 추가된 상세주소 (DB 저장 X, 프론트 전용)
+
     private Integer since;
     private String website;
     private String industry;
     private String ceo;
     private String photo;
 
-    // ⭐⭐ 추가된 필드
     private Double lat;
     private Double lng;
     private List<String> benefitsList;
@@ -41,7 +42,7 @@ public class CompanyDto {
         private String photo;
     }
 
-    /** Entity -> Dto **/
+    /** Entity -> Dto */
     public static CompanyDto toDto(Company entity) {
         if (entity == null) return null;
 
@@ -50,20 +51,20 @@ public class CompanyDto {
                 .name(entity.getName())
                 .content(entity.getContent())
                 .address(entity.getAddress())
+                .detailAddress("") // ⭐ DB에 없으니까 기본값 빈 문자열
                 .since(entity.getSince())
                 .website(entity.getWebsite())
                 .industry(entity.getIndustry())
                 .ceo(entity.getCeo())
                 .photo(entity.getPhoto())
-                // ⭐⭐ 추가된 부분
                 .lat(entity.getLat())
                 .lng(entity.getLng())
-                .benefitsList(List.of()) // benefitsList는 별도로 설정 필요
+                .benefitsList(List.of())
                 .count(entity.getCount())
                 .build();
     }
 
-    /** Entity -> Dto (benefitsList 포함) **/
+    /** Entity -> Dto (benefitsList 포함) */
     public static CompanyDto toDto(Company entity, List<String> benefitsList) {
         CompanyDto dto = toDto(entity);
         if (dto != null) {
@@ -72,7 +73,7 @@ public class CompanyDto {
         return dto;
     }
 
-    /** Dto -> Entity **/
+    /** Dto -> Entity */
     public static Company toEntity(CompanyDto dto) {
         if (dto == null) return null;
 
@@ -80,33 +81,31 @@ public class CompanyDto {
                 .id(dto.getId())
                 .name(dto.getName())
                 .content(dto.getContent())
-                .address(dto.getAddress())
+                .address(dto.getAddress()) // 상세주소는 DB에 저장하지 않음
                 .since(dto.getSince())
                 .website(dto.getWebsite())
                 .industry(dto.getIndustry())
                 .ceo(dto.getCeo())
                 .photo(dto.getPhoto())
-                // ⭐⭐ 추가된 부분
                 .lat(dto.getLat())
                 .lng(dto.getLng())
                 .count(dto.getCount())
                 .build();
     }
 
-    /** 업데이트 **/
+    /** 업데이트 */
     public static void updateEntity(CompanyDto dto, Company entity) {
         if (dto == null || entity == null) return;
 
         entity.setName(dto.getName());
         entity.setContent(dto.getContent());
-        entity.setAddress(dto.getAddress());
+        entity.setAddress(dto.getAddress()); // 기본 주소만 저장
         entity.setSince(dto.getSince());
         entity.setWebsite(dto.getWebsite());
         entity.setIndustry(dto.getIndustry());
         entity.setCeo(dto.getCeo());
         entity.setPhoto(dto.getPhoto());
 
-        // ⭐⭐ 추가된 부분
         entity.setLat(dto.getLat());
         entity.setLng(dto.getLng());
         entity.setCount(dto.getCount());

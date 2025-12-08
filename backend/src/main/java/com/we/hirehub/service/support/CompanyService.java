@@ -22,70 +22,136 @@ public class CompanyService {
     private BenefitsRepository benefitsRepository;
 
     @Autowired
-    private KakaoMapService kakaoMapService;   // ⭐ 새로 추가된 의존성 (기존코드 손상 없음)
+    private KakaoMapService kakaoMapService;   // ⭐ 카카오 지도 API 호출 담당
 
-    // ---------------------------
-    //  기존: 전체 조회
-    // ---------------------------
+    // ===============================================================
+    // 기존 기능: 전체 조회
+    // ===============================================================
     public List<CompanyDto> getAllCompanies() {
         return companyRepository.findAll().stream()
                 .map(company -> {
                     List<String> benefits = benefitsRepository.findByCompanyId(company.getId())
-                        .stream()
-                        .map(b -> b.getName())
-                        .collect(Collectors.toList());
+                            .stream()
+                            .map(b -> b.getName())
+                            .collect(Collectors.toList());
+
                     return CompanyDto.toDto(company, benefits);
                 })
                 .collect(Collectors.toList());
     }
 
-    // ---------------------------
-    //  기존: createCompany (절대 건들지 않음)
-    // ---------------------------
+    // ===============================================================
+    // 기존 기능: 회사 생성 (절대 수정 X)
+    // ===============================================================
     public CompanyDto createCompany(CompanyDto companyDto) {
         Company company = CompanyDto.toEntity(companyDto);
         company = companyRepository.save(company);
+
         List<String> benefits = benefitsRepository.findByCompanyId(company.getId())
-            .stream()
-            .map(b -> b.getName())
-            .collect(Collectors.toList());
+                .stream()
+                .map(b -> b.getName())
+                .collect(Collectors.toList());
+
         return CompanyDto.toDto(company, benefits);
     }
 
-    // ---------------------------
-    // 기존: 삭제
-    // ---------------------------
+    // ===============================================================
+    // 기존 기능: 삭제
+    // ===============================================================
     public void deleteCompany(Long id) {
         companyRepository.deleteById(id);
     }
 
-    // ---------------------------
-    // 기존: ID 조회
-    // ---------------------------
+    // ===============================================================
+    // 기존 기능: ID 조회
+    // ===============================================================
     public Company getCompanyById(Long id) {
         return companyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("해당 회사를 찾을 수 없습니다: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException("해당 회사를 찾을 수 없습니다: " + id));
     }
 
     // ===============================================================
-    // ⭐⭐⭐ 새 기능: 주소 → 위도/경도 자동 포함한 회사 생성
+    // ⭐⭐⭐ 새 기능 1: 주소 → 위도/경도 자동 포함한 회사 생성
     // ===============================================================
+    public CompanyDto createCompanyWithMap(CompanyDto dto) {
 
-    public CompanyDto createCompanyWithMap(CompanyDto companyDto) {
+        if (dto.getAddress() != null) {
+            var latLng = kakaoMapService.getLatLngFromAddress(dto.getAddress());
 
-        // 주소 기반 좌표 요청
-        var latLng = kakaoMapService.getLatLngFromAddress(companyDto.getAddress());
+            if (latLng != null) {
+                dto.setLat(latLng.getLat());
+                dto.setLng(latLng.getLng());
+            }
+        }
 
-        // lat/lng 자동 주입
-        companyDto.setLat(latLng.getLat());
-        companyDto.setLng(latLng.getLng());
-
-        // 기존 createCompany 로직 재사용 (절대 변경 없음)
-        return createCompany(companyDto);
+        return createCompany(dto);
     }
 
     public Company save(Company company) {
         return companyRepository.save(company);
     }
 
+    // ===============================================================
+    // ⭐⭐⭐ 새 기능 2: 회사 정보 수정 시 위경도 자동 갱신 (안정본)
+    // ===============================================================
+    public CompanyDto updateCompanyWithMap(Long id, CompanyDto dto) {
+
+        Company company = companyRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("해당 회사를 찾을 수 없습니다: " + id));
+
+        // ------------------------------------------------------------
+        // 주소 변경 여부 확인
+        // ------------------------------------------------------------
+        boolean addressChanged =
+                dto.getAddress() != null &&
+                        !dto.getAddress().equals(company.getAddress());
+
+        // ------------------------------------------------------------
+        // 주소가 변경되었거나, 기존 lat/lng가 비어있으면 → 자동 재계산
+        // ------------------------------------------------------------
+        boolean needUpdateCoord =
+                addressChanged ||
+                        company.getLat() == null ||
+                        company.getLng() == null ||
+                        dto.getLat() == null ||
+                        dto.getLng() == null;
+
+        if (needUpdateCoord) {
+
+            String addressToUse =
+                    dto.getAddress() != null ? dto.getAddress() : company.getAddress();
+
+            if (addressToUse != null) {
+                var latLng = kakaoMapService.getLatLngFromAddress(addressToUse);
+
+                if (latLng != null) {
+                    company.setLat(latLng.getLat());
+                    company.setLng(latLng.getLng());
+                }
+            }
+        }
+
+        // ------------------------------------------------------------
+        // CompanyDto에 실제 있는 필드만 업데이트 (컴파일러 오류 방지)
+        // ------------------------------------------------------------
+        if (dto.getName() != null) company.setName(dto.getName());
+        if (dto.getAddress() != null) company.setAddress(dto.getAddress());
+        if (dto.getWebsite() != null) company.setWebsite(dto.getWebsite());
+
+        // CompanyDto에는 description, industry, ceo, photo 등 없음 → 제외
+
+        companyRepository.save(company);
+
+        // ------------------------------------------------------------
+        // 혜택 조회 후 DTO로 변환
+        // ------------------------------------------------------------
+        List<String> benefits = benefitsRepository.findByCompanyId(company.getId())
+                .stream()
+                .map(b -> b.getName())
+                .collect(Collectors.toList());
+
+        return CompanyDto.toDto(company, benefits);
+    }
 }

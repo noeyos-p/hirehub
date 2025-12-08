@@ -194,9 +194,9 @@ const CompanyManagement: React.FC = () => {
     e.preventDefault();
     try {
       // 상세주소를 포함한 최종 주소 생성
-      const finalAddress = detailAddress
-        ? `${newCompany.address} ${detailAddress}`
-        : newCompany.address;
+    const finalAddress =
+  newCompany.address +
+  (detailAddress ? ` ${detailAddress}` : "");
 
       console.log("📤 [기업 등록 요청 데이터]", {
         ...newCompany,
@@ -460,30 +460,49 @@ const CompanyManagement: React.FC = () => {
 
 
   /** ✅ 회사 수정 */
-  const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
-    e.stopPropagation();
-    setEditFormData({ ...company });
+const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
+  e.stopPropagation();
+  setEditFormData({ ...company });
 
-    // 주소 파싱: [우편번호] 기본주소 상세주소 형태로 저장되어 있다면
-    const addressMatch = company.address.match(/\[(\d+)\]\s*(.+)/);
-    if (addressMatch) {
-      setEditPostcode(addressMatch[1]);
-      // 기본주소와 상세주소를 분리하기 위해 마지막 공백 기준으로 분리 시도
-      const addressPart = addressMatch[2];
-      setEditFormData({ ...company, address: `[${addressMatch[1]}] ${addressPart}` });
-      setEditDetailAddress(""); // 초기화
-    } else {
-      setEditPostcode("");
-      setEditDetailAddress("");
-    }
+  let addr = company.address || "";
 
-    // 복리후생 리스트 초기화
-    setEditBenefitsList(company.benefitsList || []);
-    setEditBenefitInput("");
+  /** 1️⃣ 우편번호 분리 */
+  const postcodeMatch = addr.match(/^\[(\d{5})\]\s*(.*)$/);
+  if (postcodeMatch) {
+    setEditPostcode(postcodeMatch[1]);
+    addr = postcodeMatch[2];
+  } else {
+    setEditPostcode("");
+  }
 
-    setIsEditModalOpen(true);
-  };
+  /** 2️⃣ 도로명 + 상세주소 정규식 (강화 버전) */
+  // 예: "서울 강남구 테헤란로 217 10층 1005호"
+  const roadMatch = addr.match(
+    /^(.+?(?:로|길|대로)\s*\d+(?:-\d+)?)\s*(.*)$/
+  );
 
+  let road = "";
+  let detail = "";
+
+  if (roadMatch) {
+    road = roadMatch[1].trim();     // 도로명 주소만
+    detail = roadMatch[2].trim();   // 상세주소
+  } else {
+    // 혹시 예상치 못한 케이스 → 전체를 주소로 처리
+    road = addr.trim();
+    detail = "";
+  }
+
+  /** 3️⃣ 최종 세팅 */
+  setEditFormData(prev => ({ ...prev, address: road }));
+  setEditDetailAddress(detail);
+
+  // 복리후생
+  setEditBenefitsList(company.benefitsList || []);
+  setEditBenefitInput("");
+
+  setIsEditModalOpen(true);
+};
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editFormData) return;

@@ -14,19 +14,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile; // ✅ 추가
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * 관리자 - 기업 관리 API
- *
- * 기본 경로: /api/admin/company-management
- * 권한: ADMIN 역할
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/company-management")
@@ -37,282 +31,199 @@ public class CompanyAdminController {
     private final S3Service s3Service;
     private final KakaoMapService kakaoMapService;
 
-    // Helper: Company에 benefitsList 추가
+    // 공통: Company → Map 변환 + benefits 포함
     private Map<String, Object> addBenefitsToCompany(Company company) {
-        Map<String, Object> companyData = new HashMap<>();
-        companyData.put("id", company.getId());
-        companyData.put("name", company.getName());
-        companyData.put("content", company.getContent());
-        companyData.put("address", company.getAddress());
-        companyData.put("since", company.getSince());
-        companyData.put("website", company.getWebsite());
-        companyData.put("industry", company.getIndustry());
-        companyData.put("ceo", company.getCeo());
-        companyData.put("photo", company.getPhoto());
-        companyData.put("count", company.getCount());
-        companyData.put("companyType", company.getCompanyType());
-        companyData.put("lat", company.getLat());
-        companyData.put("lng", company.getLng());
+        Map<String, Object> result = new HashMap<>();
+        result.put("id", company.getId());
+        result.put("name", company.getName());
+        result.put("content", company.getContent());
+        result.put("address", company.getAddress());
+        result.put("since", company.getSince());
+        result.put("website", company.getWebsite());
+        result.put("industry", company.getIndustry());
+        result.put("ceo", company.getCeo());
+        result.put("photo", company.getPhoto());
+        result.put("count", company.getCount());
+        result.put("companyType", company.getCompanyType());
+        result.put("lat", company.getLat());
+        result.put("lng", company.getLng());
 
-        List<String> benefitsList = companyService.getBenefitsByCompanyId(company.getId())
-            .stream()
-            .map(Benefits::getName)
-            .collect(Collectors.toList());
-        companyData.put("benefitsList", benefitsList);
+        List<String> benefits = companyService.getBenefitsByCompanyId(company.getId())
+                .stream().map(Benefits::getName).collect(Collectors.toList());
+        result.put("benefitsList", benefits);
 
-        return companyData;
+        return result;
     }
 
-    // =================== 조회 ===================
+    // 전체 조회
     @GetMapping
     public ResponseEntity<?> getAllCompanies(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "DESC") Sort.Direction direction,
-            @RequestParam(required = false) String keyword) {
-
+            @RequestParam(required = false) String keyword
+    ) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-            Page<Company> companies;
+            Page<Company> companies =
+                    (keyword != null && !keyword.isBlank())
+                            ? companyService.searchCompanies(keyword.trim(), pageable)
+                            : companyService.getAllCompanies(pageable);
 
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                companies = companyService.searchCompanies(keyword.trim(), pageable);
-            } else {
-                companies = companyService.getAllCompanies(pageable);
-            }
-
-            List<Map<String, Object>> companiesWithBenefits = companies.getContent().stream()
-                .map(this::addBenefitsToCompany)
-                .collect(Collectors.toList());
+            List<Map<String, Object>> list = companies.getContent()
+                    .stream().map(this::addBenefitsToCompany).collect(Collectors.toList());
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "기업 조회 성공");
-            response.put("data", companiesWithBenefits);
+            response.put("data", list);
             response.put("totalElements", companies.getTotalElements());
             response.put("totalPages", companies.getTotalPages());
             response.put("currentPage", page);
 
-            log.info("기업 조회 성공 - 총 {} 개", companies.getTotalElements());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("기업 조회 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse(e.getMessage()));
+                    .body(error("기업 목록 조회 중 오류 발생"));
         }
     }
 
-    // =================== 등록 ===================
+    // 등록
     @PostMapping
-    public ResponseEntity<?> createCompany(@RequestBody Map<String, Object> requestData) {
+    public ResponseEntity<?> createCompany(@RequestBody Map<String, Object> body) {
         try {
-            Company company = new Company();
-            company.setName((String) requestData.get("name"));
-            company.setContent((String) requestData.get("content"));
-            company.setAddress((String) requestData.get("address"));
-            company.setSince(requestData.get("since") != null ? Integer.parseInt(requestData.get("since").toString()) : null);
-            company.setWebsite((String) requestData.get("website"));
-            company.setIndustry((String) requestData.get("industry"));
-            company.setCeo((String) requestData.get("ceo"));
-            company.setPhoto((String) requestData.get("photo"));
-            company.setCount((String) requestData.get("count"));
-            company.setCompanyType((String) requestData.get("companyType"));
+            Company c = new Company();
+            c.setName((String) body.get("name"));
+            c.setContent((String) body.get("content"));
+            c.setAddress((String) body.get("address"));
+            c.setSince(parseInt(body.get("since")));
+            c.setWebsite((String) body.get("website"));
+            c.setIndustry((String) body.get("industry"));
+            c.setCeo((String) body.get("ceo"));
+            c.setPhoto((String) body.get("photo"));
+            c.setCount((String) body.get("count"));
+            c.setCompanyType((String) body.get("companyType"));
 
-            if (company.getName() == null || company.getName().trim().isEmpty()) {
-                return ResponseEntity.badRequest()
-                        .body(createErrorResponse("기업명이 필요합니다"));
-            }
+            Company saved = companyService.createCompany(c);
 
-            Company createdCompany = companyService.createCompany(company);
+            List<String> benefits = (List<String>) body.get("benefitsList");
+            companyService.saveBenefits(benefits, saved);
 
-            // benefitsList 처리
-            @SuppressWarnings("unchecked")
-            List<String> benefitsList = (List<String>) requestData.get("benefitsList");
-            companyService.saveBenefits(benefitsList, createdCompany);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "기업 등록 성공");
-            response.put("data", addBenefitsToCompany(createdCompany));
-
-            log.info("기업 등록 완료 - {}", createdCompany.getName());
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(success("기업 등록 성공", addBenefitsToCompany(saved)));
 
         } catch (Exception e) {
             log.error("기업 등록 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse(e.getMessage()));
+                    .body(error("기업 등록 실패: " + e.getMessage()));
         }
     }
 
-    // =================== 수정 ===================
+    // 수정
     @PutMapping("/{companyId}")
     public ResponseEntity<?> updateCompany(
             @PathVariable Long companyId,
-            @RequestBody Map<String, Object> requestData) {
-
+            @RequestBody Map<String, Object> body
+    ) {
         try {
-            if (companyId == null || companyId <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(createErrorResponse("유효한 기업 ID가 필요합니다"));
-            }
+            Company update = new Company();
+            update.setName((String) body.get("name"));
+            update.setContent((String) body.get("content"));
+            update.setAddress((String) body.get("address"));  // 상세주소 포함 ❌ (프론트에서 분리)
+            update.setSince(parseInt(body.get("since")));
+            update.setWebsite((String) body.get("website"));
+            update.setIndustry((String) body.get("industry"));
+            update.setCeo((String) body.get("ceo"));
+            update.setPhoto((String) body.get("photo"));
+            update.setCount((String) body.get("count"));
+            update.setCompanyType((String) body.get("companyType"));
 
-            Company updateData = new Company();
-            if (requestData.containsKey("name")) updateData.setName((String) requestData.get("name"));
-            if (requestData.containsKey("content")) updateData.setContent((String) requestData.get("content"));
-            if (requestData.containsKey("address")) updateData.setAddress((String) requestData.get("address"));
-            if (requestData.containsKey("since")) updateData.setSince(Integer.parseInt(requestData.get("since").toString()));
-            if (requestData.containsKey("website")) updateData.setWebsite((String) requestData.get("website"));
-            if (requestData.containsKey("industry")) updateData.setIndustry((String) requestData.get("industry"));
-            if (requestData.containsKey("ceo")) updateData.setCeo((String) requestData.get("ceo"));
-            if (requestData.containsKey("photo")) updateData.setPhoto((String) requestData.get("photo"));
-            if (requestData.containsKey("count")) updateData.setCount((String) requestData.get("count"));
-            if (requestData.containsKey("companyType")) updateData.setCompanyType((String) requestData.get("companyType"));
+            List<String> benefits = (List<String>) body.get("benefitsList");
 
-            // benefitsList 처리
-            List<String> benefitsList = null;
-            if (requestData.containsKey("benefitsList")) {
-                @SuppressWarnings("unchecked")
-                List<String> list = (List<String>) requestData.get("benefitsList");
-                benefitsList = list;
-            }
+            Company saved = companyService.updateCompany(companyId, update, benefits);
 
-            Company updatedCompany = companyService.updateCompany(companyId, updateData, benefitsList);
+            return ResponseEntity.ok(success("기업 수정 완료", addBenefitsToCompany(saved)));
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "기업 정보 수정 완료");
-            response.put("data", addBenefitsToCompany(updatedCompany));
-
-            log.info("기업 정보 수정 완료 - companyId: {}", companyId);
-            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            log.warn("기업 수정 실패: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(createErrorResponse(e.getMessage()));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error(e.getMessage()));
         } catch (Exception e) {
             log.error("기업 수정 중 오류", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse(e.getMessage()));
+                    .body(error("기업 수정 실패"));
         }
     }
 
-    // =================== 삭제 ===================
+    // 삭제
     @DeleteMapping("/{companyId}")
     public ResponseEntity<?> deleteCompany(@PathVariable Long companyId) {
         try {
-            if (companyId == null || companyId <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(createErrorResponse("유효한 기업 ID가 필요합니다"));
-            }
-
-            Company company = companyService.getCompanyById(companyId);
-
-            if (company.getPhoto() != null && !company.getPhoto().isEmpty()) {
-                try {
-                    s3Service.deleteFile(company.getPhoto());
-                    log.info("S3 로고 파일 삭제 완료: {}", company.getPhoto());
-                } catch (Exception e) {
-                    log.error("S3 파일 삭제 실패: {}", e.getMessage());
-                }
-            }
-
             companyService.deleteCompany(companyId);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "기업 삭제 완료");
-            response.put("deletedCompanyId", companyId);
-
-            log.info("기업 삭제 완료 - companyId: {}", companyId);
-            return ResponseEntity.ok(response);
-
-        } catch (IllegalArgumentException e) {
-            log.warn("기업 삭제 실패: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(createErrorResponse(e.getMessage()));
+            return ResponseEntity.ok(success("기업 삭제 완료", Map.of("deletedCompanyId", companyId)));
         } catch (Exception e) {
-            log.error("기업 삭제 중 오류", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse(e.getMessage()));
+                    .body(error("기업 삭제 실패: " + e.getMessage()));
         }
     }
 
-    // =================== 기업 이미지 업로드 ===================
+    // 이미지 업로드
     @PostMapping("/{companyId}/image")
-    public ResponseEntity<Map<String, Object>> uploadCompanyImage(
-            @PathVariable("companyId") Long companyId,
-            @RequestParam("file") MultipartFile file) {
-
+    public ResponseEntity<?> uploadCompanyImage(
+            @PathVariable Long companyId,
+            @RequestParam("file") MultipartFile file
+    ) {
         try {
-            log.info("기업 이미지 업로드 요청 - companyId: {}, fileName: {}", companyId, file.getOriginalFilename());
+            String url = s3Service.uploadCompanyPhoto(file, companyId);
+            Company updated = companyService.updateCompanyPhoto(companyId, url);
 
-            // 1️⃣ AWS S3 업로드
-            String fileUrl = s3Service.uploadCompanyPhoto(file, companyId);
-
-            // 2️⃣ DB에 URL 저장
-            Company company = companyService.updateCompanyPhoto(companyId, fileUrl);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "기업 이미지 업로드 성공");
-            response.put("fileUrl", fileUrl);
-            response.put("company", addBenefitsToCompany(company));
-
-            log.info("기업 이미지 업로드 성공 - URL: {}", fileUrl);
-            return ResponseEntity.ok(response);
-
-        } catch (IllegalArgumentException e) {
-            log.error("유효성 검증 실패: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(createErrorResponse(e.getMessage()));
+            return ResponseEntity.ok(success("이미지 업로드 성공", Map.of(
+                    "fileUrl", url,
+                    "company", addBenefitsToCompany(updated)
+            )));
         } catch (Exception e) {
-            log.error("기업 이미지 업로드 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("업로드 실패: " + e.getMessage()));
+                    .body(error("업로드 실패: " + e.getMessage()));
         }
     }
 
-    // =================== ✅ 기업 이미지 삭제 ===================
+    // 이미지 삭제
     @DeleteMapping("/{companyId}/image")
     public ResponseEntity<?> deleteCompanyImage(@PathVariable Long companyId) {
         try {
             Company company = companyService.getCompanyById(companyId);
 
-            if (company == null || company.getPhoto() == null || company.getPhoto().isEmpty()) {
+            if (company.getPhoto() == null || company.getPhoto().isBlank()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(createErrorResponse("삭제할 이미지가 없습니다."));
+                        .body(error("삭제할 이미지가 없습니다."));
             }
 
-            // 1️⃣ S3 파일 삭제
             s3Service.deleteFile(company.getPhoto());
-            log.info("S3 이미지 삭제 완료: {}", company.getPhoto());
-
-            // 2️⃣ DB photo 필드 null 처리
             companyService.updateCompanyPhoto(companyId, null);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "기업 이미지 삭제 완료");
-            return ResponseEntity.ok(response);
-
-        } catch (IllegalArgumentException e) {
-            log.warn("이미지 삭제 실패: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(createErrorResponse(e.getMessage()));
+            return ResponseEntity.ok(success("이미지 삭제 완료", null));
         } catch (Exception e) {
-            log.error("이미지 삭제 중 오류", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("이미지 삭제 중 오류: " + e.getMessage()));
+                    .body(error("이미지 삭제 실패: " + e.getMessage()));
         }
     }
 
-    // =================== 공통 에러 응답 ===================
-    private Map<String, Object> createErrorResponse(String message) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", false);
-        response.put("message", message);
-        return response;
+    private Integer parseInt(Object obj) {
+        try { return obj == null ? null : Integer.parseInt(obj.toString()); }
+        catch (Exception e) { return null; }
+    }
+
+    private Map<String, Object> success(String msg, Object data) {
+        Map<String, Object> r = new HashMap<>();
+        r.put("success", true);
+        r.put("message", msg);
+        r.put("data", data);
+        return r;
+    }
+
+    private Map<String, Object> error(String msg) {
+        Map<String, Object> r = new HashMap<>();
+        r.put("success", false);
+        r.put("message", msg);
+        return r;
     }
 }

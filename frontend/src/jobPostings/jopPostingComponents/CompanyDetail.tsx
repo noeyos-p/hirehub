@@ -34,6 +34,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const averageRating = Array.isArray(reviews) && reviews.length > 0
     ? reviews.reduce((sum, review) => sum + review.score, 0) / reviews.length
     : 0;
+console.log("lat/lng:", company?.lat, company?.lng);
+console.log("🔥 CompanyDetail 렌더됨, companyId =", companyId);
 
   // 로그인 상태 확인
   useEffect(() => {
