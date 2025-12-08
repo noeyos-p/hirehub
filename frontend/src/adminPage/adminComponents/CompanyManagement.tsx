@@ -459,50 +459,42 @@ const CompanyManagement: React.FC = () => {
   };
 
 
-  /** ✅ 회사 수정 */
+ /** ✅ 회사 수정 */
 const handleEditClick = (e: React.MouseEvent, company: AdminCompany) => {
   e.stopPropagation();
-  setEditFormData({ ...company });
 
   let addr = company.address || "";
 
-  /** 1️⃣ 우편번호 분리 */
+  // 1️⃣ 우편번호 분리
+  let extractedPostcode = "";
   const postcodeMatch = addr.match(/^\[(\d{5})\]\s*(.*)$/);
   if (postcodeMatch) {
-    setEditPostcode(postcodeMatch[1]);
-    addr = postcodeMatch[2];
-  } else {
-    setEditPostcode("");
+    extractedPostcode = postcodeMatch[1];
+    addr = postcodeMatch[2]; // 나머지 주소만 남김
   }
 
-  /** 2️⃣ 도로명 + 상세주소 정규식 (강화 버전) */
-  // 예: "서울 강남구 테헤란로 217 10층 1005호"
-  const roadMatch = addr.match(
-    /^(.+?(?:로|길|대로)\s*\d+(?:-\d+)?)\s*(.*)$/
-  );
+  // 2️⃣ 도로명 + 상세주소 분리
+  const roadRegex = /^(.+(?:로|길|대로)\s?\d+)\s+(.*)$/;
+  const match = addr.match(roadRegex);
 
-  let road = "";
-  let detail = "";
+  const road = match ? match[1] : addr;
+  const detail = match ? match[2] : "";
 
-  if (roadMatch) {
-    road = roadMatch[1].trim();     // 도로명 주소만
-    detail = roadMatch[2].trim();   // 상세주소
-  } else {
-    // 혹시 예상치 못한 케이스 → 전체를 주소로 처리
-    road = addr.trim();
-    detail = "";
-  }
-
-  /** 3️⃣ 최종 세팅 */
-  setEditFormData(prev => ({ ...prev, address: road }));
-  setEditDetailAddress(detail);
-
-  // 복리후생
+  // 3️⃣ 단 한 번만 호출해서 모든 값 저장
+  setEditPostcode(extractedPostcode);          // 우편번호
+  setEditDetailAddress(detail.trim());        // 상세주소
+//복리후생
   setEditBenefitsList(company.benefitsList || []);
   setEditBenefitInput("");
 
+  setEditFormData({
+    ...company,
+    address: road,                            // 도로명 주소만 저장
+  });
+
   setIsEditModalOpen(true);
 };
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editFormData) return;
