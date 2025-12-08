@@ -432,6 +432,7 @@ export interface CompanyResponse {
   photo?: string;
   count?: string;        // 사원수
   companyType?: string;  // 기업구분
+  benefitsList?: string[]; // 복리후생 리스트
 
   // ⭐⭐ 반드시 추가
   lat: number | null;
