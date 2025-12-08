@@ -74,32 +74,21 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.error('❌ 401 Unauthorized - 토큰이 유효하지 않거나 만료됨', {
-        url: error.config?.url,
-        hasToken: !!localStorage.getItem('token')
-      });
+      console.error('❌ 401 Unauthorized - 토큰이 유효하지 않거나 만료됨');
 
-      // 로그인/회원가입 API는 401이 정상이므로 토큰을 삭제하지 않음
+      // 로그인/회원가입 API가 아닌 경우에만 토큰 삭제
+      // (로그인 실패는 401이 정상이므로 토큰을 삭제하면 안됨)
       const isAuthEndpoint = error.config?.url?.includes('/api/auth/');
-
-      // 공개 API는 401이 와도 토큰을 삭제하지 않음 (인증 불필요)
       const isPublicEndpoint =
         error.config?.url?.includes('/api/jobposts') ||
         error.config?.url?.includes('/api/companies') ||
         error.config?.url?.includes('/api/boards') ||
         error.config?.url?.includes('/api/reviews');
 
-      // ⚠️ 실제 인증 실패 시에만 토큰 삭제
-      // 단, 너무 공격적으로 토큰을 삭제하지 않도록 조건 추가
+      // 인증 엔드포인트나 공개 엔드포인트가 아닌 경우에만 토큰 삭제
       if (!isAuthEndpoint && !isPublicEndpoint) {
-        const token = localStorage.getItem('token');
-
-        // 토큰이 있는데 401이 발생한 경우에만 로그
-        if (token) {
-          console.warn('⚠️ 토큰이 있지만 401 발생 - 에러를 컴포넌트로 전달');
-          // 토큰을 즉시 삭제하지 않고, 에러를 컴포넌트로 전달하여 처리하도록 함
-          // 컴포넌트에서 재시도하거나 사용자에게 재로그인을 요청할 수 있음
-        }
+        console.warn('⚠️ 인증 실패 - 토큰 삭제');
+        setAuthToken(null);
       }
     }
     return Promise.reject(error);

@@ -1,7 +1,7 @@
 spring:
   # AWS RDS 연결
   datasource:
-    url: jdbc:mysql://hirehub-db.cbai2wwi0xpx.ap-northeast-2.rds.amazonaws.com:3306/hirehub?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
+    url: jdbc:mysql://hirehub-1234.cbai2wwi0xpx.ap-northeast-2.rds.amazonaws.com:3306/hirehub?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}

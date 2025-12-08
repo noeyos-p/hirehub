@@ -181,8 +181,8 @@ export default function Header() {
           <div className="md:hidden flex items-center space-x-3" ref={mobileMenuRef}>
             {!isAuthenticated && (
               <Link
-                to="/login"
-                className="text-sm font-medium text-gray-700 hover:text-[#006AFF] transition whitespace-nowrap px-4 py-1.5 border border-gray-300 rounded-md"
+                to="/auth"
+                className="text-sm font-medium text-gray-700 hover:text-[#006AFF] transition whitespace-nowrap"
               >
                 로그인
               </Link>
@@ -245,22 +245,13 @@ export default function Header() {
                 {/* 비로그인 시 로그인/회원가입 버튼 */}
                 {!isAuthenticated && (
                   <div className="px-4 py-3 border-b border-gray-100">
-                    <div className="flex gap-2">
-                      <Link
-                        to="/login"
-                        onClick={() => setShowMobileMenu(false)}
-                        className="flex-1 text-center py-2 text-sm font-medium bg-[#006AFF] text-white rounded hover:bg-blue-600"
-                      >
-                        로그인
-                      </Link>
-                      <Link
-                        to="/signup"
-                        onClick={() => setShowMobileMenu(false)}
-                        className="flex-1 text-center py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-                      >
-                        회원가입
-                      </Link>
-                    </div>
+                    <Link
+                      to="/auth"
+                      onClick={() => setShowMobileMenu(false)}
+                      className="block text-center py-2 text-sm font-medium bg-[#006AFF] text-white rounded hover:bg-blue-600"
+                    >
+                      로그인 | 회원가입
+                    </Link>
                   </div>
                 )}
 
@@ -377,15 +368,12 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-1.5 md:space-x-2 text-sm text-gray-700">
-                <Link to="/login" className="font-light text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition whitespace-nowrap">
-                  로그인
-                </Link>
-                <span className="text-gray-300 mb-[3px]">|</span>
-                <Link to="/signup" className="font-light text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition whitespace-nowrap">
-                  회원가입
-                </Link>
-              </div>
+              <Link
+                to="/auth"
+                className="font-light text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition whitespace-nowrap"
+              >
+                로그인 <span className="text-gray-300 mx-1">|</span> 회원가입
+              </Link>
             )}
           </div>
         </div>

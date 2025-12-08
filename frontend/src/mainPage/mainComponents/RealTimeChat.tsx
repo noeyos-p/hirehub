@@ -47,14 +47,12 @@ const RealTimeChat: React.FC = () => {
         return true;
       } else {
         console.log('사용자 정보 조회 실패');
-        // 토큰 삭제하지 않음 - api.ts의 인터셉터에서 처리
         setUserNickname('');
         setIsAuthenticated(false);
         return false;
       }
     } catch (e) {
       console.error('사용자 정보 조회 에러:', e);
-      // 토큰 삭제하지 않음 - api.ts의 인터셉터에서 처리
       setUserNickname('');
       setIsAuthenticated(false);
       return false;

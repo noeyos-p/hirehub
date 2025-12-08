@@ -10,6 +10,7 @@ import AdminLayout from './adminPage/AdminPage';
 import MyPage from './myPage/MyPage';
 import Login from './signPage/login/Login';
 import Signup from './signPage/signup/SignUp';
+import AuthSelection from './signPage/AuthSelection';
 import JobPostings from './jobPostings/JobPostings';
 import CompanyDetail from './jobPostings/jopPostingComponents/CompanyDetail';
 import JobDetailWrapper from './jobPostings/jopPostingComponents/JobDetailWrapper';
@@ -54,6 +55,7 @@ function App() {
         <Route path="/jobPostings/:jobId" element={<Layout><JobDetailWrapper /></Layout>} />
 
         {/* 로그인/회원가입 */}
+        <Route path="/auth" element={<Layout><AuthSelection /></Layout>} />
         <Route path="/login" element={<Layout><Login /></Layout>} />
         <Route path="/signup" element={<Layout><Signup /></Layout>} />
 
