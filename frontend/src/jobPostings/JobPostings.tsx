@@ -134,7 +134,9 @@ const JobPostings: React.FC = () => {
       setError("");
       try {
         const data = await jobPostApi.getJobPosts();
-        setJobListings(data);
+        // 최신순(ID 역순) 정렬
+        const sortedData = data.sort((a, b) => b.id - a.id);
+        setJobListings(sortedData);
         // 모바일이고 공고가 있으면 회사 이미지 로드
         if (isMobile && data.length > 0) {
           fetchCompanyPhotos(data);
