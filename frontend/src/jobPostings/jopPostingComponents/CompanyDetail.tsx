@@ -34,8 +34,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
   const averageRating = Array.isArray(reviews) && reviews.length > 0
     ? reviews.reduce((sum, review) => sum + review.score, 0) / reviews.length
     : 0;
-console.log("lat/lng:", company?.lat, company?.lng);
-console.log("🔥 CompanyDetail 렌더됨, companyId =", companyId);
+  console.log("lat/lng:", company?.lat, company?.lng);
+  console.log("🔥 CompanyDetail 렌더됨, companyId =", companyId);
 
   // 로그인 상태 확인
   useEffect(() => {
@@ -60,15 +60,18 @@ console.log("🔥 CompanyDetail 렌더됨, companyId =", companyId);
           companyData = await jobPostApi.getCompanyById(numericCompanyId);
         } else if (companyName) {
           const allCompanies = await jobPostApi.getCompanies();
-          companyData = allCompanies.find(
+          const found = allCompanies.find(
             (c) => c.name === companyName
           );
 
-          if (!companyData) {
+          if (!found) {
             setError(`'${companyName}' 회사를 찾을 수 없습니다.`);
             setIsLoading(false);
             return;
           }
+
+          // 요약 정보만으로는 부족하므로 ID로 상세 정보를 다시 요청
+          companyData = await jobPostApi.getCompanyById(found.id);
         }
 
         setCompany(companyData || null);
@@ -411,7 +414,7 @@ console.log("🔥 CompanyDetail 렌더됨, companyId =", companyId);
                 </div>
                 <div>
                   <p className="text-gray-500 mb-1 text-sm">복리후생</p>
-                  <p className="font-medium text-gray-900">{company.benefits}</p>
+                  <p className="font-medium text-gray-900">{company.benefits || (company.benefitsList ? company.benefitsList.join(", ") : "-")}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-1 text-sm">인원</p>

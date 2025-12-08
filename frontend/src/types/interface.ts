@@ -436,6 +436,7 @@ export interface CompanyResponse {
   // ⭐⭐ 반드시 추가
   lat: number | null;
   lng: number | null;
+  benefitsList?: string[];
 }
 
 export interface ChartData {

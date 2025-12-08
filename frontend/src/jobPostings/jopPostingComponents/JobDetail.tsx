@@ -347,10 +347,7 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                     <p className="text-gray-500 mb-1 text-sm">근무지역</p>
                     <p className="font-medium text-gray-900">{job.location}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500 mb-1 text-sm">급여</p>
-                    <p className="font-medium text-gray-900">{job.salary || "회사내규에 따름"}</p>
-                  </div>
+
                   {!job.endAt ? (
                     <div>
                       <p className="text-gray-500 mb-1 text-sm">채용기간</p>
