@@ -67,7 +67,6 @@ public class JobPostsAdminController {
                     jobData.put("id", jobPost.getId());
                     jobData.put("title", jobPost.getTitle());
                     jobData.put("content", jobPost.getContent());
-                    jobData.put("startAt", jobPost.getStartAt());
                     jobData.put("endAt", jobPost.getEndAt());
                     jobData.put("location", jobPost.getLocation());
                     jobData.put("careerLevel", jobPost.getCareerLevel());
@@ -123,11 +122,6 @@ public class JobPostsAdminController {
             JobPosts jobPost = new JobPosts();
             jobPost.setTitle((String) requestData.get("title"));
             jobPost.setContent((String) requestData.get("content"));
-
-            // startAt 처리: null이거나 빈 문자열이면 null로 설정
-            String startAtStr = (String) requestData.get("startAt");
-            jobPost.setStartAt(startAtStr != null && !startAtStr.trim().isEmpty()
-                ? java.time.LocalDate.parse(startAtStr) : null);
 
             // endAt 처리: null이거나 빈 문자열이면 null로 설정
             String endAtStr = (String) requestData.get("endAt");
@@ -257,13 +251,6 @@ public class JobPostsAdminController {
             JobPostsDto updateDto = new JobPostsDto();
             if (requestData.containsKey("title")) updateDto.setTitle((String) requestData.get("title"));
             if (requestData.containsKey("content")) updateDto.setContent((String) requestData.get("content"));
-
-            // startAt 처리
-            if (requestData.containsKey("startAt")) {
-                String startAtStr = (String) requestData.get("startAt");
-                updateDto.setStartAt(startAtStr != null && !startAtStr.trim().isEmpty()
-                    ? java.time.LocalDate.parse(startAtStr) : null);
-            }
 
             // endAt 처리
             if (requestData.containsKey("endAt")) {
