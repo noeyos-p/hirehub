@@ -37,7 +37,7 @@ script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autol
     return () => {
       document.head.removeChild(script);
     };
-  }, [lat, lng, KAKAO_KEY]);
+  }, [lat, lng]);
 
   return (
     <div
