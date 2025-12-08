@@ -60,18 +60,15 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
           companyData = await jobPostApi.getCompanyById(numericCompanyId);
         } else if (companyName) {
           const allCompanies = await jobPostApi.getCompanies();
-          const found = allCompanies.find(
+          companyData = allCompanies.find(
             (c) => c.name === companyName
           );
 
-          if (!found) {
+          if (!companyData) {
             setError(`'${companyName}' 회사를 찾을 수 없습니다.`);
             setIsLoading(false);
             return;
           }
-
-          // 요약 정보만으로는 부족하므로 ID로 상세 정보를 다시 요청
-          companyData = await jobPostApi.getCompanyById(found.id);
         }
 
         setCompany(companyData || null);
@@ -414,7 +411,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
                 </div>
                 <div>
                   <p className="text-gray-500 mb-1 text-sm">복리후생</p>
-                  <p className="font-medium text-gray-900">{company.benefits || (company.benefitsList ? company.benefitsList.join(", ") : "-")}</p>
+                  <p className="font-medium text-gray-900">{company.benefits}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-1 text-sm">인원</p>

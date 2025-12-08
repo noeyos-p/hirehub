@@ -101,7 +101,9 @@ public class CompanyStatsService {
             return 0;
         }
         try {
-            return Integer.parseInt(value);
+            // 콤마, 문자 등 제거하고 숫자만 남김
+            String cleanValue = value.replaceAll("[^0-9]", "");
+            return Integer.parseInt(cleanValue);
         } catch (NumberFormatException e) {
             return 0;
         }
