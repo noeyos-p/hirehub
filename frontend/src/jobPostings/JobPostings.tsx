@@ -717,8 +717,13 @@ const JobPostings: React.FC = () => {
                       <p className="text-gray-500 text-[10px] truncate mt-1">
                         {job.position} / {job.careerLevel}
                       </p>
-                      <p className="text-gray-400 text-[11px] text-right mt-1.5">
-                        {!job.startAt && !job.endAt ? '상시채용' : `~${job.endAt?.replace(/-/g, '.')}`}
+                      {/* 날짜 */}
+                      <p className="text-gray-400 text-sm text-right mt-4">
+                        {!job.endAt
+                          ? "상시채용"
+                          : `~ ${new Date(job.endAt)
+                            .toLocaleDateString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit" })
+                            .replace(/\. /g, ".")}`}
                       </p>
                     </div>
 
@@ -745,61 +750,61 @@ const JobPostings: React.FC = () => {
                     key={job.id}
                     className="flex flex-col sm:flex-row justify-between items-start hover:bg-gray-50 px-2 sm:px-4 md:px-6 rounded-md transition py-4 sm:py-5 md:py-[26px] gap-3 sm:gap-0"
                   >
-                  {/* 왼쪽: 회사명 + 세로선 + 공고 정보 */}
-                  <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-4 cursor-pointer w-full sm:w-auto" onClick={() => handleJobClick(job.id)}>
-                    {/* 회사명 */}
-                    <div className="w-full sm:w-[140px] md:w-[160px] flex items-center gap-2">
-                      <p className="text-base sm:text-lg md:text-[20px] font-semibold text-gray-900 truncate">{job.companyName}</p>
-                      <button
-                        onClick={(e) => handleFavoriteClick(e, job.companyId)}
-                        className="transition-all hover:scale-110 flex-shrink-0"
-                        title={favoritedCompanies.has(job.companyId) ? "즐겨찾기 해제" : "즐겨찾기"}
-                      >
-                        {favoritedCompanies.has(job.companyId) ? (
-                          <StarSolidIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#006AFF]" />
-                        ) : (
-                          <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-[#006AFF]" />
-                        )}
-                      </button>
+                    {/* 왼쪽: 회사명 + 세로선 + 공고 정보 */}
+                    <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-4 cursor-pointer w-full sm:w-auto" onClick={() => handleJobClick(job.id)}>
+                      {/* 회사명 */}
+                      <div className="w-full sm:w-[140px] md:w-[160px] flex items-center gap-2">
+                        <p className="text-base sm:text-lg md:text-[20px] font-semibold text-gray-900 truncate">{job.companyName}</p>
+                        <button
+                          onClick={(e) => handleFavoriteClick(e, job.companyId)}
+                          className="transition-all hover:scale-110 flex-shrink-0"
+                          title={favoritedCompanies.has(job.companyId) ? "즐겨찾기 해제" : "즐겨찾기"}
+                        >
+                          {favoritedCompanies.has(job.companyId) ? (
+                            <StarSolidIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#006AFF]" />
+                          ) : (
+                            <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-[#006AFF]" />
+                          )}
+                        </button>
+                      </div>
+                      {/* 세로 구분선 */}
+                      <div className="hidden sm:block w-px bg-gray-300"></div>
+                      {/* 공고 정보 */}
+                      <div className="flex-1 sm:ml-[20px]">
+                        <p className="text-sm sm:text-[15px] md:text-[16px] font-normal text-gray-800 mb-1 sm:mb-[9px] line-clamp-2 sm:line-clamp-1">{job.title}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 truncate">
+                          {job.position && <span>{job.position} / </span>}
+                          {job.careerLevel} / {job.education} / {job.location}
+                        </p>
+                      </div>
                     </div>
-                    {/* 세로 구분선 */}
-                    <div className="hidden sm:block w-px bg-gray-300"></div>
-                    {/* 공고 정보 */}
-                    <div className="flex-1 sm:ml-[20px]">
-                      <p className="text-sm sm:text-[15px] md:text-[16px] font-normal text-gray-800 mb-1 sm:mb-[9px] line-clamp-2 sm:line-clamp-1">{job.title}</p>
-                      <p className="text-xs sm:text-sm text-gray-500 truncate">
-                        {job.position && <span>{job.position} / </span>}
-                        {job.careerLevel} / {job.education} / {job.location}
+                    {/* 오른쪽: 조회수, 스크랩, 날짜 */}
+                    <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 ml-0 sm:ml-4 w-full sm:w-auto justify-between sm:justify-start">
+                      {/* 조회수 + 스크랩 */}
+                      <div className="flex items-center gap-2 sm:gap-3 mb-0 sm:mb-[9px]">
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <EyeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="text-xs sm:text-sm">{job.views ?? 0}</span>
+                        </div>
+                        <button
+                          onClick={(e) => handleBookmarkClick(e, job.id)}
+                          className="transition-all hover:scale-110"
+                          title={scrappedJobs.has(job.id) ? "북마크 해제" : "북마크 추가"}
+                        >
+                          {scrappedJobs.has(job.id) ? (
+                            <BookmarkSolidIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#006AFF]" />
+                          ) : (
+                            <BookmarkIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 hover:text-[#006AFF]" />
+                          )}
+                        </button>
+                      </div>
+                      {/* 날짜 */}
+                      <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                        {!job.startAt && !job.endAt ? '상시채용' : `~${job.endAt?.replace(/-/g, ".")}`}
                       </p>
                     </div>
                   </div>
-                  {/* 오른쪽: 조회수, 스크랩, 날짜 */}
-                  <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 ml-0 sm:ml-4 w-full sm:w-auto justify-between sm:justify-start">
-                    {/* 조회수 + 스크랩 */}
-                    <div className="flex items-center gap-2 sm:gap-3 mb-0 sm:mb-[9px]">
-                      <div className="flex items-center gap-1 text-gray-500">
-                        <EyeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        <span className="text-xs sm:text-sm">{job.views ?? 0}</span>
-                      </div>
-                      <button
-                        onClick={(e) => handleBookmarkClick(e, job.id)}
-                        className="transition-all hover:scale-110"
-                        title={scrappedJobs.has(job.id) ? "북마크 해제" : "북마크 추가"}
-                      >
-                        {scrappedJobs.has(job.id) ? (
-                          <BookmarkSolidIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#006AFF]" />
-                        ) : (
-                          <BookmarkIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 hover:text-[#006AFF]" />
-                        )}
-                      </button>
-                    </div>
-                    {/* 날짜 */}
-                    <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
-                      {!job.startAt && !job.endAt ? '상시채용' : `~${job.endAt?.replace(/-/g, ".")}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
               </div>
             )}
 

@@ -264,17 +264,58 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                 </div>
               )}
 
-              {/* 상세 내용 */}
-              <div className="mt-6 md:mt-10">
-                <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">상세 내용</h2>
+              <div className="mt-6 md:mt-10 space-y-8">
+                {/* 상세 내용 */}
+                <section>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">상세 내용</h2>
+                  {job.content ? (
+                    <div
+                      className="text-gray-800 leading-relaxed font-normal whitespace-pre-line"
+                      dangerouslySetInnerHTML={{ __html: job.content }}
+                    />
+                  ) : (
+                    <p className="text-gray-500">등록된 상세 내용이 없습니다.</p>
+                  )}
+                </section>
 
-                {job.content ? (
-                  <div
-                    className="text-gray-800 leading-relaxed font-normal whitespace-pre-line"
-                    dangerouslySetInnerHTML={{ __html: job.content }}
-                  />
-                ) : (
-                  <p className="text-gray-500 text-center">등록된 상세 내용이 없습니다.</p>
+                {/* 주요업무 */}
+                {job.mainJob && (
+                  <section>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">주요업무</h2>
+                    <div className="text-gray-800 leading-relaxed font-normal whitespace-pre-line bg-gray-50 p-4 rounded-lg">
+                      {job.mainJob}
+                    </div>
+                  </section>
+                )}
+
+                {/* 자격요건 */}
+                {job.qualification && (
+                  <section>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">자격요건</h2>
+                    <div className="text-gray-800 leading-relaxed font-normal whitespace-pre-line bg-gray-50 p-4 rounded-lg">
+                      {job.qualification}
+                    </div>
+                  </section>
+                )}
+
+                {/* 우대사항 */}
+                {job.preference && (
+                  <section>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">우대사항</h2>
+                    <div className="text-gray-800 leading-relaxed font-normal whitespace-pre-line bg-gray-50 p-4 rounded-lg">
+                      {job.preference}
+                    </div>
+                  </section>
+                )}
+
+                {/* 채용전형 */}
+                {job.hireType && (
+                  <section>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">채용전형</h2>
+                    <div className="text-gray-800 leading-relaxed font-normal whitespace-pre-line bg-blue-50 p-4 rounded-lg">
+                      {job.hireType}
+                    </div>
+                  </section>
                 )}
               </div>
             </div>
@@ -310,22 +351,16 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                     <p className="text-gray-500 mb-1 text-sm">급여</p>
                     <p className="font-medium text-gray-900">{job.salary || "회사내규에 따름"}</p>
                   </div>
-                  {!job.startAt && !job.endAt ? (
+                  {!job.endAt ? (
                     <div>
                       <p className="text-gray-500 mb-1 text-sm">채용기간</p>
                       <p className="font-medium text-gray-900">상시채용</p>
                     </div>
                   ) : (
-                    <>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">시작일</p>
-                        <p className="font-medium text-gray-900">{job.startAt || "협의 후 결정"}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 mb-1 text-sm">마감일</p>
-                        <p className="font-medium text-gray-900">{job.endAt}</p>
-                      </div>
-                    </>
+                    <div>
+                      <p className="text-gray-500 mb-1 text-sm">마감일</p>
+                      <p className="font-medium text-gray-900">{job.endAt}</p>
+                    </div>
                   )}
                 </div>
               </div>

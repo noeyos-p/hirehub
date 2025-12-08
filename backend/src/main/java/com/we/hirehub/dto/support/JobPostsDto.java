@@ -17,7 +17,6 @@ public class JobPostsDto {
     private Long id;
     private String title;
     private String content;
-    private LocalDate startAt;
     private LocalDate endAt;
     private String location;
     private String careerLevel;
@@ -58,7 +57,6 @@ public class JobPostsDto {
                 .id(entity.getId())
                 .title(entity.getTitle())
                 .content(entity.getContent())
-                .startAt(entity.getStartAt())
                 .endAt(entity.getEndAt())
                 .location(entity.getLocation())
                 .careerLevel(entity.getCareerLevel())
@@ -87,7 +85,6 @@ public class JobPostsDto {
                 .id(dto.getId())
                 .title(dto.getTitle())
                 .content(dto.getContent())
-                .startAt(dto.getStartAt())
                 .endAt(dto.getEndAt())
                 .location(dto.getLocation())
                 .careerLevel(dto.getCareerLevel())
@@ -115,7 +112,6 @@ public class JobPostsDto {
         if (dto.getEducation() != null) entity.setEducation(dto.getEducation());
         if (dto.getPosition() != null) entity.setPosition(dto.getPosition());
         if (dto.getType() != null) entity.setType(dto.getType());
-        if (dto.getStartAt() != null) entity.setStartAt(dto.getStartAt());
         if (dto.getEndAt() != null) entity.setEndAt(dto.getEndAt());
         if (dto.getPhoto() != null) entity.setPhoto(dto.getPhoto());
         // views는 업데이트하지 않는 것이 일반적이지만, 필요하다면 추가 가능합니다.

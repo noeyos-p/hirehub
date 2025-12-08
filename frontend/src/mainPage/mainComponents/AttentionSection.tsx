@@ -286,7 +286,7 @@ const AttentionSection: React.FC = () => {
                 </p>
 
                 <p className="text-gray-400 text-[11px] md:text-[16px] text-right mt-1.5 md:mt-2">
-                  {!job.startAt && !job.endAt ? '상시채용' : `~${new Date(job.endAt).toLocaleDateString("ko-KR", {
+                  {!job.endAt ? '상시채용' : `~${new Date(job.endAt).toLocaleDateString("ko-KR", {
                     year: "2-digit",
                     month: "2-digit",
                     day: "2-digit",

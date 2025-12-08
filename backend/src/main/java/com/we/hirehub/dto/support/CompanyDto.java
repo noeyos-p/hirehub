@@ -26,6 +26,7 @@ public class CompanyDto {
     private Double lat;
     private Double lng;
     private List<String> benefitsList;
+    private String count; // 사원수
 
     @Getter
     @Setter
@@ -58,6 +59,7 @@ public class CompanyDto {
                 .lat(entity.getLat())
                 .lng(entity.getLng())
                 .benefitsList(List.of()) // benefitsList는 별도로 설정 필요
+                .count(entity.getCount())
                 .build();
     }
 
@@ -87,6 +89,7 @@ public class CompanyDto {
                 // ⭐⭐ 추가된 부분
                 .lat(dto.getLat())
                 .lng(dto.getLng())
+                .count(dto.getCount())
                 .build();
     }
 
@@ -106,5 +109,6 @@ public class CompanyDto {
         // ⭐⭐ 추가된 부분
         entity.setLat(dto.getLat());
         entity.setLng(dto.getLng());
+        entity.setCount(dto.getCount());
     }
 }

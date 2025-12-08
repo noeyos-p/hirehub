@@ -27,10 +27,6 @@ public class JobPosts {
     @Column(columnDefinition = "LONGTEXT", nullable = false)
     private String content;
 
-    // 시작일
-    @Column(name = "start_at")
-    private LocalDate startAt;
-
     // 마감일
     @Column(name = "end_at")
     private LocalDate endAt;

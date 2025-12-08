@@ -67,7 +67,7 @@ export const adminApi = {
     },
 
     // Company Management
-    getCompanies: async (params: { page: number; size: number; sortBy?: string; direction?: string }): Promise<AdminResponse<AdminCompany[]>> => {
+    getCompanies: async (params: { page: number; size: number; sortBy?: string; direction?: string; keyword?: string }): Promise<AdminResponse<AdminCompany[]>> => {
         const { data } = await api.get('/api/admin/company-management', { params });
         return data;
     },

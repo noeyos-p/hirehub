@@ -47,7 +47,6 @@ const JobManagement: React.FC = () => {
   const [newJob, setNewJob] = useState<NewJob>({
     title: "",
     content: "",
-    startAt: "",
     endAt: "",
     location: "",
     careerLevel: "",
@@ -165,7 +164,6 @@ const JobManagement: React.FC = () => {
     setNewJob({
       title: "",
       content: "",
-      startAt: "",
       endAt: "",
       location: "",
       careerLevel: "",
@@ -291,7 +289,6 @@ const JobManagement: React.FC = () => {
         education: editFormData.education,
         position: editFormData.position,
         type: editFormData.type,
-        startAt: editFormData.startAt,
         endAt: editFormData.endAt,
         mainJob: editFormData.mainJob,
         qualification: editFormData.qualification,
@@ -535,11 +532,10 @@ const JobManagement: React.FC = () => {
             onChange={toggleSelectAll}
             className="sr-only peer"
           />
-          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-            allSelected
-              ? 'bg-blue-600 border-blue-600'
-              : 'bg-white border-gray-300 group-hover:border-blue-400'
-          }`}>
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${allSelected
+            ? 'bg-blue-600 border-blue-600'
+            : 'bg-white border-gray-300 group-hover:border-blue-400'
+            }`}>
             {allSelected && (
               <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -591,9 +587,8 @@ const JobManagement: React.FC = () => {
             {jobs.map((job) => (
               <div
                 key={job.id}
-                className={`relative bg-white p-4 rounded-lg shadow hover:shadow-lg transition-all cursor-pointer ${
-                  selectedIds.includes(job.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-                }`}
+                className={`relative bg-white p-4 rounded-lg shadow hover:shadow-lg transition-all cursor-pointer ${selectedIds.includes(job.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                  }`}
                 onClick={() => handleJobClick(job)}
               >
                 {/* ✅ 개별 선택 체크박스 */}
@@ -608,11 +603,10 @@ const JobManagement: React.FC = () => {
                       onChange={() => toggleSelect(job.id)}
                       className="sr-only peer"
                     />
-                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                      selectedIds.includes(job.id)
-                        ? 'bg-blue-600 border-blue-600'
-                        : 'bg-white border-gray-300 hover:border-blue-400'
-                    }`}>
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selectedIds.includes(job.id)
+                      ? 'bg-blue-600 border-blue-600'
+                      : 'bg-white border-gray-300 hover:border-blue-400'
+                      }`}>
                       {selectedIds.includes(job.id) && (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -740,9 +734,9 @@ const JobManagement: React.FC = () => {
               </div>
 
               <div>
-                <p className="font-semibold text-gray-700">공고 기간</p>
+                <p className="font-semibold text-gray-700">마감일</p>
                 <p className="text-gray-600">
-                  {selectedJob.startAt} ~ {selectedJob.endAt}
+                  {selectedJob.endAt}
                 </p>
               </div>
 
@@ -841,7 +835,7 @@ const JobManagement: React.FC = () => {
                     type="button"
                     onClick={() => {
                       new (window as any).daum.Postcode({
-                        oncomplete: function(data: any) {
+                        oncomplete: function (data: any) {
                           const baseAddress = `(${data.zonecode}) ${data.address}${data.buildingName ? ' ' + data.buildingName : ''}`;
                           const baseInput = document.getElementById('editBaseAddress') as HTMLInputElement;
                           const detailInput = document.getElementById('editDetailAddress') as HTMLInputElement;
@@ -928,15 +922,6 @@ const JobManagement: React.FC = () => {
                     type="text"
                     value={editFormData.type}
                     onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">시작일</label>
-                  <input
-                    type="date"
-                    value={editFormData.startAt}
-                    onChange={(e) => setEditFormData({ ...editFormData, startAt: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -1230,7 +1215,7 @@ const JobManagement: React.FC = () => {
                     type="button"
                     onClick={() => {
                       new (window as any).daum.Postcode({
-                        oncomplete: function(data: any) {
+                        oncomplete: function (data: any) {
                           const baseAddress = `(${data.zonecode}) ${data.address}${data.buildingName ? ' ' + data.buildingName : ''}`;
                           const baseInput = document.getElementById('baseAddress') as HTMLInputElement;
                           const detailInput = document.getElementById('detailAddress') as HTMLInputElement;
@@ -1317,15 +1302,6 @@ const JobManagement: React.FC = () => {
                     type="text"
                     value={newJob.type}
                     onChange={(e) => setNewJob({ ...newJob, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">시작일</label>
-                  <input
-                    type="date"
-                    value={newJob.startAt}
-                    onChange={(e) => setNewJob({ ...newJob, startAt: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

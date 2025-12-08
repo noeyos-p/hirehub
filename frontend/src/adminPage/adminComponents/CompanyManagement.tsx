@@ -54,6 +54,7 @@ const CompanyManagement: React.FC = () => {
   const [editPostcode, setEditPostcode] = useState("");
   const [editDetailAddress, setEditDetailAddress] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   // 복리후생 관리
   const [benefitsList, setBenefitsList] = useState<string[]>([]);
@@ -71,7 +72,7 @@ const CompanyManagement: React.FC = () => {
       }
       alert("선택된 기업이 삭제되었습니다.");
       setSelectedIds([]);
-      fetchCompanies(currentPage);
+      fetchCompanies(currentPage, searchKeyword);
     } catch (err) {
       console.error("선택삭제 실패:", err);
       alert("선택삭제 중 오류가 발생했습니다.");
@@ -79,7 +80,7 @@ const CompanyManagement: React.FC = () => {
   };
 
   /** ✅ 회사 목록 불러오기 */
-  const fetchCompanies = async (page: number = 0) => {
+  const fetchCompanies = async (page: number = 0, keyword: string = "") => {
     setLoading(true);
     setError(null);
     try {
@@ -87,7 +88,8 @@ const CompanyManagement: React.FC = () => {
         page,
         size: pageSize,
         sortBy: "id",
-        direction: "DESC"
+        direction: "DESC",
+        keyword
       });
       if (res.success) {
         setCompanies(res.data);
@@ -229,7 +231,8 @@ const CompanyManagement: React.FC = () => {
         }
         alert("기업 등록 완료!");
         setIsCreateModalOpen(false);
-        fetchCompanies(0);
+        fetchCompanies(0, "");
+        setSearchKeyword("");
       } else {
         console.error("❌ 등록 실패 응답:", res);
         alert("등록 실패: " + (res.message || "서버 오류"));
@@ -452,7 +455,7 @@ const CompanyManagement: React.FC = () => {
 
   // ✅ 페이지 변경
   const handlePageChange = (page: number) => {
-    fetchCompanies(page);
+    fetchCompanies(page, searchKeyword);
   };
 
 
@@ -509,7 +512,7 @@ const CompanyManagement: React.FC = () => {
         console.log("✅ 기업 수정 성공");
         alert("수정 완료");
         setIsEditModalOpen(false);
-        fetchCompanies(currentPage);
+        fetchCompanies(currentPage, searchKeyword);
       } else {
         console.error("❌ 수정 실패 응답:", res);
         alert("수정 실패: " + (res.message || "서버 오류"));
@@ -536,9 +539,9 @@ const CompanyManagement: React.FC = () => {
       if (res.success) {
         alert("삭제 완료");
         if (companies.length === 1 && currentPage > 0) {
-          fetchCompanies(currentPage - 1);
+          fetchCompanies(currentPage - 1, searchKeyword);
         } else {
-          fetchCompanies(currentPage);
+          fetchCompanies(currentPage, searchKeyword);
         }
         if (selectedCompany?.id === companyId) setSelectedCompany(null);
       } else {
@@ -677,15 +680,51 @@ const CompanyManagement: React.FC = () => {
 
   return (
     <div className="p-8 h-full bg-gray-50">
-      {/* 타이틀 */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">기업 관리</h2>
-        <button
-          onClick={openCreateModal}
-          className="bg-blue-100 text-blue-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-200 flex items-center gap-1"
+      {/* 타이틀 및 검색 */}
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">기업 관리</h2>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>신규 기업 등록</span>
+          </button>
+        </div>
+
+        {/* ✅ 검색 폼 */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            fetchCompanies(0, searchKeyword);
+          }}
+          className="flex items-center gap-2"
         >
-          <PlusIcon className="w-4 h-4" /> 신규
-        </button>
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="기업명 검색"
+            className="border rounded px-3 py-2 text-sm w-64"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
+          >
+            검색
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchKeyword("");
+              fetchCompanies(0, "");
+            }}
+            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200"
+          >
+            초기화
+          </button>
+        </form>
       </div>
       {/* ✅ 전체선택 + 선택삭제 영역 */}
       <div className="flex items-center gap-3 mb-4 min-h-[36px]">
@@ -696,11 +735,10 @@ const CompanyManagement: React.FC = () => {
             onChange={toggleSelectAll}
             className="sr-only peer"
           />
-          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-            allSelected
-              ? 'bg-blue-600 border-blue-600'
-              : 'bg-white border-gray-300 group-hover:border-blue-400'
-          }`}>
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${allSelected
+            ? 'bg-blue-600 border-blue-600'
+            : 'bg-white border-gray-300 group-hover:border-blue-400'
+            }`}>
             {allSelected && (
               <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -734,9 +772,8 @@ const CompanyManagement: React.FC = () => {
             {companies.map((company) => (
               <div
                 key={company.id}
-                className={`relative bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer ${
-                  selectedIds.includes(company.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-                }`}
+                className={`relative bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer ${selectedIds.includes(company.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                  }`}
                 onClick={() => setSelectedCompany(company)}
               >
                 {/* ✅ 개별 선택 체크박스 */}
@@ -751,11 +788,10 @@ const CompanyManagement: React.FC = () => {
                       onChange={() => toggleSelect(company.id)}
                       className="sr-only peer"
                     />
-                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                      selectedIds.includes(company.id)
-                        ? 'bg-blue-600 border-blue-600'
-                        : 'bg-white border-gray-300 hover:border-blue-400'
-                    }`}>
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selectedIds.includes(company.id)
+                      ? 'bg-blue-600 border-blue-600'
+                      : 'bg-white border-gray-300 hover:border-blue-400'
+                      }`}>
                       {selectedIds.includes(company.id) && (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />

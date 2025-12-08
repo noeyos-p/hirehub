@@ -412,6 +412,11 @@ export interface JobPostResponse {
   endAt: string;
   content?: string;
   photo?: string;
+  // ✅ 추가된 필드
+  mainJob?: string;
+  qualification?: string;
+  preference?: string;
+  hireType?: string;
 }
 
 export interface CompanyResponse {
@@ -650,6 +655,27 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface JobPostResponse {
+  id: number;
+  title: string;
+  companyName: string;
+  companyId: number;
+  views: number;
+  careerLevel: string;
+  position: string;
+  education: string;
+  type?: string;
+  location: string;
+  salary?: string;
+  endAt: string;
+  content?: string;
+  photo?: string;
+  mainJob?: string;
+  qualification?: string;
+  preference?: string;
+  hireType?: string;
+}
+
 export interface AdminCompany {
   id: number;
   name: string;
@@ -670,7 +696,6 @@ export interface AdminJob {
   id: number;
   title: string;
   content: string;
-  startAt: string;
   endAt: string;
   location: string;
   careerLevel: string;

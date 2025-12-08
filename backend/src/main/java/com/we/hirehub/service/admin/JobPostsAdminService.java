@@ -85,8 +85,8 @@ public class JobPostsAdminService {
         JobPostsDto.updateEntity(dto, jobPost);
 
         // Only validate dates if both are present
-        if (jobPost.getStartAt() != null && jobPost.getEndAt() != null) {
-            validateJobPostDates(jobPost.getStartAt(), jobPost.getEndAt());
+        if (jobPost.getEndAt() != null) {
+            validateJobPostDates(jobPost.getEndAt());
         }
         JobPosts updated = jobPostsRepository.save(jobPost);
 
@@ -152,17 +152,14 @@ public class JobPostsAdminService {
 
         // 날짜는 선택사항 (상시채용 지원)
         // 둘 다 있는 경우에만 유효성 검증
-        if (jobPost.getStartAt() != null && jobPost.getEndAt() != null) {
-            validateJobPostDates(jobPost.getStartAt(), jobPost.getEndAt());
+        if (jobPost.getEndAt() != null) {
+            validateJobPostDates(jobPost.getEndAt());
         }
     }
 
-    private void validateJobPostDates(LocalDate startAt, LocalDate endAt) {
-        if (startAt == null || endAt == null) {
-            return; // Skip validation if either date is null
-        }
-        if (startAt.isAfter(endAt)) {
-            throw new IllegalArgumentException("시작일이 마감일보다 늦을 수 없습니다");
+    private void validateJobPostDates(LocalDate endAt) {
+        if (endAt == null) {
+            return; 
         }
         LocalDate today = LocalDate.now();
         if (endAt.isBefore(today)) {
