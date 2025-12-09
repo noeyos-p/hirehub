@@ -21,4 +21,13 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.initialize();
         return executor;
     }
+
+    // ⭐ 예외 처리 추가 (선택사항)
+    @Override
+    public org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return (throwable, method, params) -> {
+            System.err.println("❌ 비동기 작업 예외 발생: " + method.getName());
+            throwable.printStackTrace();
+        };
+    }
 }

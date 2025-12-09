@@ -26,6 +26,8 @@ import time
 from functools import wraps
 from typing_extensions import TypedDict
 from collections import deque
+from fastapi.responses import StreamingResponse
+import asyncio
 
 # ===== Gemini 설정 =====
 API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -401,18 +403,247 @@ def moderate(req: dict):
 
 @app.post("/ai/review")
 def review_resume(req: ReviewRequest):
+    """
+    이력서/자소서 첨삭 기능 (개선 버전)
+    - 더 상세한 에러 로깅
+    - rate limit 체크
+    - fallback 모델 지원
+    - 구조화된 피드백
+    """
     if not req.content:
-        return {"feedback": "이력서 내용 없음"}
+        return {"feedback": "❌ 이력서 내용이 비어있습니다."}
 
-    system = "너는 한국 IT 기업의 전문 채용 담당자다."
-    prompt = f"""
-다음 이력서를 분석하고 항목별 개선사항을 정리하라:
+    content = req.content.strip()
 
-{req.content}
-"""
+    # 텍스트 길이 제한 (토큰 절약)
+    if len(content) > 5000:
+        content = content[:5000]
+        print(f"⚠️ 텍스트가 너무 길어 5000자로 제한했습니다.")
 
-    out = generate_text(system, prompt, max_tokens=1000, temperature=0.25)
-    return {"feedback": out}
+    print(f"📝 첨삭 요청 받음 - 텍스트 길이: {len(content)}자")
+
+    system_prompt = """당신은 한국 IT 기업의 전문 채용 담당자입니다.
+이력서와 자기소개서를 첨삭하여 구체적이고 실용적인 개선 제안을 제공합니다.
+
+**첨삭 기준:**
+1. 명확성: 모호한 표현을 구체적으로 개선
+2. 임팩트: 성과와 기여도를 강조
+3. 구조: 논리적 흐름과 가독성
+4. 전문성: IT 직무에 적합한 표현
+5. 문법: 맞춤법과 문장 구조
+
+**응답 형식:**
+### 📊 전체 평가
+- 전반적인 인상과 강점을 2-3문장으로 요약
+
+### ✏️ 주요 개선사항
+1. [항목]: 구체적인 문제점과 개선 방향
+2. [항목]: 구체적인 문제점과 개선 방향
+3. [항목]: 구체적인 문제점과 개선 방향
+
+### 💡 추천 표현
+- "기존 표현" → "개선된 표현"
+- "기존 표현" → "개선된 표현"
+
+### 🎯 마무리 조언
+실용적인 최종 조언 1-2문장"""
+
+    user_prompt = f"""다음 내용을 첨삭해주세요:
+
+{content}
+
+위 형식에 맞춰 구체적이고 실용적인 첨삭을 제공해주세요."""
+
+    try:
+        print("🤖 Gemini API 호출 시작...")
+
+        # Primary model: gemini-2.0-flash-exp (무료)
+        try:
+            model = genai.GenerativeModel(
+                model_name="models/gemini-2.0-flash-exp",
+                system_instruction=system_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    max_output_tokens=1500,
+                    temperature=0.4,
+                    top_k=40,
+                    top_p=0.95,
+                )
+            )
+
+            response = model.generate_content(user_prompt)
+
+            if response.candidates and response.candidates[0].content.parts:
+                feedback = "\n".join([
+                    part.text for part in response.candidates[0].content.parts
+                    if hasattr(part, "text")
+                ])
+
+                if feedback and len(feedback) > 50:
+                    print(f"✅ Primary model 응답 성공 - 길이: {len(feedback)}자")
+                    return {"feedback": feedback}
+
+            print("⚠️ Primary model 응답이 비어있음, fallback 시도...")
+
+        except Exception as e:
+            print(f"⚠️ Primary model 실패: {str(e)[:100]}")
+
+        # Fallback model: gemini-1.5-flash
+        print("🔄 Fallback model 시도 중...")
+
+        model = genai.GenerativeModel(
+            model_name="models/gemini-1.5-flash",
+            system_instruction=system_prompt,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=2048,
+                temperature=0.4,
+                stop_sequences=None,
+            )
+        )
+
+        response = model.generate_content(user_prompt)
+
+        if response.candidates and response.candidates[0].content.parts:
+            feedback = "\n".join([
+                part.text for part in response.candidates[0].content.parts
+                if hasattr(part, "text")
+            ])
+
+            if feedback and len(feedback) > 50:
+                print(f"✅ Fallback model 응답 성공 - 길이: {len(feedback)}자")
+
+                # 응답이 완전한지 체크
+                if not feedback.rstrip().endswith(('.', '!', '?', '요', '다', '니다', '습니다', '세요')):
+                    print(f"⚠️ Fallback 응답도 불완전함")
+                    feedback += "\n\n### ⚠️ 응답이 일부 누락되었을 수 있습니다\n위 내용을 참고하시고, 필요시 다시 요청해주세요."
+
+                return {"feedback": feedback}
+
+        # 두 모델 모두 실패한 경우
+        print("❌ 모든 모델에서 응답 실패")
+        return {
+            "feedback": """### ⚠️ AI 첨삭 서비스 일시 이용 불가
+
+현재 AI 모델이 응답하지 않습니다. 다음을 확인해주세요:
+
+1. **잠시 후 다시 시도**: API 요청 제한에 도달했을 수 있습니다
+2. **텍스트 길이 줄이기**: 너무 긴 내용은 요약해서 다시 시도
+3. **기본 첨삭 가이드**:
+   - 구체적인 성과 수치 포함 (예: "매출 20% 증가")
+   - 기술 스택 명확히 명시
+   - STAR 기법 활용 (상황-과제-행동-결과)
+   - 간결하고 명확한 문장 사용
+
+문제가 지속되면 관리자에게 문의해주세요."""
+        }
+
+    except Exception as e:
+        error_msg = str(e)
+        print(f"❌ 첨삭 API 오류: {error_msg}")
+
+        # 에러 타입별 처리
+        if "quota" in error_msg.lower() or "limit" in error_msg.lower():
+            return {
+                "feedback": """### ⚠️ API 사용량 초과
+
+현재 일일 API 사용량을 초과했습니다.
+
+**임시 해결 방법:**
+1. 내일 다시 시도해주세요
+2. 텍스트를 나눠서 여러 번 첨삭 요청
+3. 아래 기본 가이드를 참고하세요
+
+**기본 첨삭 가이드:**
+- ✅ 구체적인 숫자와 성과 포함
+- ✅ 기술 스택 명확히 기재
+- ✅ 주요 경험 중심으로 작성
+- ✅ 간결하고 임팩트 있는 표현 사용
+- ❌ 추상적이고 모호한 표현 지양"""
+            }
+        elif "timeout" in error_msg.lower():
+            return {
+                "feedback": """### ⏱️ 응답 시간 초과
+
+API 서버 응답이 지연되고 있습니다.
+
+**해결 방법:**
+1. 텍스트 양을 줄여서 다시 시도
+2. 몇 분 후에 다시 시도
+3. 섹션별로 나눠서 첨삭 요청"""
+            }
+        else:
+            return {
+                "feedback": f"""### ❌ 첨삭 오류 발생
+
+오류 메시지: {error_msg[:200]}
+
+**대처 방법:**
+1. 페이지 새로고침 후 재시도
+2. 브라우저 캐시 삭제
+3. 관리자에게 문의
+
+**기본 첨삭 원칙:**
+- 명확하고 구체적으로 작성
+- 성과와 기여도 강조
+- 기술 스택 명확히 표시
+- STAR 기법 활용"""
+            }
+
+
+# 추가: 첨삭 상태 체크 엔드포인트
+@app.get("/ai/review/health")
+def review_health_check():
+    """첨삭 기능 상태 확인"""
+    try:
+        # 간단한 테스트 요청
+        model = genai.GenerativeModel("models/gemini-2.0-flash-exp")
+        response = model.generate_content(
+            "간단히 '정상'이라고만 답변해주세요.",
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=10,
+                temperature=0.1,
+            )
+        )
+
+        if response.candidates:
+            return {
+                "status": "healthy",
+                "message": "AI 첨삭 서비스 정상 작동 중",
+                "model": "gemini-2.0-flash-exp"
+            }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "message": f"서비스 이용 불가: {str(e)[:100]}",
+            "model": "none"
+        }
+
+
+@app.get("/ai/review/health")
+def review_health_check():
+    """첨삭 기능 상태 확인"""
+    try:
+        # 간단한 테스트 요청
+        model = genai.GenerativeModel("models/gemini-2.0-flash-exp")
+        response = model.generate_content(
+            "간단히 '정상'이라고만 답변해주세요.",
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=10,
+                temperature=0.1,
+            )
+        )
+
+        if response.candidates:
+            return {
+                "status": "healthy",
+                "message": "AI 첨삭 서비스 정상 작동 중",
+                "model": "gemini-2.0-flash-exp"
+            }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "message": f"서비스 이용 불가: {str(e)[:100]}",
+            "model": "none"
+        }
 
 
 # ------------------------------------------------------

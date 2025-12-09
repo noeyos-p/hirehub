@@ -5,6 +5,7 @@ import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.entity.TechStack;
 import com.we.hirehub.repository.JobPostsRepository;
 import com.we.hirehub.repository.TechStackRepository;
+import com.we.hirehub.service.support.JobPostAiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,8 +26,8 @@ public class JobPostsAdminService {
 
     private final JobPostsRepository jobPostsRepository;
     private final TechStackRepository techStackRepository;
+    private final JobPostAiService jobPostAiService;
 
-    // ✅ [추가] 전체 조회 + 검색 통합 버전
     public Page<JobPostsDto> getAllJobPosts(Pageable pageable, String keyword) {
         Page<JobPosts> jobPosts;
 
@@ -40,11 +41,9 @@ public class JobPostsAdminService {
             );
         }
 
-        // ✅ [수정] Page<JobPosts> → Page<JobPostsDto> 변환
         return jobPosts.map(JobPostsDto::toDto);
     }
 
-    // ✅ [추가] 기존 page, size 기반 메서드 (Controller에서 page 파라미터 받는 경우)
     public Page<JobPostsDto> getAllJobPosts(int page, int size, String sortBy, String direction, String keyword) {
         Pageable pageable = PageRequest.of(
                 page, size,
@@ -55,86 +54,109 @@ public class JobPostsAdminService {
         return getAllJobPosts(pageable, keyword);
     }
 
-    // ✅ 공고 단일 조회
     public JobPostsDto getJobPostById(Long jobPostId) {
         JobPosts jobPost = jobPostsRepository.findById(jobPostId)
                 .orElseThrow(() -> new IllegalArgumentException("공고를 찾을 수 없습니다: " + jobPostId));
         return JobPostsDto.toDto(jobPost);
     }
 
-    // ✅ 공고 등록
+    /**
+     * ✅ 공고 등록 + AI 자동 처리 (동기)
+     */
     @Transactional
     public JobPostsDto createJobPost(JobPosts jobPost) {
-        // 1️⃣ 먼저 공고 저장 (photo는 아직 없음)
+        log.info("📝 신규 공고 등록 시작 - 제목: {}", jobPost.getTitle());
+
+        // 1. 공고 저장
         JobPosts saved = jobPostsRepository.save(jobPost);
+        log.info("✅ 공고 저장 완료 - ID: {}", saved.getId());
 
-        // 2️⃣ 로그 확인
-        log.info("✅ 신규 공고 저장 완료 - id: {}, title: {}", saved.getId(), saved.getTitle());
-
-        // 3️⃣ 다른 공고 photo 절대 건드리지 않음 (중요)
-        //    기존 코드에서 jobPostsRepository.findAll() or updateAll() 같은 루프 절대 넣지 말기!
+        // 2. AI 처리 (Summary & Embedding 생성)
+        processAI(saved, "등록");
 
         return JobPostsDto.toDto(saved);
     }
 
+    /**
+     * ✅ 공고 수정 + AI 재처리 (동기)
+     */
     @Transactional
     public JobPostsDto updateJobPost(Long jobPostId, JobPostsDto dto) {
+        log.info("📝 공고 수정 시작 - ID: {}", jobPostId);
+
         JobPosts jobPost = jobPostsRepository.findById(jobPostId)
                 .orElseThrow(() -> new IllegalArgumentException("공고를 찾을 수 없습니다: " + jobPostId));
 
         JobPostsDto.updateEntity(dto, jobPost);
 
-        // Only validate dates if both are present
         if (jobPost.getEndAt() != null) {
             validateJobPostDates(jobPost.getEndAt());
         }
+
         JobPosts updated = jobPostsRepository.save(jobPost);
+        log.info("✅ 공고 수정 완료 - ID: {}", updated.getId());
+
+        // AI 재처리
+        updated.setSummary(null);
+        updated.setEmbedding(null);
+        processAI(updated, "수정");
 
         return JobPostsDto.toDto(updated);
     }
 
+    /**
+     * 🤖 AI 처리 공통 로직
+     */
+    private void processAI(JobPosts jobPost, String action) {
+        try {
+            log.info("🤖 AI 처리 시작 - {} - ID: {}", action, jobPost.getId());
 
-    // ✅ 공고 삭제
+            JobPosts processed = jobPostAiService.generateSummaryAndEmbedding(jobPost);
+            jobPostsRepository.save(processed);
+
+            log.info("🎉 AI 처리 완료 - {} - Summary: {}자, Embedding: {}",
+                    action,
+                    processed.getSummary() != null ? processed.getSummary().length() : 0,
+                    processed.getEmbedding() != null ? "생성됨" : "없음");
+
+        } catch (Exception e) {
+            log.error("⚠️ AI 처리 실패 (공고는 저장됨) - {} - ID: {}", action, jobPost.getId(), e);
+            // 예외를 던지지 않음 - 공고 저장은 성공했으므로
+        }
+    }
+
     @Transactional
     public void deleteJobPost(Long jobPostId) {
         if (!jobPostsRepository.existsById(jobPostId)) {
             throw new IllegalArgumentException("존재하지 않는 공고입니다: " + jobPostId);
         }
-        // 기술스택 먼저 삭제
         techStackRepository.deleteByJobPostId(jobPostId);
         jobPostsRepository.deleteById(jobPostId);
     }
 
-    // ✅ 기술스택 조회
     public List<TechStack> getTechStacksByJobPostId(Long jobPostId) {
         return techStackRepository.findByJobPostId(jobPostId);
     }
 
-    // ✅ 기술스택 저장
     @Transactional
     public void saveTechStacks(List<String> techStackList, JobPosts jobPost) {
         if (techStackList != null && !techStackList.isEmpty()) {
             for (String techName : techStackList) {
                 TechStack techStack = TechStack.builder()
-                    .name(techName)
-                    .jobPost(jobPost)
-                    .build();
+                        .name(techName)
+                        .jobPost(jobPost)
+                        .build();
                 techStackRepository.save(techStack);
             }
         }
     }
 
-    // ✅ 기술스택 업데이트 (기존 삭제 후 새로 추가)
     @Transactional
     public void updateTechStacks(Long jobPostId, List<String> techStackList, JobPosts jobPost) {
-        // 기존 기술스택 삭제
         techStackRepository.deleteByJobPostId(jobPostId);
-
-        // 새로운 기술스택 추가
         saveTechStacks(techStackList, jobPost);
     }
 
-    // ✅ 이미지 삭제 또는 수정 시 photo 업데이트
     @Transactional
     public void updateJobPhoto(Long jobPostId, String fileUrl) {
         JobPosts jobPost = jobPostsRepository.findById(jobPostId)
@@ -143,15 +165,12 @@ public class JobPostsAdminService {
         jobPostsRepository.save(jobPost);
     }
 
-    // ✅ 내부 유효성 검증
     private void validateJobPost(JobPosts jobPost) {
         if (jobPost.getTitle() == null || jobPost.getTitle().trim().isEmpty())
             throw new IllegalArgumentException("공고 제목이 필요합니다");
         if (jobPost.getContent() == null || jobPost.getContent().trim().isEmpty())
             throw new IllegalArgumentException("공고 내용이 필요합니다");
 
-        // 날짜는 선택사항 (상시채용 지원)
-        // 둘 다 있는 경우에만 유효성 검증
         if (jobPost.getEndAt() != null) {
             validateJobPostDates(jobPost.getEndAt());
         }
@@ -159,7 +178,7 @@ public class JobPostsAdminService {
 
     private void validateJobPostDates(LocalDate endAt) {
         if (endAt == null) {
-            return; 
+            return;
         }
         LocalDate today = LocalDate.now();
         if (endAt.isBefore(today)) {
