@@ -79,11 +79,8 @@ public class BoardRestController {
             log.info("✅ [CONTROLLER] 게시글 작성 완료 boardId={}, userId={}",
                     created.getId(), user.getUserId());
 
-            // ✅ 간단한 성공 응답 (프론트는 /board로 이동)
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "게시글이 등록되었습니다."
-            ));
+            // ✅ 생성된 게시글 정보 반환 (프론트에서 상세 페이지로 이동하기 위해)
+            return ResponseEntity.ok(created);
 
         } catch (Exception e) {
             log.error("❌ [CONTROLLER] 게시글 작성 실패", e);
@@ -165,11 +162,7 @@ public class BoardRestController {
 
             BoardDto updated = boardService.updateBoard(id, dto);
 
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "게시글이 수정되었습니다.",
-                    "board", updated
-            ));
+            return ResponseEntity.ok(updated);
 
         } catch (Exception e) {
             log.error("게시글 수정 실패", e);
