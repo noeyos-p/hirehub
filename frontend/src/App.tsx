@@ -19,8 +19,11 @@ import ResumeViewer from './myPage/resume/ResumeViewer';
 import AuthCallback from './page/AuthCallback';
 import MobileChatPage from './chatPage/MobileChatPage';
 import CoverLetterPage from './coverLetterPage/CoverLetterPage';
+import CoverLetterHistoryPage from './coverLetterPage/CoverLetterHistoryPage';
 import JobMatchingPage from './jobMatchingPage/JobMatchingPage';
+import JobMatchingHistoryPage from './jobMatchingPage/JobMatchingHistoryPage';
 import InterviewCoachingPage from './interviewCoachingPage/InterviewCoachingPage';
+import InterviewCoachingHistoryPage from './interviewCoachingPage/InterviewCoachingHistoryPage';
 import PayReturn from './page/PayReturn';
 
 function App() {
@@ -35,12 +38,15 @@ function App() {
 
         {/* 자소서 첨삭 */}
         <Route path="/cover-letter" element={<Layout><CoverLetterPage /></Layout>} />
+        <Route path="/cover-letter/history" element={<Layout><CoverLetterHistoryPage /></Layout>} />
 
         {/* 공고 매칭 */}
         <Route path="/job-matching" element={<Layout><JobMatchingPage /></Layout>} />
+        <Route path="/job-matching/history" element={<Layout><JobMatchingHistoryPage /></Layout>} />
 
         {/* 면접 코칭 */}
         <Route path="/interview-coaching" element={<Layout><InterviewCoachingPage /></Layout>} />
+        <Route path="/interview-coaching/history" element={<Layout><InterviewCoachingHistoryPage /></Layout>} />
 
         {/* 관리자 */}
         <Route path="/admin" element={<Navigate to="/admin/job-management" replace />} />

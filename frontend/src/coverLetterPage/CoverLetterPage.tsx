@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { SparklesIcon, DocumentTextIcon, ClipboardDocumentIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { SparklesIcon, DocumentTextIcon, ClipboardDocumentIcon, CheckCircleIcon, ClockIcon, BookmarkIcon } from '@heroicons/react/24/outline';
 import { myPageApi } from '../api/myPageApi';
 import api from '../api/api';
+import { coverLetterApi } from '../api/coverLetterApi';
 import type { ResumeItem } from '../types/interface';
 
 type InputMode = 'text' | 'essay' | 'resume';
 
 export default function CoverLetterPage() {
+  const navigate = useNavigate();
   const [inputMode, setInputMode] = useState<InputMode>('text');
   const [originalText, setOriginalText] = useState('');
   const [improvedText, setImprovedText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [resumes, setResumes] = useState<ResumeItem[]>([]);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
+  const [selectedResumeTitle, setSelectedResumeTitle] = useState<string>('');
   const [loadingResumes, setLoadingResumes] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // 이력서 목록 불러오기
   useEffect(() => {
@@ -40,6 +45,7 @@ export default function CoverLetterPage() {
     setSelectedResumeId(resumeId);
     try {
       const resume = await myPageApi.getResumeDetail(resumeId);
+      setSelectedResumeTitle(resume.title || '');
 
       console.log('📄 불러온 이력서 데이터:', resume);
 
@@ -165,6 +171,31 @@ export default function CoverLetterPage() {
     setOriginalText('');
     setImprovedText('');
     setSelectedResumeId(null);
+    setSelectedResumeTitle('');
+  };
+
+  const handleSave = async () => {
+    if (!improvedText.trim()) {
+      alert('저장할 첨삭 결과가 없습니다.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await coverLetterApi.saveHistory({
+        resumeId: selectedResumeId || undefined,
+        resumeTitle: selectedResumeTitle || undefined,
+        inputMode,
+        originalText,
+        improvedText,
+      });
+      alert('첨삭 이력이 저장되었습니다!');
+    } catch (error: any) {
+      console.error('저장 실패:', error);
+      alert('저장 중 오류가 발생했습니다: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleModeChange = (mode: InputMode) => {
@@ -178,12 +209,21 @@ export default function CoverLetterPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
         {/* 헤더 */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <DocumentTextIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 자기소개서 수정</h1>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <DocumentTextIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 자기소개서 수정</h1>
+            </div>
+            <button
+              onClick={() => navigate('/cover-letter/history')}
+              className="flex items-center px-4 py-2 text-sm md:text-base bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              <ClockIcon className="w-5 h-5 mr-2" />
+              첨삭 이력
+            </button>
           </div>
-          <p className="text-sm md:text-base text-gray-600">
+          <p className="text-sm md:text-base text-gray-600 text-center">
             AI가 당신의 자기소개서를 분석하고 더 나은 표현으로 개선해드립니다.
           </p>
         </div>
@@ -340,12 +380,25 @@ export default function CoverLetterPage() {
                   <span className="text-sm text-gray-500">
                     {improvedText.length} 글자
                   </span>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(improvedText)}
-                    className="px-4 py-2 bg-[#006AFF] text-white rounded-lg hover:bg-green-700 transition"
-                  >
-                    복사하기
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <BookmarkIcon className="w-4 h-4 mr-1" />
+                      {isSaving ? '저장 중...' : '저장하기'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(improvedText);
+                        alert('복사되었습니다!');
+                      }}
+                      className="px-4 py-2 bg-[#006AFF] text-white rounded-lg hover:bg-[#0055DD] transition"
+                    >
+                      복사하기
+                    </button>
+                  </div>
                 </div>
               </>
             ) : (

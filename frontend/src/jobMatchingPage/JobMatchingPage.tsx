@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   DocumentTextIcon,
   BriefcaseIcon,
   SparklesIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ClockIcon,
+  BookmarkIcon
 } from '@heroicons/react/24/outline';
 import { myPageApi } from '../api/myPageApi';
 import api from '../api/api';
+import { jobMatchingApi } from '../api/jobMatchingApi';
 import type { ResumeItem } from '../types/interface';
 interface MatchResult {
   jobId?: number;
@@ -19,11 +23,14 @@ interface MatchResult {
 }
 
 export default function JobMatchingPage() {
+  const navigate = useNavigate();
   const [resumes, setResumes] = useState<ResumeItem[]>([]);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
+  const [selectedResumeTitle, setSelectedResumeTitle] = useState<string>('');
   const [loadingResumes, setLoadingResumes] = useState(false);
   const [matching, setMatching] = useState(false);
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchResumes();
@@ -67,7 +74,30 @@ export default function JobMatchingPage() {
 
   const handleReset = () => {
     setSelectedResumeId(null);
+    setSelectedResumeTitle('');
     setMatchResults([]);
+  };
+
+  const handleSave = async () => {
+    if (matchResults.length === 0) {
+      alert('저장할 매칭 결과가 없습니다.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await jobMatchingApi.saveHistory({
+        resumeId: selectedResumeId!,
+        resumeTitle: selectedResumeTitle,
+        matchResults,
+      });
+      alert('매칭 결과가 저장되었습니다!');
+    } catch (error: any) {
+      console.error('저장 실패:', error);
+      alert('저장 중 오류가 발생했습니다: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getGradeColor = (grade: string) => {
@@ -81,12 +111,21 @@ export default function JobMatchingPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
         {/* 헤더 */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <MagnifyingGlassIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 공고 매칭</h1>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <MagnifyingGlassIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 공고 매칭</h1>
+            </div>
+            <button
+              onClick={() => navigate('/job-matching/history')}
+              className="flex items-center px-4 py-2 text-sm md:text-base bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              <ClockIcon className="w-5 h-5 mr-2" />
+              매칭 이력
+            </button>
           </div>
-          <p className="text-sm md:text-base text-gray-600">
+          <p className="text-sm md:text-base text-gray-600 text-center">
             내 이력서와 가장 잘 맞는 채용 공고를 AI가 분석하여 추천해드립니다.
           </p>
         </div>
@@ -114,7 +153,10 @@ export default function JobMatchingPage() {
                 {resumes.map((resume) => (
                   <button
                     key={resume.id}
-                    onClick={() => setSelectedResumeId(resume.id)}
+                    onClick={() => {
+                      setSelectedResumeId(resume.id);
+                      setSelectedResumeTitle(resume.title);
+                    }}
                     className={`p-4 border rounded-lg text-left transition ${selectedResumeId === resume.id
                         ? 'border-[#4E98FF] bg-withe'
                         : 'border-gray-200 hover:border-[#4E98FF]'
@@ -176,12 +218,22 @@ export default function JobMatchingPage() {
         {/* 매칭 결과 */}
         {matchResults.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-            <div className="flex items-center mb-6">
-              <BriefcaseIcon className="w-6 h-6 text-blue-600 mr-2" />
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">매칭 결과</h2>
-              <span className="ml-3 text-sm text-gray-500">
-                총 {matchResults.length}개의 공고
-              </span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <BriefcaseIcon className="w-6 h-6 text-blue-600 mr-2" />
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">매칭 결과</h2>
+                <span className="ml-3 text-sm text-gray-500">
+                  총 {matchResults.length}개의 공고
+                </span>
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+              >
+                <BookmarkIcon className="w-4 h-4 mr-1" />
+                {isSaving ? '저장 중...' : '저장하기'}
+              </button>
             </div>
 
             <div className="space-y-4">

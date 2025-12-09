@@ -8,10 +8,13 @@ import {
   BriefcaseIcon,
   BuildingOfficeIcon,
   UserIcon,
+  ClockIcon,
+  BookmarkIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { myPageApi } from '../api/myPageApi';
 import { jobPostApi } from '../api/jobPostApi';
+import { interviewCoachingApi, type InterviewSession } from '../api/interviewCoachingApi';
 import type { ResumeDto, JobPostResponse, CompanyResponse } from '../types/interface';
 
 interface InterviewQuestion {
@@ -41,6 +44,8 @@ const InterviewCoachingPage: React.FC = () => {
   const [feedback, setFeedback] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
+  const [interviewSessions, setInterviewSessions] = useState<InterviewSession[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   // 로그인 여부 확인
   useEffect(() => {
@@ -300,7 +305,7 @@ const InterviewCoachingPage: React.FC = () => {
           contextFeedback += `\n\n🏢 **기업 정보 활용**\n- 기업의 비전과 문화를 이해하고 답변에 반영하세요.\n- 회사가 추구하는 가치와 본인의 가치관을 연결지어 설명하면 효과적입니다.\n- 기업 링크: ${companyLink}`;
         }
 
-        setFeedback(`[AI 면접관의 피드백]
+        const feedbackText = `[AI 면접관의 피드백]
 
 ✅ **답변의 강점**
 - 구체적인 경험을 바탕으로 답변하셨습니다.
@@ -320,7 +325,17 @@ const InterviewCoachingPage: React.FC = () => {
 ${contextFeedback}
 
 📌 **다음 면접을 위한 조언**
-이력서에 기재된 "${summary.career}" 경험을 더 깊이 있게 준비하시면 좋을 것 같습니다.`);
+이력서에 기재된 "${summary.career}" 경험을 더 깊이 있게 준비하시면 좋을 것 같습니다.`;
+
+        setFeedback(feedbackText);
+
+        // 세션 저장
+        setInterviewSessions(prev => [...prev, {
+          question: currentQuestion!.question,
+          category: currentQuestion!.category,
+          answer: answer,
+          feedback: feedbackText
+        }]);
 
         setStep('feedback');
         setIsLoading(false);
@@ -363,6 +378,31 @@ ${contextFeedback}
     setCurrentQuestion(newQuestions[questionIndex % 3]);
   };
 
+  // 저장하기
+  const handleSave = async () => {
+    if (interviewSessions.length === 0) {
+      alert('저장할 면접 연습 내용이 없습니다.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await interviewCoachingApi.saveHistory({
+        resumeId: selectedResume!.id,
+        resumeTitle: selectedResume!.title || '',
+        jobPostLink: jobPostLink || undefined,
+        companyLink: companyLink || undefined,
+        sessions: interviewSessions,
+      });
+      alert('면접 연습 내용이 저장되었습니다!');
+    } catch (error: any) {
+      console.error('저장 실패:', error);
+      alert('저장 중 오류가 발생했습니다: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // 처음으로
   const handleReset = () => {
     setStep('select');
@@ -373,18 +413,28 @@ ${contextFeedback}
     setAnswer('');
     setFeedback('');
     setQuestionIndex(0);
+    setInterviewSessions([]);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
         {/* 헤더 */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <BriefcaseIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 면접 코칭</h1>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <BriefcaseIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 면접 코칭</h1>
+            </div>
+            <button
+              onClick={() => navigate('/interview-coaching/history')}
+              className="flex items-center px-4 py-2 text-sm md:text-base bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              <ClockIcon className="w-5 h-5 mr-2" />
+              연습 이력
+            </button>
           </div>
-          <p className="text-sm md:text-base text-gray-600">
+          <p className="text-sm md:text-base text-gray-600 text-center">
             이력서를 기반으로 AI가 맞춤형 면접 질문을 생성하고 피드백을 제공합니다.
           </p>
         </div>
@@ -694,6 +744,14 @@ ${contextFeedback}
 
             {/* 액션 버튼 */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="bg-green-600 hover:bg-green-700 text-white font-medium px-8 py-3 rounded-lg transition flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                <BookmarkIcon className="w-5 h-5 mr-2" />
+                {isSaving ? '저장 중...' : '연습 내용 저장하기'}
+              </button>
               <button
                 onClick={handleNextQuestion}
                 className="bg-[#006AFF] hover:bg-blue-600 text-white font-medium px-8 py-3 rounded-lg transition flex items-center justify-center"
