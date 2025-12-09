@@ -903,7 +903,7 @@ def generate_questions(req: GenerateRequest):
 
     if req.jobPostId:
         try:
-            job_res = requests.get(f"{BASE}/jobPostings/{req.jobPostId}")
+            job_res = requests.get(f"{BASE}/jobposts/{req.jobPostId}")
             if job_res.status_code == 200:
                 job_data = job_res.json()
                 job_text = job_data.get("content", "")
@@ -912,7 +912,7 @@ def generate_questions(req: GenerateRequest):
 
     if req.companyId:
         try:
-            company_res = requests.get(f"{BASE}/company/{req.companyId}")
+            company_res = requests.get(f"{BASE}/companies/{req.companyId}")
             if company_res.status_code == 200:
                 company_data = company_res.json()
                 company_text = company_data.get("content", "")
