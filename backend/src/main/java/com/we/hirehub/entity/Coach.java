@@ -11,39 +11,39 @@ import lombok.*;
 @Builder
 @Table(name = "coach")
 public class Coach {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private Users user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "resume_id", nullable = false)
-    private Resume resume;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "resume_id", nullable = false)
+  private Resume resume;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_posts_id", nullable = false)
-    private JobPosts jobPosts;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "job_posts_id", nullable = true)
+  private JobPosts jobPosts;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "company_id", nullable = true)
+  private Company company;
 
-    // 코칭 질문
-    @Column(columnDefinition = "LONGTEXT")
-    private String question;
+  // 코칭 질문
+  @Column(columnDefinition = "LONGTEXT")
+  private String question;
 
-    // 코칭 질문
-    @Column(columnDefinition = "LONGTEXT")
-    private String answer;
+  // 코칭 질문
+  @Column(columnDefinition = "LONGTEXT")
+  private String answer;
 
-    // 코칭 질문
-    @Column(columnDefinition = "LONGTEXT")
-    private String feedback;
+  // 코칭 질문
+  @Column(columnDefinition = "LONGTEXT")
+  private String feedback;
 
-    // ✅ 새로 추가: 메시지 역할 (USER, AGENT, SYS)
-    @Column(name = "role", length = 20)
-    private String role;
+  // ✅ 새로 추가: 메시지 역할 (USER, AGENT, SYS)
+  @Column(name = "role", length = 20)
+  private String role;
 }

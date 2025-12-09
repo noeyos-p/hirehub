@@ -4,24 +4,25 @@
 # + 10만 job_posts 확장을 위한 속도 최적화 (임베딩 캐시-friendly)
 
 import os, sys, re, json
+import requests
+import google.generativeai as genai
 from datetime import datetime, timedelta
 from typing import List, Optional
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from dotenv import dotenv_values, load_dotenv
+
+sys.stdout.reconfigure(encoding='utf-8')
 
 sys.stdout.reconfigure(encoding='utf-8')
 
 # ===== ENV 적용 =====
-from dotenv import dotenv_values, load_dotenv
 env = dotenv_values(".env")
 for k, v in env.items():
     if v:
         os.environ[k] = v
 load_dotenv()
-
-import requests
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import google.generativeai as genai
 import time
 from functools import wraps
 from typing_extensions import TypedDict
@@ -155,8 +156,8 @@ def call_llm_with_json(model, system, prompt, max_tokens=512, temperature=0.3):
 
 def generate_text(system, prompt, max_tokens=512, temperature=0.3):
     """2단계 모델 폴백 포함"""
-    primary = "models/gemini-2.5-flash"
-    fallback = "models/gemini-flash-latest"
+    primary = "models/gemini-2.0-flash-exp"
+    fallback = "models/gemini-1.5-flash"
 
     out = call_llm(primary, system, prompt, max_tokens, temperature)
     if out:
@@ -846,6 +847,261 @@ def keyword_based_match(resume: str, job: str):
     reason = f"키워드 매칭 ({total_matches}개 일치)"
 
     return {"score": final_score, "reason": reason}
+
+
+# ------------------------------------------------------
+# 인터뷰 질문 생성 API
+# ------------------------------------------------------
+
+class GenerateRequest(BaseModel):
+    resumeId: int
+    jobPostId: Optional[int] = None
+    companyId: Optional[int] = None
+    jobPostLink: Optional[str] = None
+    companyLink: Optional[str] = None
+    previousQuestions: List[str] = []
+
+def fetch_url_content(url: str) -> str:
+    """URL에서 텍스트 콘텐츠 추출 (간단한 스크래핑)"""
+    try:
+        if not url.startswith("http"):
+            return ""
+        
+        # 헤더 추가 (봇 차단 방지)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        resp = requests.get(url, headers=headers, timeout=5)
+        if resp.status_code == 200:
+            # HTML 태그 제거 (간단한 정규식)
+            text = re.sub(r'<[^>]+>', ' ', resp.text)
+            # 공백 정리
+            text = re.sub(r'\s+', ' ', text).strip()
+            return text[:2000] # 너무 길면 자름
+    except Exception as e:
+        print(f"URL fetch error: {e}")
+    return ""
+
+@app.post("/interview/generate-questions")
+def generate_questions(req: GenerateRequest):
+
+    # === 1) Spring Boot로부터 데이터 가져오기 ===
+    resume_text = ""
+    job_text = ""
+    company_text = ""
+
+    # ⚠️ 엔드포인트 주소는 실제 네 프로젝트 기준으로 수정 필요
+    BASE = "http://localhost:8080/api"
+
+    try:
+        resume_res = requests.get(f"{BASE}/resume/{req.resumeId}")
+        if resume_res.status_code == 200:
+            resume_data = resume_res.json()
+            resume_text = resume_data.get("content", "")
+    except:
+        pass
+
+    if req.jobPostId:
+        try:
+            job_res = requests.get(f"{BASE}/jobPostings/{req.jobPostId}")
+            if job_res.status_code == 200:
+                job_data = job_res.json()
+                job_text = job_data.get("content", "")
+        except:
+            pass
+
+    if req.companyId:
+        try:
+            company_res = requests.get(f"{BASE}/company/{req.companyId}")
+            if company_res.status_code == 200:
+                company_data = company_res.json()
+                company_text = company_data.get("content", "")
+        except:
+            pass
+
+    # === 1.5) 링크에서 데이터 가져오기 (ID가 없거나 링크가 우선일 경우) ===
+    if not job_text and req.jobPostLink:
+        job_text = fetch_url_content(req.jobPostLink)
+
+    if not company_text and req.companyLink:
+        company_text = fetch_url_content(req.companyLink)
+
+    # === 2) Gemini 프롬프트 구성 ===
+    system_prompt = """
+    너는 한국 IT기업 면접 전문 질문 생성 AI다.
+    이력서 / 공고 / 기업 정보를 종합하여 실제 면접에서 자주 묻는 질문 5개를 만들어라.
+
+    출력 형식:
+    [
+      {"id": 1, "question": "...", "category": "..."},
+      ...
+    ]
+    """
+
+    user_prompt = f"""
+    [이력서 내용]
+    {resume_text}
+
+    [공고 내용]
+    {job_text or "없음"}
+
+    [기업 소개]
+    {company_text or "없음"}
+
+    [제외할 질문들 (이미 질문함)]
+    {json.dumps(req.previousQuestions, ensure_ascii=False) if req.previousQuestions else "없음"}
+
+    위 내용을 기반으로 질문 5개를 생성해라.
+    [제외할 질문들]에 있는 내용과 유사한 질문은 피해서 생성해라.
+    JSON 배열만 출력하라.
+    """
+
+    raw = call_llm_with_json(
+        model="models/gemini-2.0-flash-exp",
+        system=system_prompt,
+        prompt=user_prompt,
+        max_tokens=600,
+        temperature=0.25
+    )
+
+    questions = safe_json(raw)
+    if not isinstance(questions, list):
+        questions = []
+
+    return questions
+
+
+
+
+# ------------------------------------------------------
+# 인터뷰 답변 피드백 API
+# ------------------------------------------------------
+
+class FeedbackRequest(BaseModel):
+    resumeId: Optional[int] = None
+    jobPostLink: Optional[str] = None    # ✅ 추가
+    companyLink: Optional[str] = None    # ✅ 추가
+    question: str
+    answer: str
+
+class FeedbackResponse(BaseModel):
+    feedback: str
+
+
+@app.post("/interview/feedback", response_model=FeedbackResponse)
+def interview_feedback(req: FeedbackRequest):
+    """
+    면접 답변 피드백 생성
+    """
+    # === 1) Spring에서 텍스트 가져오기 (선택사항) ===
+    resume_text = ""
+    job_text = ""
+    company_text = ""
+
+    BASE = "http://localhost:8080/api"
+
+    # Resume 정보
+    if req.resumeId:
+        try:
+            r = requests.get(f"{BASE}/resume/{req.resumeId}", timeout=5)
+            if r.status_code == 200:
+                resume_text = r.json().get("content", "")
+        except:
+            pass
+
+    # 공고 링크는 직접 텍스트로 사용
+    if req.jobPostLink:
+        job_text = f"공고 링크: {req.jobPostLink}"
+
+    # 기업 링크는 직접 텍스트로 사용
+    if req.companyLink:
+        company_text = f"기업 링크: {req.companyLink}"
+
+    # === 2) Gemini 프롬프트 ===
+    system_prompt = """너는 한국 IT기업의 실제 면접관이다.
+사용자의 답변을 평가하고, 더 좋은 답변을 만들 수 있도록 첨삭해라.
+
+반드시 완전한 문장으로 끝맺어라. 중간에 끊기지 않도록 주의해라.
+
+출력 형식:
+### 문제점 분석
+- ...
+
+### 개선 포인트
+- ...
+
+### 개선된 예시 답변
+...
+"""
+
+    user_prompt = f"""
+[질문]
+{req.question}
+
+[지원자 답변]
+{req.answer}
+
+[참고 - 이력서 요약]
+{resume_text[:500] if resume_text else "정보 없음"}
+
+[참고 - 공고 내용]
+{job_text[:500] if job_text else "정보 없음"}
+
+[참고 - 기업 내용]
+{company_text[:500] if company_text else "정보 없음"}
+
+위 정보를 기반으로 면접관 시각에서 첨삭해라.
+반드시 완전한 문장으로 마무리해라.
+"""
+
+    try:
+        feedback = generate_text(
+            system=system_prompt,
+            prompt=user_prompt,
+            max_tokens=2048,  # ✅ 1000 → 2048로 증가
+            temperature=0.3
+        )
+
+        # 응답이 너무 짧거나 없으면 기본 피드백
+        if not feedback or len(feedback.strip()) < 50:
+            feedback = """### 📊 답변 분석
+
+**강점:**
+- 경험을 바탕으로 답변하셨습니다.
+- 본인의 생각을 명확히 전달하셨습니다.
+
+**개선점:**
+1. **STAR 기법 활용**: 상황(Situation) - 과제(Task) - 행동(Action) - 결과(Result) 구조로 답변하세요.
+2. **구체적인 수치 추가**: "성능 개선" → "응답시간 30% 개선"처럼 정량적 지표를 포함하세요.
+3. **기술 스택 명시**: 사용한 기술과 도구를 구체적으로 언급하세요.
+
+**추천 답변 시간:** 2-3분
+
+**핵심 키워드:**
+- 문제 해결 능력
+- 기술적 역량
+- 협업 경험
+- 성과 지표
+"""
+
+        return {"feedback": feedback}
+
+    except Exception as e:
+        print(f"❌ 피드백 생성 오류: {e}")
+        return {
+            "feedback": """### ⚠️ 피드백 생성 실패
+
+AI 피드백 생성에 실패했습니다.
+
+**기본 조언:**
+1. STAR 기법으로 구조화하세요 (상황-과제-행동-결과)
+2. 구체적인 수치를 포함하세요
+3. 기술 스택을 명확히 언급하세요
+4. 2-3분 분량으로 답변하세요
+5. 핵심 성과를 강조하세요
+
+잠시 후 다시 시도해주세요."""
+        }
 
 # ------------------------------------------------------
 # 상태 & 모델 리스트

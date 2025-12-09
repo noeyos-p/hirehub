@@ -269,11 +269,48 @@ const JobManagement: React.FC = () => {
   const handleJobClick = (job: AdminJob) => setSelectedJob(job);
 
   // ✅ 공고 수정 모달 열기
-  const handleEditClick = (e: React.MouseEvent, job: AdminJob) => {
-    e.stopPropagation();
-    setEditFormData({ ...job });
-    setIsEditModalOpen(true);
-  };
+const handleEditClick = (e: React.MouseEvent, job: AdminJob) => {
+  e.stopPropagation();
+
+  const loc = job.location || "";
+
+  // 1) 우편번호 추출: (06232) 이런 형태
+  const postalRegex = /^\((\d{5})\)\s*(.*)$/;
+  const postalMatch = loc.match(postalRegex);
+
+  let base = "";
+  let detail = "";
+
+  if (postalMatch) {
+    const addrWithoutPostal = postalMatch[2];
+
+    // 2) 상세주소 분리 (마지막 공백 기준)
+    const splitIndex = addrWithoutPostal.lastIndexOf(" ");
+    if (splitIndex > -1) {
+      base = addrWithoutPostal.substring(0, splitIndex);
+      detail = addrWithoutPostal.substring(splitIndex + 1);
+    } else {
+      base = addrWithoutPostal;
+    }
+
+    // input에 값 넣기
+    setTimeout(() => {
+      const baseInput = document.getElementById("editBaseAddress") as HTMLInputElement;
+      const detailInput = document.getElementById("editDetailAddress") as HTMLInputElement;
+
+      if (baseInput) baseInput.value = `(${postalMatch[1]}) ${base}`;
+      if (detailInput) detailInput.value = detail;
+    }, 0);
+  }
+
+  setEditFormData({
+    ...job,
+    location: loc,
+  });
+
+  setIsEditModalOpen(true);
+};
+
 
   // ✅ 공고 수정 제출
   const handleEditSubmit = async (e: React.FormEvent) => {

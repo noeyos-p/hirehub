@@ -79,9 +79,9 @@ public class JobPostsDto {
                 .companyId(c.getId())
                 .companyPhoto(c.getPhoto())
 
-                // ⭐ 좌표 매핑
-                .lat(c.getLat())
-                .lng(c.getLng())
+                // ⭐ 좌표 매핑 (JobPosts의 좌표 사용하도록 수정)
+                .lat(entity.getLat())
+                .lng(entity.getLng())
 
                 .company(CompanyDto.toDto(c))
                 .views(entity.getViews())
