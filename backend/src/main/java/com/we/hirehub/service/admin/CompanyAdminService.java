@@ -75,26 +75,26 @@ public class CompanyAdminService {
         if (update.getCompanyType() != null) c.setCompanyType(update.getCompanyType());
         if (update.getSince() != null) c.setSince(update.getSince());
 
+        // =========================
+        // ⭐ 주소 업데이트 (항상 위경도 재계산)
+        // =========================
         if (update.getAddress() != null) {
 
             String clean = normalize(update.getAddress());
-            boolean changed = !clean.equals(c.getAddress());
+            c.setAddress(clean); // 주소 저장
 
-            c.setAddress(clean);
-
-            if (changed) {
-                try {
-                    var pos = kakaoMapService.getLatLngFromAddress(clean);
-                    if (pos != null) {
-                        c.setLat(pos.getLat());
-                        c.setLng(pos.getLng());
-                    }
-                } catch (Exception ignored) {}
-            }
+            try {
+                var pos = kakaoMapService.getLatLngFromAddress(clean);
+                if (pos != null) {
+                    c.setLat(pos.getLat());
+                    c.setLng(pos.getLng());
+                }
+            } catch (Exception ignored) {}
         }
 
         Company saved = companyRepository.save(c);
 
+        // 복리후생 처리
         if (benefits != null) {
             benefitsRepository.deleteByCompanyId(id);
             for (String name : benefits) {

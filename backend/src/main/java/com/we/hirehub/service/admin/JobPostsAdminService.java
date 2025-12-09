@@ -77,14 +77,21 @@ public class JobPostsAdminService {
         JobPosts job = jobPostsRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("공고 없음: " + id));
 
-        String oldLoc = job.getLocation();
+        // dto → entity 매핑
         JobPostsDto.updateEntity(dto, job);
 
-        if (dto.getLocation() != null && !dto.getLocation().equals(oldLoc)) {
-            var pos = kakaoMapService.getLatLngFromAddress(dto.getLocation());
-            if (pos != null) {
-                job.setLat(pos.getLat());
-                job.setLng(pos.getLng());
+        // ============================
+        // ⭐ 무조건 주소 기반 위경도 다시 계산
+        // ============================
+        if (dto.getLocation() != null) {
+            try {
+                var pos = kakaoMapService.getLatLngFromAddress(dto.getLocation());
+                if (pos != null) {
+                    job.setLat(pos.getLat());
+                    job.setLng(pos.getLng());
+                }
+            } catch (Exception e) {
+                log.error("위경도 계산 실패", e);
             }
         }
 
