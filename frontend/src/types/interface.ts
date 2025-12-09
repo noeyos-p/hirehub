@@ -417,12 +417,9 @@ export interface JobPostResponse {
   qualification?: string;
   preference?: string;
   hireType?: string;
-<<<<<<< Updated upstream
   lat?: number;
   lng?: number;
-=======
   techStacks?: string[];
->>>>>>> Stashed changes
 }
 
 export interface CompanyResponse {
