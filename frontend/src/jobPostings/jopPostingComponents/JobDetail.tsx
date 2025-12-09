@@ -4,6 +4,9 @@ import { BookmarkIcon as BookmarkSolidIcon, StarIcon as StarSolidIcon } from "@h
 import { Link } from "react-router-dom";
 import { jobPostApi } from "../../api/jobPostApi";
 import type { JobPostResponse, ResumeResponse } from "../../types/interface";
+    import KakaoMap from "../../page/KakaoMap";
+
+
 
 interface JobDetailProps {
   jobId: number;
@@ -347,6 +350,14 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                     <p className="text-gray-500 mb-1 text-sm">근무지역</p>
                     <p className="font-medium text-gray-900">{job.location}</p>
                   </div>
+                  {/* 🗺 회사 위치 지도 */}
+                  {job.lat != null && job.lng != null && (
+                    <div className="mt-4">
+                      <p className="text-gray-500 mb-1 text-sm">회사 위치</p>
+                      <KakaoMap lat={job.lat} lng={job.lng} />
+                    </div>
+                  )}
+
 
                   {!job.endAt ? (
                     <div>

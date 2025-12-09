@@ -1,11 +1,14 @@
 package com.we.hirehub.service.support;
 
-import com.we.hirehub.config.InicisClient;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.we.hirehub.config.JwtUserPrincipal;
-import com.we.hirehub.dto.support.InicisResponseDto;
-import com.we.hirehub.dto.support.PaymentRequestDto;
+import com.we.hirehub.config.PortOneClient;
+import com.we.hirehub.dto.support.PaymentDto;
+import com.we.hirehub.dto.support.VerifyRequest;
+import com.we.hirehub.entity.Payment;
 import com.we.hirehub.entity.TokenPackage;
 import com.we.hirehub.entity.Users;
+import com.we.hirehub.repository.PaymentRepository;
 import com.we.hirehub.repository.TokenPackageRepository;
 import com.we.hirehub.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,62 +16,124 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-@Slf4j
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentService {
 
-    private final InicisClient inicisClient;
-    private final TokenPackageRepository tokenPackageRepository;
+    private final PortOneClient portOneClient;
     private final UsersRepository usersRepository;
+    private final PaymentRepository paymentRepository;
+    private final TokenPackageRepository tokenPackageRepository;
 
-    /** 결제 준비 */
-    public InicisResponseDto ready(PaymentRequestDto req) {
+    /**
+     * ✔ PortOne 결제 검증 + DB 저장 + 토큰 지급
+     */
+    public PaymentDto verify(VerifyRequest req) {
 
-        // 🔥 핵심: 여기서 userId 추출
+        // 🔐 현재 로그인 유저 정보 가져오기
         JwtUserPrincipal principal =
-                (JwtUserPrincipal) SecurityContextHolder.getContext()
-                        .getAuthentication()
-                        .getPrincipal();
-
+                (JwtUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long userId = principal.getUserId();
-
-        log.info("🔥 [결제 준비 시작] userId={}, 패키지={}", userId, req.getTokenPackageId());
 
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("유저 없음"));
 
-        TokenPackage pkg = tokenPackageRepository.findById(req.getTokenPackageId())
+        // 🔐 결제한 토큰 패키지 불러오기
+        TokenPackage pkg = tokenPackageRepository.findById(req.getPackageId())
                 .orElseThrow(() -> new RuntimeException("토큰 패키지 없음"));
 
-        String oid = "ORDER_" + System.currentTimeMillis();
+        // 🔥 PortOne 결제 정보 조회
+        JsonNode info = portOneClient.getPayment(req.getImpUid());
 
-        return inicisClient.requestReady(pkg.getPrice(), pkg.getName(), oid);
+        String status = info.get("status").asText().toUpperCase();   // PAID
+        Integer amount = info.get("amount").asInt();
+        String merchantUid = info.get("merchantUid").asText();
+        String payMethod =
+                info.has("payMethod") ? info.get("payMethod").asText().toUpperCase() : "KAKAOPAY";
+
+        // 🔒 결제 성공 여부 체크
+        if (!"PAID".equals(status)) {
+            throw new RuntimeException("결제 실패 상태: " + status);
+        }
+
+        // 🔒 금액 위변조 방지
+        if (!amount.equals(pkg.getPrice())) {
+            throw new RuntimeException("금액 위변조 감지");
+        }
+
+        // 🧾 결제 정보 DB 저장
+        Payment payment = paymentRepository.save(
+                Payment.builder()
+                        .orderNumber(merchantUid)
+                        .tid(req.getImpUid())
+                        .goodName(pkg.getName())
+                        .totalPrice(amount)
+                        .user(user)
+                        .tokenPackage(pkg)
+                        .status("PAID")        // PortOne 실제 결제 상태
+                        .role("COMPLETED")      // 내부적으로 완료 상태
+                        .payMethod(payMethod)
+                        .createAt(LocalDateTime.now())
+                        .updateAt(LocalDateTime.now())
+                        .build()
+        );
+
+        // 🎉 토큰 충전
+        user.setTokenBalance(user.getTokenBalance() + pkg.getTokenAmount());
+        usersRepository.save(user);
+
+        log.info("🎉 토큰 충전 완료: user={}, 충전량={}, 현재 토큰={}",
+                user.getEmail(), pkg.getTokenAmount(), user.getTokenBalance());
+
+        return PaymentDto.from(payment);
     }
 
-    /** 결제 승인 */
-    public InicisResponseDto approve(PaymentRequestDto req) {
+    /**
+     * ✔ 유저 결제 내역 조회
+     */
+    public List<PaymentDto> getMyPayments() {
 
-        log.info("🔥 [결제 승인 요청] tid={}, authToken={}, oid={}",
-                req.getTid(), req.getAuthToken(), req.getOrderNumber());
+        JwtUserPrincipal principal =
+                (JwtUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long userId = principal.getUserId();
 
-        return inicisClient.requestApprove(
-                req.getTid(),
-                req.getAuthToken(),
-                req.getOrderNumber()
-        );
+        return paymentRepository.findAllByUserIdOrderByCreateAtDesc(userId)
+                .stream()
+                .map(PaymentDto::from)
+                .toList();
     }
 
-    /** 결제 취소 */
-    public InicisResponseDto cancel(PaymentRequestDto req) {
+    /**
+     * ✔ 관리자 전체 결제 조회
+     */
+    public List<PaymentDto> getAllPayments() {
+        return paymentRepository.findAllByOrderByCreateAtDesc()
+                .stream()
+                .map(PaymentDto::from)
+                .toList();
+    }
 
-        log.info("🔥 [결제 취소 요청] tid={}, amount={}, reason={}",
-                req.getTid(), req.getAmount(), req.getCancelReason());
+    /**
+     * ✔ 관리자 검색 기능 (email or status)
+     */
+    public List<PaymentDto> searchPayments(String email, String status) {
 
-        return inicisClient.requestCancel(
-                req.getTid(),
-                req.getAmount(),
-                req.getCancelReason()
-        );
+        List<Payment> list;
+
+        if (email != null && status != null) {
+            list = paymentRepository.findAllByUserEmailContainingAndRole(email, status);
+        } else if (email != null) {
+            list = paymentRepository.findAllByUserEmailContaining(email);
+        } else if (status != null) {
+            list = paymentRepository.findAllByRole(status);
+        } else {
+            list = paymentRepository.findAllByOrderByCreateAtDesc();
+        }
+
+        return list.stream().map(PaymentDto::from).toList();
     }
 }

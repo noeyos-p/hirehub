@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Slf4j  // ✅ 로그 추가
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JobPostService {
@@ -24,13 +24,21 @@ public class JobPostService {
     private final JobPostsRepository jobPostRepository;
     private final CompanyRepository companyRepository;
 
+    /**
+     * ⭐ 공고 전체 조회
+     * lat/lng 은 DTO 내부에서 자동 추가됨 (toDto)
+     */
     public List<JobPostsDto> getAllJobPosts() {
         return jobPostRepository.findAll()
                 .stream()
-                .map(JobPostsDto::toDto)
+                .map(JobPostsDto::toDto)   // ⭐ lat/lng 포함된 DTO 반환
                 .collect(Collectors.toList());
     }
 
+    /**
+     * ⭐ 특정 공고 상세 조회
+     * DTO 변환 시 lat/lng 자동 포함
+     */
     public JobPostsDto getJobPostById(Long id) {
         log.info("🔍 getJobPostById 호출 - ID: {}", id);
 
@@ -39,20 +47,27 @@ public class JobPostService {
 
         log.info("🖼️ DB에서 조회한 photo: {}", job.getPhoto());
 
-        JobPostsDto dto = JobPostsDto.toDto(job);
+        JobPostsDto dto = JobPostsDto.toDto(job);  // ⭐ lat/lng 포함 반환
 
         log.info("📤 최종 반환 DTO photo: {}", dto.getPhoto());
-
         return dto;
     }
 
+    /**
+     * ⭐ 검색 기능
+     * lat/lng 자동 포함됨
+     */
     public List<JobPostsDto> searchJobPosts(String keyword) {
         return jobPostRepository.findByTitleContaining(keyword)
                 .stream()
-                .map(JobPostsDto::toDto)
+                .map(JobPostsDto::toDto)   // ⭐ lat/lng 포함
                 .collect(Collectors.toList());
     }
 
+    /**
+     * ⚠️ 기존 기능 유지 (Admin에서 등록함)
+     * 여기서는 DTO → Entity 변환만 수행
+     */
     public JobPostsDto createJobPost(JobPostsDto dto) {
         Company company = companyRepository.findById(dto.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("해당 회사가 존재하지 않습니다."));
@@ -60,10 +75,12 @@ public class JobPostService {
         JobPosts job = JobPostsDto.toEntity(dto, company);
         JobPosts saved = jobPostRepository.save(job);
 
-        return JobPostsDto.toDto(saved);
+        return JobPostsDto.toDto(saved);  // ⭐ lat/lng 포함
     }
 
-
+    /**
+     * 조회수 증가
+     */
     public JobPostsDto incrementViews(Long id) {
         JobPosts job = jobPostRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("해당 공고를 찾을 수 없습니다."));
@@ -71,12 +88,15 @@ public class JobPostService {
         job.setViews(job.getViews() + 1);
         JobPosts saved = jobPostRepository.save(job);
 
-        return JobPostsDto.toDto(saved);
+        return JobPostsDto.toDto(saved);  // ⭐ lat/lng 포함
     }
 
+    /**
+     * AI 처리 (기존 유지)
+     */
     @Transactional
     public JobPosts saveWithAi(JobPosts post) {
-        // 공고 본문(제목+내용 등) 합친 텍스트
+
         String full = buildFullText(post);
 
         Map<String, Object> body = Map.of("content", full);
@@ -86,7 +106,6 @@ public class JobPostService {
 
         Map<String, Object> data = res.getBody();
         post.setSummary((String) data.get("summary"));
-        // embedding -> JSON 문자열 저장
         post.setEmbedding(toJson(data.get("embedding")));
 
         return jobPostRepository.save(post);
@@ -94,8 +113,7 @@ public class JobPostService {
 
     private String buildFullText(JobPosts p) {
         StringBuilder sb = new StringBuilder();
-        // 네가 가진 필드들 적절히 연결
-        // ex) sb.append(p.getTitle()).append("\n").append(p.getDescription());
+        // 필요시 본문 구성
         return sb.toString();
     }
 

@@ -1,19 +1,14 @@
 package com.we.hirehub.dto.support;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Getter
 @Builder
 public class PaymentResponseDto {
 
-    private String status;     // PENDING, SUCCESS, FAILED, CANCELLED
-    private String message;
-
-    private String tid;
-    private String payUrl;
-    private String orderNumber;
-
-    private String applNum;
-    private String applDate;
+    private String status;        // COMPLETED, FAILED
+    private String message;       // 요약 메시지
+    private String tid;           // PortOne imp_uid
+    private String orderNumber;   // merchant_uid
 }

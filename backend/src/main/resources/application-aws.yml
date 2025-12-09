@@ -99,11 +99,9 @@ solapi:
   api-secret: ${SOLAPI_API_SECRET}
   sender: ${SOLAPI_SENDER}
 
-inicis:
-  mid: ${INICIS_MID}
-  sign-key: ${INICIS_SIGN_KEY}
-  api-url: ${INICIS_API_URL}
-
+portone:
+  store-id: ${PORTONE_STORE_ID}
+  api-secret: ${PORTONE_API_SECRET}
 
 
 app:

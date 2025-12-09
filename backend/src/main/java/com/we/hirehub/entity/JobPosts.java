@@ -86,4 +86,11 @@ public class JobPosts {
     // 임베딩
     @Column(columnDefinition = "JSON")
     private String embedding; // JSON 문자열로 저장 (vector)
+
+    //위도와 경도
+    @Column(name = "lat")
+    private Double lat;
+
+    @Column(name = "lng")
+    private Double lng;
 }

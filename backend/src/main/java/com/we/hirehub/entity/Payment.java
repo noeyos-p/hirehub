@@ -45,4 +45,11 @@ public class Payment {
 
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
+
+    @Column(nullable = false)
+    private String status;   // READY, PAID, CANCEL, FAIL 등
+
+    @Column(length = 20)
+    private String payMethod;   // KAKAOPAY, CARD 등
+
 }

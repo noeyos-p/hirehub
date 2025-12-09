@@ -8,7 +8,7 @@ import com.we.hirehub.service.support.JobPostScrapService;
 import com.we.hirehub.service.support.JobPostService;
 import com.we.hirehub.service.support.JobPostsCalendarService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;  // ✅ 추가
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
-@Slf4j  // ✅ 추가
+@Slf4j
 @RestController
 @RequestMapping("/api/jobposts")
 @RequiredArgsConstructor
@@ -47,17 +47,30 @@ public class JobPostController {
         throw new IllegalStateException("현재 사용자 ID를 확인할 수 없습니다.");
     }
 
+    /**
+     * 공고 전체 조회
+     * ⭐ lat/lng 포함된 DTO 자동 반환됨
+     */
     @GetMapping
     public List<JobPostsDto> getAllJobPosts() {
         log.info("🌐 GET /api/jobposts - getAllJobPosts 호출됨");
         return jobPostService.getAllJobPosts();
     }
 
+    /**
+     * 공고 상세 조회
+     * ⭐ lat/lng 프론트로 전달됨
+     */
     @GetMapping("/{id}")
     public JobPostsDto getJobPostById(@PathVariable Long id) {
         log.info("🌐 GET /api/jobposts/{} - Controller 진입!", id);
+
         JobPostsDto result = jobPostService.getJobPostById(id);
+
+        // ⭐ 디버그: 지도 표시용 위경도 출력
+        log.info("📍 지도 표기용 lat={}, lng={}", result.getLat(), result.getLng());
         log.info("🌐 Controller 반환 photo: {}", result.getPhoto());
+
         return result;
     }
 
@@ -74,8 +87,10 @@ public class JobPostController {
     }
 
     @PostMapping("/{jobPostId}/scrap")
-    public ResponseEntity<FavoriteDto.ScrapPostsDto> scrap(Authentication auth,
-                                             @PathVariable Long jobPostId) {
+    public ResponseEntity<FavoriteDto.ScrapPostsDto> scrap(
+            Authentication auth,
+            @PathVariable Long jobPostId
+    ) {
         Long uid = userId(auth);
         return ResponseEntity.ok(jobPostScrapService.add(uid, jobPostId));
     }

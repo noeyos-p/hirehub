@@ -9,6 +9,8 @@ import CommentManagement from "./adminComponents/CommentManagement";
 import ReviewManagement from "./adminComponents/ReviewManagement";
 import ResumeManagement from "./adminComponents/ResumeManagement";
 import LiveSupport from "./adminComponents/LiveSupport"; // ✅ 추가
+// ⭐⭐⭐ 신규 결제 관리 컴포넌트 임포트
+import AdminPaymentManagement from "./adminComponents/AdminPaymentManagement";
 
 const menuItems = [
   { name: "공고 관리", path: "job-management" },
@@ -20,6 +22,8 @@ const menuItems = [
   { name: "게시판 관리", path: "board-management" },
   { name: "이력서 관리", path: "resume-management" },
   { name: "실시간 상담", path: "live-support" },
+  { name: "결제 관리", path: "payment-management" }
+
 ];
 
 const AdminLayout: React.FC = () => {
@@ -79,6 +83,7 @@ const AdminLayout: React.FC = () => {
             {activeTab === "board-management" && <BoardManagement />}
             {activeTab === "resume-management" && <ResumeManagement />}
             {activeTab === "live-support" && <LiveSupport />}
+            {activeTab === "payment-management" && <AdminPaymentManagement />}
           </div>
         </main>
       </div>

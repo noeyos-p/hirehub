@@ -6,6 +6,7 @@ import com.we.hirehub.entity.TechStack;
 import com.we.hirehub.repository.JobPostsRepository;
 import com.we.hirehub.repository.TechStackRepository;
 import com.we.hirehub.service.support.JobPostAiService;
+import com.we.hirehub.service.support.KakaoMapService;     // ⭐ 추가됨
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,9 @@ public class JobPostsAdminService {
     private final JobPostsRepository jobPostsRepository;
     private final TechStackRepository techStackRepository;
     private final JobPostAiService jobPostAiService;
+
+    // ⭐ 추가된 부분: 카카오 지도 서비스 의존성
+    private final KakaoMapService kakaoMapService;
 
     public Page<JobPostsDto> getAllJobPosts(Pageable pageable, String keyword) {
         Page<JobPosts> jobPosts;
@@ -61,24 +65,34 @@ public class JobPostsAdminService {
     }
 
     /**
-     * ✅ 공고 등록 + AI 자동 처리 (동기)
+     * ✅ 공고 등록 + AI 자동 처리
+     * ⭐ 기존 기능 유지
      */
     @Transactional
     public JobPostsDto createJobPost(JobPosts jobPost) {
         log.info("📝 신규 공고 등록 시작 - 제목: {}", jobPost.getTitle());
 
-        // 1. 공고 저장
+        // ⭐ 추가된 부분: location 기반 좌표 자동 저장
+        if (jobPost.getLocation() != null) {
+            var latLng = kakaoMapService.getLatLngFromAddress(jobPost.getLocation());
+            if (latLng != null) {
+                jobPost.setLat(latLng.getLat());
+                jobPost.setLng(latLng.getLng());
+                log.info("📍 [신규] 좌표 저장 lat={}, lng={}", latLng.getLat(), latLng.getLng());
+            }
+        }
+
         JobPosts saved = jobPostsRepository.save(jobPost);
         log.info("✅ 공고 저장 완료 - ID: {}", saved.getId());
 
-        // 2. AI 처리 (Summary & Embedding 생성)
         processAI(saved, "등록");
 
         return JobPostsDto.toDto(saved);
     }
 
     /**
-     * ✅ 공고 수정 + AI 재처리 (동기)
+     * ✅ 공고 수정 + AI 재처리
+     * ⭐ 기존 기능 유지
      */
     @Transactional
     public JobPostsDto updateJobPost(Long jobPostId, JobPostsDto dto) {
@@ -87,16 +101,25 @@ public class JobPostsAdminService {
         JobPosts jobPost = jobPostsRepository.findById(jobPostId)
                 .orElseThrow(() -> new IllegalArgumentException("공고를 찾을 수 없습니다: " + jobPostId));
 
+        String oldLocation = jobPost.getLocation();  // ⭐ 기존 location 보관
+
         JobPostsDto.updateEntity(dto, jobPost);
 
-        if (jobPost.getEndAt() != null) {
-            validateJobPostDates(jobPost.getEndAt());
+        // ⭐ 추가된 부분: 위치 변경 시 자동 geocoding
+        if (dto.getLocation() != null && !dto.getLocation().equals(oldLocation)) {
+            var latLng = kakaoMapService.getLatLngFromAddress(jobPost.getLocation());
+            if (latLng != null) {
+                jobPost.setLat(latLng.getLat());
+                jobPost.setLng(latLng.getLng());
+                log.info("📍 [신규] 위치 변경 감지 → 위경도 갱신 완료");
+            }
         }
+
+        if (jobPost.getEndAt() != null) validateJobPostDates(jobPost.getEndAt());
 
         JobPosts updated = jobPostsRepository.save(jobPost);
         log.info("✅ 공고 수정 완료 - ID: {}", updated.getId());
 
-        // AI 재처리
         updated.setSummary(null);
         updated.setEmbedding(null);
         processAI(updated, "수정");
@@ -121,7 +144,6 @@ public class JobPostsAdminService {
 
         } catch (Exception e) {
             log.error("⚠️ AI 처리 실패 (공고는 저장됨) - {} - ID: {}", action, jobPost.getId(), e);
-            // 예외를 던지지 않음 - 공고 저장은 성공했으므로
         }
     }
 
@@ -171,15 +193,12 @@ public class JobPostsAdminService {
         if (jobPost.getContent() == null || jobPost.getContent().trim().isEmpty())
             throw new IllegalArgumentException("공고 내용이 필요합니다");
 
-        if (jobPost.getEndAt() != null) {
-            validateJobPostDates(jobPost.getEndAt());
-        }
+        if (jobPost.getEndAt() != null) validateJobPostDates(jobPost.getEndAt());
     }
 
     private void validateJobPostDates(LocalDate endAt) {
-        if (endAt == null) {
-            return;
-        }
+        if (endAt == null) return;
+
         LocalDate today = LocalDate.now();
         if (endAt.isBefore(today)) {
             throw new IllegalArgumentException("마감일은 오늘 이후여야 합니다");

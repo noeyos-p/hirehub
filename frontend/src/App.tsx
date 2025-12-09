@@ -24,7 +24,8 @@ import JobMatchingPage from './jobMatchingPage/JobMatchingPage';
 import JobMatchingHistoryPage from './jobMatchingPage/JobMatchingHistoryPage';
 import InterviewCoachingPage from './interviewCoachingPage/InterviewCoachingPage';
 import InterviewCoachingHistoryPage from './interviewCoachingPage/InterviewCoachingHistoryPage';
-import PayReturn from './page/PayReturn';
+
+
 
 function App() {
   return (
@@ -80,9 +81,6 @@ function App() {
 
         <Route path="/myPage/resume/ResumeViewer/:id" element={<ResumeViewer />} />
          
-         {/* 결제로직 */}
-        <Route path="/pay/return" element={<PayReturn />} />
-
       </Routes>
     </BrowserRouter>
   );
