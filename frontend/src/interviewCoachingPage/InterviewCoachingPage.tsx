@@ -16,6 +16,8 @@ import { myPageApi } from '../api/myPageApi';
 import { jobPostApi } from '../api/jobPostApi';
 import { interviewCoachingApi, type InterviewSession } from '../api/interviewCoachingApi';
 import type { ResumeDto, JobPostResponse, CompanyResponse } from '../types/interface';
+import api from '../api/api';
+import axios from "axios";
 
 interface InterviewQuestion {
   id: number;
@@ -184,93 +186,127 @@ const InterviewCoachingPage: React.FC = () => {
     setStep('interview');
 
     try {
+      // 이전 질문 목록 가져오기 (중복 질문 방지)
+      let previousQuestions: string[] = [];
+      try {
+        const historyList = await interviewCoachingApi.getHistoryList();
+        historyList.forEach(history => {
+          history.sessions.forEach(session => {
+            if (session.question) {
+              previousQuestions.push(session.question);
+            }
+          });
+        });
+        console.log('📚 이전 질문 목록 로드 완료:', previousQuestions.length, '개');
+      } catch (error) {
+        console.warn('이전 질문 목록 로드 실패 (중복 방지 기능 비활성화):', error);
+      }
+
       // TODO: 백엔드 API 연동 - 이력서, 공고, 기업 정보 기반 면접 질문 생성
-      // const response = await api.post('/interview/generate-questions', {
-      //   resumeId: selectedResume.id,
-      //   jobPostId: selectedJobPost?.id,
-      //   companyId: selectedCompany?.id,
-      // });
-      // setCurrentQuestion(response.data[0]);
+    const response = await axios.post('http://localhost:8000/interview/generate-questions', {
+      resumeId: selectedResume.id,
+      jobPostLink: jobPostLink || undefined,
+      companyLink: companyLink || undefined,
+      previousQuestions: previousQuestions, // ✅ 추가: 이전 질문 목록 전달
+    }, {
+      timeout: 10000  // 10초 타임아웃 설정
+    });
 
-      // 임시 질문 생성 (이력서 + 공고 + 기업 기반)
-      setTimeout(() => {
-        const summary = getResumeSummary(selectedResume);
-        const questions: InterviewQuestion[] = [];
+    console.log('✅ API 응답 받음:', response.data); // 디버깅 로그
 
-        // 이력서 기반 질문
-        try {
-          const careers = (selectedResume as any).careerList || selectedResume.careers || (selectedResume.careerJson && selectedResume.careerJson !== 'null' ? JSON.parse(selectedResume.careerJson) : []);
-          if (careers.length > 0 && (careers[0].companyName || careers[0].company)) {
-            questions.push({
-              id: 1,
-              question: `이력서에 ${careers[0].companyName || careers[0].company}에서 ${careers[0].position || '근무'} 경험을 작성하셨는데, 가장 기억에 남는 프로젝트와 본인의 역할에 대해 말씀해 주세요.`,
-              category: '경험',
-            });
-          }
-        } catch (error) {
-          console.error('경력 정보 파싱 실패:', error);
-        }
+    const questions = response.data;
 
-        // 기술 스택 질문
-        if (summary.skillList !== '정보 없음') {
-          questions.push({
-            id: 2,
-            question: `이력서에 ${summary.skillList} 기술을 보유하고 계신다고 하셨는데, 이 중 가장 자신 있는 기술과 실제 프로젝트 적용 경험을 말씀해 주세요.`,
-            category: '기술',
-          });
-        }
-
-        // 공고 링크가 있을 경우
-        if (jobPostLink.trim()) {
-          questions.push({
-            id: 3,
-            question: `해당 공고에 지원하시는 이유와, 본인이 이 직무에 적합한 이유를 말씀해 주세요.`,
-            category: '지원동기',
-          });
-
-          questions.push({
-            id: 4,
-            question: `해당 직무에서 요구하는 역량과 경험에 대해, 본인의 이력서 내용이 어떻게 부합하는지 설명해 주세요.`,
-            category: '직무적합성',
-          });
-        }
-
-        // 기업 링크가 있을 경우
-        if (companyLink.trim()) {
-          questions.push({
-            id: 5,
-            question: `해당 기업에 대해 알고 계신 것과, 이 회사에서 이루고 싶은 목표를 말씀해 주세요.`,
-            category: '기업이해도',
-          });
-        }
-
-        // 자기소개서 기반 질문
-        if (selectedResume.essayContent) {
-          questions.push({
-            id: 6,
-            question: `자기소개서에 작성하신 내용을 바탕으로, 본인의 강점을 뒷받침할 수 있는 구체적인 사례를 말씀해 주세요.`,
-            category: '인성',
-          });
-        }
-
-        // 기본 질문 (이력서 정보가 부족할 경우)
-        if (questions.length === 0) {
-          questions.push({
-            id: 1,
-            question: '본인의 강점과 약점에 대해 말씀해 주세요.',
-            category: '인성',
-          });
-        }
-
-        setCurrentQuestion(questions[0]);
-        setIsLoading(false);
-      }, 1500);
-    } catch (error) {
-      console.error('질문 생성 실패:', error);
-      alert('질문 생성에 실패했습니다.');
+    if (questions && Array.isArray(questions) && questions.length > 0) {
+      setCurrentQuestion(questions[0]);
       setIsLoading(false);
+      console.log('✅ 질문 설정 완료');
+      return;
     }
-  };
+
+    console.warn('⚠️ API 응답이 비어있음, fallback 사용');
+    throw new Error('질문이 생성되지 않음');
+
+  } catch (error) {
+    console.error('❌ 질문 생성 실패:', error);
+
+    // fallback: 임시 질문 생성
+    const summary = getResumeSummary(selectedResume);
+    const questions: InterviewQuestion[] = [];
+
+    // 이력서 기반 질문
+    try {
+      const careers = (selectedResume as any).careerList || selectedResume.careers || 
+        (selectedResume.careerJson && selectedResume.careerJson !== 'null' 
+          ? JSON.parse(selectedResume.careerJson) 
+          : []);
+      
+      if (careers.length > 0 && (careers[0].companyName || careers[0].company)) {
+        questions.push({
+          id: 1,
+          question: `이력서에 ${careers[0].companyName || careers[0].company}에서 ${careers[0].position || '근무'} 경험을 작성하셨는데, 가장 기억에 남는 프로젝트와 본인의 역할에 대해 말씀해 주세요.`,
+          category: '경험',
+        });
+      }
+    } catch (error) {
+      console.error('경력 정보 파싱 실패:', error);
+    }
+
+    // 기술 스택 질문
+    if (summary.skillList !== '정보 없음') {
+      questions.push({
+        id: 2,
+        question: `이력서에 ${summary.skillList} 기술을 보유하고 계신다고 하셨는데, 이 중 가장 자신 있는 기술과 실제 프로젝트 적용 경험을 말씀해 주세요.`,
+        category: '기술',
+      });
+    }
+
+    // 공고 링크가 있을 경우
+    if (jobPostLink.trim()) {
+      questions.push({
+        id: 3,
+        question: `해당 공고에 지원하시는 이유와, 본인이 이 직무에 적합한 이유를 말씀해 주세요.`,
+        category: '지원동기',
+      });
+
+      questions.push({
+        id: 4,
+        question: `해당 직무에서 요구하는 역량과 경험에 대해, 본인의 이력서 내용이 어떻게 부합하는지 설명해 주세요.`,
+        category: '직무적합성',
+      });
+    }
+
+    // 기업 링크가 있을 경우
+    if (companyLink.trim()) {
+      questions.push({
+        id: 5,
+        question: `해당 기업에 대해 알고 계신 것과, 이 회사에서 이루고 싶은 목표를 말씀해 주세요.`,
+        category: '기업이해도',
+      });
+    }
+
+    // 자기소개서 기반 질문
+    if (selectedResume.essayContent) {
+      questions.push({
+        id: 6,
+        question: `자기소개서에 작성하신 내용을 바탕으로, 본인의 강점을 뒷받침할 수 있는 구체적인 사례를 말씀해 주세요.`,
+        category: '인성',
+      });
+    }
+
+    // 기본 질문 (이력서 정보가 부족할 경우)
+    if (questions.length === 0) {
+      questions.push({
+        id: 1,
+        question: '본인의 강점과 약점에 대해 말씀해 주세요.',
+        category: '인성',
+      });
+    }
+
+    console.log('📝 Fallback 질문 생성됨:', questions.length, '개');
+    setCurrentQuestion(questions[0]);
+    setIsLoading(false);
+  }
+};
 
   // 답변 제출 및 AI 피드백 받기
   const handleSubmitAnswer = async () => {
@@ -283,29 +319,49 @@ const InterviewCoachingPage: React.FC = () => {
 
     try {
       // TODO: 백엔드 API 연동 - AI 피드백 받기
-      // const response = await api.post('/interview/feedback', {
-      //   resumeId: selectedResume?.id,
-      //   jobPostId: selectedJobPost?.id,
-      //   companyId: selectedCompany?.id,
-      //   question: currentQuestion?.question,
-      //   answer: answer,
-      // });
-      // setFeedback(response.data.feedback);
+    const response = await axios.post('http://localhost:8000/interview/feedback', {
+      resumeId: selectedResume?.id,
+      jobPostLink: jobPostLink || undefined,
+      companyLink: companyLink || undefined,
+      question: currentQuestion?.question,
+      answer,
+    });
 
-      // 임시 피드백
-      setTimeout(() => {
-        const summary = getResumeSummary(selectedResume!);
-        let contextFeedback = '';
+    const feedbackText = response.data.feedback;
 
-        if (jobPostLink.trim()) {
-          contextFeedback = `\n📋 **공고 관련 조언**\n- 공고에서 요구하는 경력 수준과 기술 스택을 고려하여 답변하세요.\n- 직무의 핵심 역량을 강조하면 좋습니다.\n- 공고 링크: ${jobPostLink}`;
-        }
+    if (feedbackText) {
+      setFeedback(feedbackText);
+      
+      // 세션 저장
+      setInterviewSessions(prev => [...prev, {
+        question: currentQuestion!.question,
+        category: currentQuestion!.category,
+        answer: answer,
+        feedback: feedbackText
+      }]);
 
-        if (companyLink.trim()) {
-          contextFeedback += `\n\n🏢 **기업 정보 활용**\n- 기업의 비전과 문화를 이해하고 답변에 반영하세요.\n- 회사가 추구하는 가치와 본인의 가치관을 연결지어 설명하면 효과적입니다.\n- 기업 링크: ${companyLink}`;
-        }
+      setStep('feedback');
+      setIsLoading(false);
+    } else {
+      throw new Error('피드백이 비어있습니다.');
+    }
+  } catch (error) {
+    console.error('피드백 받기 실패:', error);
+    
+    // fallback: 기존 임시 피드백 로직 사용
+    setTimeout(() => {
+      const summary = getResumeSummary(selectedResume!);
+      let contextFeedback = '';
 
-        const feedbackText = `[AI 면접관의 피드백]
+      if (jobPostLink.trim()) {
+        contextFeedback = `\n📋 **공고 관련 조언**\n- 공고에서 요구하는 경력 수준과 기술 스택을 고려하여 답변하세요.\n- 직무의 핵심 역량을 강조하면 좋습니다.\n- 공고 링크: ${jobPostLink}`;
+      }
+
+      if (companyLink.trim()) {
+        contextFeedback += `\n\n🏢 **기업 정보 활용**\n- 기업의 비전과 문화를 이해하고 답변에 반영하세요.\n- 회사가 추구하는 가치와 본인의 가치관을 연결지어 설명하면 효과적입니다.\n- 기업 링크: ${companyLink}`;
+      }
+
+      const feedbackText = `[AI 면접관의 피드백]
 
 ✅ **답변의 강점**
 - 구체적인 경험을 바탕으로 답변하셨습니다.
@@ -327,25 +383,21 @@ ${contextFeedback}
 📌 **다음 면접을 위한 조언**
 이력서에 기재된 "${summary.career}" 경험을 더 깊이 있게 준비하시면 좋을 것 같습니다.`;
 
-        setFeedback(feedbackText);
+      setFeedback(feedbackText);
 
-        // 세션 저장
-        setInterviewSessions(prev => [...prev, {
-          question: currentQuestion!.question,
-          category: currentQuestion!.category,
-          answer: answer,
-          feedback: feedbackText
-        }]);
+      // 세션 저장
+      setInterviewSessions(prev => [...prev, {
+        question: currentQuestion!.question,
+        category: currentQuestion!.category,
+        answer: answer,
+        feedback: feedbackText
+      }]);
 
-        setStep('feedback');
-        setIsLoading(false);
-      }, 2000);
-    } catch (error) {
-      console.error('피드백 받기 실패:', error);
-      alert('피드백을 받는데 실패했습니다.');
+      setStep('feedback');
       setIsLoading(false);
-    }
-  };
+    }, 2000);
+  }
+};
 
   // 다음 질문으로
   const handleNextQuestion = () => {
