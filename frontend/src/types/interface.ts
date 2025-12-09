@@ -417,6 +417,8 @@ export interface JobPostResponse {
   qualification?: string;
   preference?: string;
   hireType?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface CompanyResponse {
