@@ -27,6 +27,9 @@ public class ResumeMatchService {
     private final VectorUtil vectorUtil;
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @org.springframework.beans.factory.annotation.Value("${ai.server-url}")
+    private String aiServerUrl;
+
     public static class MatchResult {
         public Long jobId;
         public String jobTitle;
@@ -242,7 +245,7 @@ public class ResumeMatchService {
 
         try {
             var res = restTemplate.postForEntity(
-                    "http://localhost:8000/ai/match-one",
+                    aiServerUrl + "/ai/match-one",
                     entity,
                     Map.class
             );

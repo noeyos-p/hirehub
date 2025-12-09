@@ -20,6 +20,9 @@ public class AiEmbeddingClient {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @org.springframework.beans.factory.annotation.Value("${ai.server-url}")
+    private String aiServerUrl;
+
     public List<Double> embed(String text) {
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -30,7 +33,7 @@ public class AiEmbeddingClient {
             HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
 
             Map res = restTemplate.postForObject(
-                    "http://localhost:8000/ai/embed",
+                    aiServerUrl + "/ai/embed",
                     entity,
                     Map.class
             );
