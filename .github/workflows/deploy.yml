@@ -107,7 +107,9 @@ jobs:
             FASTAPI_IMAGE=${{ secrets.FASTAPI_IMAGE }}
             FASTAPI_NAVER_CLIENT_ID=${{ secrets.FASTAPI_NAVER_CLIENT_ID }}
             FASTAPI_NAVER_CLIENT_SECRET=${{ secrets.FASTAPI_NAVER_CLIENT_SECRET }}
-            FASTAPI_OPENAI_API_KEY=${{ secrets.FASTAPI_OPENAI_API_KEY }}
+            OPENAI_API_KEY=${{ secrets.FASTAPI_OPENAI_API_KEY }}
+            HF_API_TOKEN=${{ secrets.HF_API_TOKEN }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             EOF
 
             echo "🚀 Docker Compose 실행…"

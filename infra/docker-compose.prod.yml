@@ -41,7 +41,6 @@ services:
     environment:
       NAVER_CLIENT_ID: ${FASTAPI_NAVER_CLIENT_ID}
       NAVER_CLIENT_SECRET: ${FASTAPI_NAVER_CLIENT_SECRET}
-      OPENAI_API_KEY: ${FASTAPI_OPENAI_API_KEY}
     ports:
       - "8000:8000"
     restart: unless-stopped
