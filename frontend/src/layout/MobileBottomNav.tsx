@@ -12,10 +12,12 @@ import {
   ChatBubbleLeftRightIcon as ChatSolidIcon,
   UserIcon as UserSolidIcon
 } from '@heroicons/react/24/solid';
+import { useAuth } from '../hooks/useAuth';
 
 const MobileBottomNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
 
   const navItems = [
     {
@@ -48,6 +50,15 @@ const MobileBottomNav: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
+  const handleNavClick = (path: string) => {
+    // 마이페이지 클릭 시 로그인 체크
+    if (path === '/mypage' && !isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+    navigate(path);
+  };
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-2">
@@ -58,7 +69,7 @@ const MobileBottomNav: React.FC = () => {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNavClick(item.path)}
               className="flex flex-col items-center justify-center flex-1 h-full transition-colors"
             >
               <Icon

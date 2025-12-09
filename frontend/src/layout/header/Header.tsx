@@ -154,24 +154,24 @@ export default function Header() {
         </div>
 
         <div className="flex items-center space-x-3 md:space-x-4 xl:space-x-6 min-w-0">
-          {/* 데스크톱 검색창 (lg 이상에서만 표시) */}
-          <div className="relative hidden lg:block min-w-0">
+          {/* 데스크톱 검색창 (xl 이상에서만 표시) */}
+          <div className="relative hidden xl:block min-w-0">
             <input
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="어떤 공고를 찾으세요?"
-              className="w-[200px] lg:w-[280px] xl:w-[400px] h-[38px] lg:h-[41px] border border-gray-400 rounded-[10px] px-4 py-1.5 pr-10 text-sm focus:outline-none focus:border-[#006AFF] transition-all"
+              className="w-[280px] xl:w-[400px] h-[38px] lg:h-[41px] border border-gray-400 rounded-[10px] px-4 py-1.5 pr-10 text-sm focus:outline-none focus:border-[#006AFF] transition-all"
             />
             <button onClick={handleSearch}>
-              <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 absolute right-3 top-2.5 cursor-pointer hover:text-blue-500 transition" />
+              <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 absolute right-3 top-3 cursor-pointer hover:text-blue-500 transition" />
             </button>
           </div>
 
-          {/* 태블릿용 검색 아이콘 (md ~ lg 사이) */}
+          {/* 태블릿/데스크톱용 검색 아이콘 (md ~ xl 사이) */}
           <button
-            className="hidden md:block lg:hidden p-1"
+            className="hidden md:block xl:hidden p-1"
             onClick={() => setShowMobileSearch(true)}
           >
             <MagnifyingGlassIcon className="w-5 h-5 text-gray-500 hover:text-[#006AFF] transition" />
@@ -197,110 +197,71 @@ export default function Header() {
 
             {/* 모바일 햄버거 메뉴 드롭다운 */}
             {showMobileMenu && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 overflow-hidden">
+              <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 overflow-hidden">
                 {/* 사용자 정보 영역 */}
                 {isAuthenticated && user && (
-                  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <UserCircleIcon className="w-6 h-6 text-white" />
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <UserCircleIcon className="w-7 h-7 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-gray-900 truncate">
+                        <p className="font-bold text-base text-gray-900 truncate">
                           {user.nickname || user.name}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-sm text-gray-500 truncate">
                           {user.email}
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      {user.email === "admin@admin" ? (
-                        <Link
-                          to="/admin"
-                          onClick={() => setShowMobileMenu(false)}
-                          className="flex-1 text-center py-1.5 text-xs font-medium bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-700"
-                        >
-                          관리자
-                        </Link>
-                      ) : (
-                        <Link
-                          to="/myPage/MyInfo"
-                          onClick={() => setShowMobileMenu(false)}
-                          className="flex-1 text-center py-1.5 text-xs font-medium bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-700"
-                        >
-                          마이페이지
-                        </Link>
-                      )}
-                      <button
-                        onClick={handleLogout}
-                        className="flex-1 text-center py-1.5 text-xs font-medium bg-white border border-gray-200 rounded hover:bg-red-50 text-red-600"
-                      >
-                        로그아웃
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 비로그인 시 로그인/회원가입 버튼 */}
-                {!isAuthenticated && (
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <Link
-                      to="/auth"
-                      onClick={() => setShowMobileMenu(false)}
-                      className="block text-center py-2 text-sm font-medium bg-[#006AFF] text-white rounded hover:bg-blue-600"
-                    >
-                      로그인 | 회원가입
-                    </Link>
                   </div>
                 )}
 
                 {/* 네비게이션 링크 */}
-                <div className="py-2">
+                <div className="pt-1 pb-2">
                   <Link
                     to="/jobPostings"
                     onClick={() => setShowMobileMenu(false)}
-                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                    className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
                     채용정보
                   </Link>
                   <Link
                     to="/board"
                     onClick={() => setShowMobileMenu(false)}
-                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                    className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
                     자유게시판
                   </Link>
                   <Link
                     to="/cover-letter"
                     onClick={() => setShowMobileMenu(false)}
-                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                    className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
                     자소서 수정
                   </Link>
                   <Link
                     to="/job-matching"
                     onClick={() => setShowMobileMenu(false)}
-                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                    className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
                     공고매칭
                   </Link>
                   <Link
                     to="/interview-coaching"
                     onClick={() => setShowMobileMenu(false)}
-                    className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                    className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
                     면접코칭
                   </Link>
 
-                  <hr className="my-2 border-gray-100" />
+                  <hr className="my-1 border-gray-100" />
 
                   <Link
                     to="/chatBot"
                     onClick={() => setShowMobileMenu(false)}
-                    className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                    className="block px-4 pt-3 pb-1 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
-                    <Headphones className="w-5 h-5 mr-2" />
                     고객 상담 센터
                   </Link>
                 </div>
