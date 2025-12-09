@@ -724,7 +724,10 @@ const ResumeDetail: React.FC = () => {
                 ref={eduMajorRef}
                 placeholder="전공 및 학위"
                 className="bg-transparent py-1 focus:outline-none text-14 pl-2" // <- pl-2 추가
-                onKeyDown={(e) => { if (e.key === "Enter") addEducation(); }}
+                onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
+                  if (e.key === "Enter") addEducation();
+                }}
               />
             </div>
           </div>
@@ -906,7 +909,10 @@ const ResumeDetail: React.FC = () => {
                 ref={carDescRef}
                 placeholder="내용 (Enter 추가)"
                 className="w-full bg-transparent py-1 focus:outline-none text-14"
-                onKeyDown={(e) => { if (e.key === "Enter") addCareer(); }}
+                onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
+                  if (e.key === "Enter") addCareer();
+                }}
               />
             </div>
           </div>
@@ -949,7 +955,10 @@ const ResumeDetail: React.FC = () => {
               ref={certRef}
               placeholder="자격증 (Enter 추가)"
               className="w-full bg-transparent py-1 focus:outline-none text-14"
-              onKeyDown={(e) => { if (e.key === "Enter") addCert(); }}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === "Enter") addCert();
+              }}
             />
           </div>
         </div>
@@ -988,7 +997,10 @@ const ResumeDetail: React.FC = () => {
               ref={skillRef}
               placeholder="스킬 (Enter 추가)"
               className="w-full bg-transparent py-1 focus:outline-none text-14"
-              onKeyDown={(e) => { if (e.key === "Enter") addSkill(); }}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === "Enter") addSkill();
+              }}
             />
           </div>
         </div>
@@ -1027,7 +1039,10 @@ const ResumeDetail: React.FC = () => {
               ref={langRef}
               placeholder="언어 (Enter 추가)"
               className="w-full bg-transparent py-1 focus:outline-none text-14"
-              onKeyDown={(e) => { if (e.key === "Enter") addLang(); }}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === "Enter") addLang();
+              }}
             />
           </div>
         </div>

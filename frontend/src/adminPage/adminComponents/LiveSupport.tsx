@@ -232,10 +232,10 @@ const LiveSupport: React.FC = () => {
           return prev.map(q =>
             q.roomId === body.roomId
               ? {
-                  roomId: body.roomId,
-                  userName: body.userName || "user",
-                  userNickname: body.userNickname || "user"
-                }
+                roomId: body.roomId,
+                userName: body.userName || "user",
+                userNickname: body.userNickname || "user"
+              }
               : q
           );
         } else {
@@ -639,7 +639,7 @@ const LiveSupport: React.FC = () => {
                         {!isAdmin && (
                           <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
                             <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                              <path fillRule="evenodd" d="M12 2a5 5 0 100 10 5 5 0 000-10zM4 20a8 8 0 0116 0H4z" clipRule="evenodd"/>
+                              <path fillRule="evenodd" d="M12 2a5 5 0 100 10 5 5 0 000-10zM4 20a8 8 0 0116 0H4z" clipRule="evenodd" />
                             </svg>
                           </div>
                         )}
@@ -652,11 +652,10 @@ const LiveSupport: React.FC = () => {
                           )}
 
                           <div
-                            className={`px-4 py-2.5 text-sm rounded-2xl break-words shadow-sm ${
-                              isAdmin
-                                ? 'text-white rounded-tr-sm'
-                                : 'bg-gray-50 text-gray-800 rounded-tl-sm'
-                            }`}
+                            className={`px-4 py-2.5 text-sm rounded-2xl break-words shadow-sm ${isAdmin
+                              ? 'text-white rounded-tr-sm'
+                              : 'bg-gray-50 text-gray-800 rounded-tl-sm'
+                              }`}
                             style={isAdmin ? { backgroundColor: '#006AFF' } : {}}
                           >
                             {l.replace(/\[(나|ADMIN|USER|.*?)\]\s*/, '')}
