@@ -28,10 +28,19 @@ public class SmsService {
 
     /**
      * SMS 인증코드 발송
+     * 
      * @param phone 수신자 전화번호
-     * @param code 인증코드
+     * @param code  인증코드
      */
     public void sendCode(String phone, String code) {
+        // 🔥 Mock Mode Check
+        if (API_KEY == null || API_KEY.isBlank() || API_KEY.contains("test")
+                || API_SECRET == null || API_SECRET.isBlank()) {
+            log.warn("⚠️ [Mock SMS Mode] 실물 문자가 발송되지 않습니다. (API Key 미설정/Test 모드)");
+            log.info("📨 [Mock Send] To: {}, Code: {}", phone, code);
+            return; // 실제 발송 로직 건너뜀
+        }
+
         String url = "https://api.coolsms.co.kr/messages/v4/send";
 
         try {
@@ -65,8 +74,7 @@ public class SmsService {
                     "HMAC-SHA256 apiKey=" + API_KEY +
                             ", date=" + date +
                             ", salt=" + salt +
-                            ", signature=" + signature
-            );
+                            ", signature=" + signature);
 
             // 6. RestTemplate으로 API 호출
             RestTemplate rest = new RestTemplate();
@@ -106,6 +114,7 @@ public class SmsService {
 
     /**
      * HMAC-SHA256 Signature 생성
+     * 
      * @param date ISO 8601 형식의 시간
      * @param salt 랜덤 salt 값
      * @return Hex 형식의 signature
@@ -117,8 +126,7 @@ public class SmsService {
         Mac mac = Mac.getInstance("HmacSHA256");
         SecretKeySpec keySpec = new SecretKeySpec(
                 API_SECRET.getBytes(StandardCharsets.UTF_8),
-                "HmacSHA256"
-        );
+                "HmacSHA256");
 
         mac.init(keySpec);
         byte[] rawHmac = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
@@ -129,6 +137,7 @@ public class SmsService {
 
     /**
      * 바이트 배열을 Hex 문자열로 변환
+     * 
      * @param bytes 변환할 바이트 배열
      * @return Hex 문자열
      */
@@ -146,6 +155,7 @@ public class SmsService {
 
     /**
      * 랜덤 Salt 생성 (16바이트 = 32자 hex)
+     * 
      * @return Hex 형식의 랜덤 salt
      */
     private String generateRandomSalt() {
@@ -157,6 +167,7 @@ public class SmsService {
 
     /**
      * 6자리 인증코드 생성
+     * 
      * @return 6자리 숫자 문자열
      */
     public String generateVerificationCode() {

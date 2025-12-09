@@ -114,7 +114,8 @@ const Signup: React.FC = () => {
       return;
     }
     try {
-      await api.post("/api/sms/send", { phone });
+      const fullPhone = countryCode + phone;
+      await api.post("/api/sms/send", { phone: fullPhone });
       setIsCodeSent(true);
       setError('');
       alert("인증번호가 전송되었습니다.");
@@ -127,7 +128,8 @@ const Signup: React.FC = () => {
   // 인증번호 확인
   const handleVerifyCode = async () => {
     try {
-      await api.post("/api/sms/verify", { phone, code });
+      const fullPhone = countryCode + phone;
+      await api.post("/api/sms/verify", { phone: fullPhone, code });
       setIsVerified(true);
       setError('');
     } catch (e) {
@@ -197,8 +199,8 @@ const Signup: React.FC = () => {
         console.log('🔐 회원가입 성공, 토큰 저장 및 인증 상태 업데이트 완료');
       }
 
-      console.log('📝 메인 페이지로 이동');
-      navigate('/');
+      console.log('📝 온보딩 페이지로 이동');
+      navigate('/signInfo');
 
     } catch (err: any) {
       console.error('❌ 회원가입 에러:', err.response?.data);

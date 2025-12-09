@@ -47,8 +47,8 @@ public class AuthService {
         if (usersRepository.existsByPhoneAndEmailNot(req.getPhone(), req.getEmail())) {
             throw new IllegalStateException("이미 가입된 전화번호입니다.");
         }
-//
-//         🔥 SMS 인증 여부 체크
+        //
+        // 🔥 SMS 인증 여부 체크
         if (!smsCodeService.isVerified(req.getPhone())) {
             throw new IllegalStateException("휴대폰 인증이 필요합니다.");
         }
@@ -57,9 +57,11 @@ public class AuthService {
 
         Users u = Users.builder()
                 .email(req.getEmail())
+                .name(req.getName()) // 🔥 추가
+                .nickname(req.getNickname()) // 🔥 추가
                 .password(encoded)
                 .phone(req.getPhone())
-                .phoneVerified(true)   // 🔥 인증됨
+                .phoneVerified(true) // 🔥 인증됨
                 .role(Role.USER)
                 .build();
 
@@ -74,7 +76,7 @@ public class AuthService {
         Users u = Users.builder()
                 .email(email)
                 .name(name != null ? name : "")
-                .password(encoded)           // NULL 금지 컬럼 충족
+                .password(encoded) // NULL 금지 컬럼 충족
                 .role(Role.USER)
                 .build();
 
@@ -109,7 +111,8 @@ public class AuthService {
                 case "google":
                     return (String) attrs.getOrDefault("name", "");
                 case "kakao":
-                    Map<String, Object> profile = (Map<String, Object>) ((Map<String, Object>) attrs.getOrDefault("kakao_account", Map.of()))
+                    Map<String, Object> profile = (Map<String, Object>) ((Map<String, Object>) attrs
+                            .getOrDefault("kakao_account", Map.of()))
                             .getOrDefault("profile", Map.of());
                     return (String) profile.getOrDefault("nickname", "");
                 case "naver":

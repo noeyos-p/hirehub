@@ -3,20 +3,6 @@ import { myPageApi } from "../../api/myPageApi";
 import type { UsersRequest, UsersResponse } from "../../types/interface";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
-/* === Daum 주소검색 타입 선언 === */
-declare global {
-  interface Window {
-    daum: any;
-  }
-}
-
-/* === 카카오 주소 검색 === */
-const openPostcode = (cb: (addr: string) => void) => {
-  new window.daum.Postcode({
-    oncomplete: (data: any) => cb(data.address),
-  }).open();
-};
-
 /* SVG 아이콘 */
 const Svg = (p: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -129,19 +115,22 @@ const FieldRow: React.FC<{
   children?: React.ReactNode;
   disabled?: boolean;
 }> = ({ label, value, onEdit, editing, children, disabled }) => (
-  <div className="grid grid-cols-12 items-center border-b border-zinc-200 py-3">
-    <div className="col-span-3 text-sm text-zinc-500">{label}</div>
-    <div className="col-span-6 text-sm md:text-base text-zinc-900">
+  <div className="grid grid-cols-12 items-center px-4 sm:px-6 py-4 min-h-[64px]">
+    <div className="col-span-4 text-sm font-medium text-gray-600 dark:text-gray-400">{label}</div>
+    <div className="col-span-6 text-sm md:text-base text-text-primary dark:text-white">
       {editing ? children : value}
     </div>
-    <div className="col-span-3 flex justify-end">
+    <div className="col-span-2 flex justify-end items-center min-h-[40px]">
       {onEdit && (
         <button
-          className={`p-1 rounded ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-100"
-            }`}
+          className={`p-2 rounded-full transition ${
+            disabled
+              ? "opacity-40 cursor-not-allowed"
+              : "hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
           onClick={disabled ? undefined : onEdit}
         >
-          <Pencil className="text-zinc-400" />
+          <Pencil className="text-gray-400 w-4 h-4" />
         </button>
       )}
     </div>
@@ -152,10 +141,6 @@ const MyInfo: React.FC = () => {
   const [me, setMe] = useState<UsersResponse | null>(null);
   const [editing, setEditing] = useState<null | keyof UsersResponse>(null);
   const [draft, setDraft] = useState<Record<string, any>>({});
-
-  /* 상세주소 (프론트 전용) */
-  const [addressDetail, setAddressDetail] = useState("");
-  const detailRef = useRef<HTMLInputElement | null>(null);
 
   /* 드롭다운 상태 관리 */
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -198,43 +183,19 @@ const MyInfo: React.FC = () => {
 
   const startEdit = (key: keyof UsersResponse) => {
     setEditing(key);
-
-    if (key === "address") {
-      /* DB의 단일 address → 주소/상세주소 분리 */
-      const full = me?.address || "";
-      const parts = full.split(" ");
-      const base = parts.slice(0, 3).join(" "); // 시/구/로 정도
-      const detail = parts.slice(3).join(" ");
-
-      setDraft({ address: base.trim() });
-      setAddressDetail(detail.trim());
-    } else {
-      setDraft({ [key]: me?.[key] ?? "" });
-    }
+    setDraft({ [key]: me?.[key] ?? "" });
   };
 
   const cancel = () => {
     setEditing(null);
     setDraft({});
-    setAddressDetail("");
   };
 
   const commit = async (key: keyof UsersResponse) => {
     try {
-      let payload: any;
-
-      if (key === "address") {
-        /* 주소 + 상세주소 합쳐서 단일 address 로 저장 */
-
-        const combined = `${draft.address || ""} ${addressDetail}`.trim();
-        payload = { address: combined };
-      } else {
-        payload = { [key]: draft[key] };
-      }
-
+      const payload = { [key]: draft[key] };
       const updated = await updateMe(payload);
       setMe(updated);
-
       cancel();
     } catch (e) {
       alert("오류가 발생했습니다.");
@@ -250,20 +211,21 @@ const MyInfo: React.FC = () => {
     (code && GENDER_LABEL[code]) || "-";
 
   return (
-    <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
-      <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">
-        계정정보 설정
-      </h2>
+    <div className="min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+          내 정보
+        </h2>
 
-      <section className="grid grid-cols-1 xl:grid-cols-12 gap-4 xl:gap-10">
-        {/* 프로필 */}
-        <aside className="xl:col-span-4 flex flex-col items-center gap-4">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+        {/* 프로필 섹션 */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-[#006AFF] to-[#0056CC] flex items-center justify-center shadow-lg flex-shrink-0">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
+              fill="white"
               viewBox="0 0 24 24"
-              className="w-12 h-12 sm:w-14 sm:h-14 text-gray-600"
+              className="w-12 h-12 sm:w-14 sm:h-14"
             >
               <path
                 fillRule="evenodd"
@@ -273,37 +235,43 @@ const MyInfo: React.FC = () => {
             </svg>
           </div>
 
+          <div className="ml-4">
           {editing === "nickname" ? (
-            <div className="flex items-center gap-2 justify-center">
+            <div className="flex items-center gap-2">
               <input
-                className="border border-zinc-300 rounded px-3 py-2 text-center"
+                className="rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 value={draft.nickname ?? ""}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, nickname: e.target.value }))
                 }
               />
-              <button className="p-2" onClick={() => commit("nickname")}>
-                <Check />
+              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onClick={() => commit("nickname")}>
+                <Check className="text-green-600" />
               </button>
-              <button className="p-2" onClick={cancel}>
-                <X />
+              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onClick={cancel}>
+                <X className="text-red-600" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-zinc-700 justify-center">
-              <span className="text-lg font-medium">{me?.nickname || "닉네임 없음"}</span>
+            <div className="flex items-center gap-2 text-text-primary dark:text-white">
+              <span className="text-lg sm:text-xl font-semibold">{me?.nickname || "닉네임 없음"}</span>
               <button
-                className="p-1 rounded hover:bg-zinc-100"
+                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                 onClick={() => startEdit("nickname")}
               >
-                <Pencil className="text-zinc-400" />
+                <Pencil className="text-gray-400 w-4 h-4" />
               </button>
             </div>
           )}
-        </aside>
+          </div>
+          </div>
+        </div>
 
-        {/* 상세 정보 */}
-        <div className="xl:col-span-8 space-y-1">
+        {/* 기본 정보 섹션 */}
+        <section className="mb-8">
+          <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4 px-2">기본 정보</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {/* 이메일 */}
           <FieldRow
             label="이메일"
@@ -319,7 +287,7 @@ const MyInfo: React.FC = () => {
           >
             <div className="flex items-center gap-2 w-full">
               <input
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                className="w-full rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 value={draft.name ?? ""}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, name: e.target.value }))
@@ -343,7 +311,7 @@ const MyInfo: React.FC = () => {
           >
             <div className="flex items-center gap-2 w-full">
               <input
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                className="w-full rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 value={draft.phone ?? ""}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, phone: e.target.value }))
@@ -357,7 +325,15 @@ const MyInfo: React.FC = () => {
               </button>
             </div>
           </FieldRow>
+            </div>
+          </div>
+        </section>
 
+        {/* 이력서 자동기입정보 섹션 */}
+        <section className="mb-8">
+          <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4 px-2">이력서 자동기입정보</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {/* 생년월일 */}
           <FieldRow
             label="생년월일"
@@ -368,7 +344,7 @@ const MyInfo: React.FC = () => {
             <div className="flex items-center gap-2">
               <input
                 type="date"
-                className="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                className="rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 value={draft.dob ?? ""}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, dob: e.target.value }))
@@ -386,9 +362,31 @@ const MyInfo: React.FC = () => {
           {/* 나이 */}
           <FieldRow
             label="나이"
-            value={ageToShow ? `${ageToShow}살` : "-"}
-            disabled
+            value={ageToShow ? `${ageToShow}세` : "-"}
           />
+
+          {/* 주소 */}
+          <FieldRow
+            label="주소"
+            value={me?.address || "-"}
+            onEdit={() => startEdit("address")}
+            editing={editing === "address"}
+          >
+            <div className="flex items-center gap-2 w-full">
+              <input
+                className="w-full rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
+                value={draft.address ?? ""}
+                onChange={(e) => setDraft((d) => ({ ...d, address: e.target.value }))}
+                placeholder="주소를 입력하세요"
+              />
+              <button className="p-2" onClick={() => commit("address")}>
+                <Check />
+              </button>
+              <button className="p-2" onClick={cancel}>
+                <X />
+              </button>
+            </div>
+          </FieldRow>
 
           {/* 성별 */}
           <FieldRow
@@ -401,7 +399,7 @@ const MyInfo: React.FC = () => {
               <div className="relative flex-1" ref={genderRef}>
                 <button
                   onClick={() => setOpenDropdown(openDropdown === "gender" ? null : "gender")}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                  className="w-full flex items-center justify-between rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 >
                   <span className="truncate">{draft.gender ? GENDER_LABEL[draft.gender] : "선택하세요"}</span>
                   <ChevronDownIcon
@@ -448,52 +446,15 @@ const MyInfo: React.FC = () => {
               </button>
             </div>
           </FieldRow>
-
-          {/* ============================== */}
-          {/*           주소 수정             */}
-          {/* ============================== */}
-          <FieldRow
-            label="주소"
-            value={me?.address || "-"}
-            onEdit={() => startEdit("address")}
-            editing={editing === "address"}
-          >
-            <div className="flex flex-col gap-2 w-full">
-
-              {/* 주소 input - 클릭하면 주소 찾기 API 실행 */}
-              <input
-                readOnly
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black cursor-pointer"
-                value={draft.address ?? ""}
-                onClick={() =>
-                  openPostcode((addr) => {
-                    setDraft((d) => ({ ...d, address: addr }));
-                    setTimeout(() => detailRef.current?.focus(), 120);
-                  })
-                }
-                placeholder="주소를 검색하려면 클릭하세요"
-              />
-
-              {/* 상세주소 */}
-              <input
-                ref={detailRef}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
-                value={addressDetail}
-                onChange={(e) => setAddressDetail(e.target.value)}
-                placeholder="상세 주소 (예: 101동 1203호)"
-              />
-
-              {/* 저장/취소 */}
-              <div className="flex gap-2 mt-1">
-                <button className="p-2" onClick={() => commit("address")}>
-                  <Check />
-                </button>
-                <button className="p-2" onClick={cancel}>
-                  <X />
-                </button>
-              </div>
             </div>
-          </FieldRow>
+          </div>
+        </section>
+
+        {/* AI 추천공고 기입정보 섹션 */}
+        <section className="mb-8">
+          <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4 px-2">AI 추천공고 기입정보</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
 
           {/* 선호지역 */}
           <FieldRow
@@ -506,7 +467,7 @@ const MyInfo: React.FC = () => {
               <div className="relative flex-1" ref={locationRef}>
                 <button
                   onClick={() => setOpenDropdown(openDropdown === "location" ? null : "location")}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                  className="w-full flex items-center justify-between rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 >
                   <span className="truncate">{draft.location || "선택하세요"}</span>
                   <ChevronDownIcon
@@ -550,7 +511,7 @@ const MyInfo: React.FC = () => {
               <div className="relative flex-1" ref={positionRef}>
                 <button
                   onClick={() => setOpenDropdown(openDropdown === "position" ? null : "position")}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                  className="w-full flex items-center justify-between rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 >
                   <span className="truncate">{draft.position || "선택하세요"}</span>
                   <ChevronDownIcon
@@ -594,7 +555,7 @@ const MyInfo: React.FC = () => {
               <div className="relative flex-1" ref={careerRef}>
                 <button
                   onClick={() => setOpenDropdown(openDropdown === "career" ? null : "career")}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                  className="w-full flex items-center justify-between rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 >
                   <span className="truncate">{draft.careerLevel || "선택하세요"}</span>
                   <ChevronDownIcon
@@ -638,7 +599,7 @@ const MyInfo: React.FC = () => {
               <div className="relative flex-1" ref={educationRef}>
                 <button
                   onClick={() => setOpenDropdown(openDropdown === "education" ? null : "education")}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition text-sm text-black"
+                  className="w-full flex items-center justify-between rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
                 >
                   <span className="truncate">{draft.education || "선택하세요"}</span>
                   <ChevronDownIcon
@@ -670,8 +631,10 @@ const MyInfo: React.FC = () => {
               </button>
             </div>
           </FieldRow>
-        </div>
-      </section>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 };

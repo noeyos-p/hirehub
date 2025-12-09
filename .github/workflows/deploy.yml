@@ -110,6 +110,9 @@ jobs:
             OPENAI_API_KEY=${{ secrets.FASTAPI_OPENAI_API_KEY }}
             HF_API_TOKEN=${{ secrets.HF_API_TOKEN }}
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            VITE_PORTONE_IMP_KEY=${VITE_PORTONE_IMP_KEY}
+            PORTONE_STORE_ID=${PORTONE_STORE_ID}
+            PORTONE_API_SECRET=${PORTONE_API_SECRET}
             EOF
 
             echo "🚀 Docker Compose 실행…"

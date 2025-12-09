@@ -1,40 +1,29 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { setAuthToken } from '../api/api';
 import { AxiosError } from 'axios';
-import type { UsersRequest } from "../types/interface";
-
-/* === Daum 주소검색용 타입 선언 === */
-declare global { interface Window { daum: any } }
-
-/* 주소검색 함수 */
-const openPostcode = (cb: (addr: string) => void) => {
-  new window.daum.Postcode({
-    oncomplete: (data: any) => cb(data.address)
-  }).open();
-};
 
 const SignInfo: React.FC = () => {
   const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
 
-  const [formData, setFormData] = useState<UsersRequest>({
-    name: '',
-    nickname: '',
-    phone: '',
+  // Step 1: 이력서 자동기입정보
+  const [step1Data, setStep1Data] = useState({
     dob: '',
-    gender: '',
     address: '',
+    gender: ''
+  });
+
+  // Step 2: AI 추천공고정보
+  const [step2Data, setStep2Data] = useState({
     location: '',
     position: '',
     careerLevel: '',
     education: ''
   });
 
-  /* 상세주소 (프론트 전용) */
-  const [addressDetail, setAddressDetail] = useState("");
-
-  /* 상세주소 자동 포커스 */
-  const detailRef = useRef<HTMLInputElement | null>(null);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const seoulDistricts = [
     '강남구', '강동구', '강북구', '강서구', '관악구',
@@ -44,19 +33,39 @@ const SignInfo: React.FC = () => {
     '용산구', '은평구', '종로구', '중구', '중랑구'
   ];
 
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleStep1Change = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setStep1Data(prev => ({ ...prev, [name]: value }));
   };
 
-  /* 저장 */
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleStep2Change = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setStep2Data(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleNextStep = () => {
+    setCurrentStep(2);
+  };
+
+  const handlePreviousStep = () => {
+    if (currentStep === 2) {
+      setCurrentStep(1);
+    } else {
+      // Step 1에서는 회원가입 페이지로
+      navigate('/signup');
+    }
+  };
+
+  const handleSkipStep = async () => {
+    if (currentStep === 1) {
+      setCurrentStep(2);
+    } else {
+      // Step 2 건너뛰기 - 바로 완료
+      await handleComplete(true);
+    }
+  };
+
+  const handleComplete = async (isSkip = false) => {
     setError('');
     setIsLoading(true);
 
@@ -68,19 +77,28 @@ const SignInfo: React.FC = () => {
         return;
       }
 
-      const finalAddress = `${formData.address} ${addressDetail}`.trim();
+      const dataToSend = {
+        dob: step1Data.dob || undefined,
+        address: step1Data.address || undefined,
+        gender: step1Data.gender || undefined,
+        location: step2Data.location || undefined,
+        position: step2Data.position || undefined,
+        careerLevel: step2Data.careerLevel || undefined,
+        education: step2Data.education || undefined
+      };
 
-      const response = await api.post('/api/onboarding/save', {
-        ...formData,
-        address: finalAddress
-      });
+      // undefined 필드 제거
+      const cleanData = Object.fromEntries(
+        Object.entries(dataToSend).filter(([_, v]) => v !== undefined && v !== '')
+      );
+
+      const response = await api.post('/api/onboarding/save', cleanData);
 
       if (response.data?.accessToken) {
         setAuthToken(response.data.accessToken);
       }
 
-      alert('정보가 성공적으로 저장되었습니다!');
-      window.location.href = '/';
+      navigate('/');
 
     } catch (e) {
       const err = e as AxiosError<{ message?: string }>;
@@ -90,231 +108,211 @@ const SignInfo: React.FC = () => {
     }
   };
 
-  const isFormComplete = Object.values(formData).every(v => v.trim() !== "");
-
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold mb-4">HIREHUB</h1>
-      <hr className="max-w-md w-full border-t-2 border-gray-300 mb-6" />
-      <h2 className="text-xl mb-6 font-bold">정보를 입력해주세요</h2>
-
-      {error && (
-        <div className="w-full max-w-md mb-4 px-4 py-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
-      >
-
-        {/* 이름 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">이름 *</label>
-          <input
-            type="text"
-            name="name"
-            required
-            disabled={isLoading}
-            value={formData.name}
-            onChange={handleChange}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* 닉네임 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">닉네임 *</label>
-          <input
-            type="text"
-            name="nickname"
-            required
-            disabled={isLoading}
-            value={formData.nickname}
-            onChange={handleChange}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* 전화번호 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">전화번호 *</label>
-          <input
-            type="tel"
-            name="phone"
-            required
-            disabled={isLoading}
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="010-1234-5678"
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* 생년월일 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">생년월일 *</label>
-          <input
-            type="date"
-            name="dob"
-            required
-            disabled={isLoading}
-            value={formData.dob}
-            onChange={handleChange}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* 성별 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">성별 *</label>
-          <select
-            name="gender"
-            required
-            disabled={isLoading}
-            value={formData.gender}
-            onChange={handleChange}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">선택하세요</option>
-            <option value="MALE">남성</option>
-            <option value="FEMALE">여성</option>
-            <option value="UNKNOWN">선택 안 함</option>
-          </select>
-        </div>
-
-        {/* ===================== */}
-        {/*   주소 + 상세주소     */}
-        {/* ===================== */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">주소 *</label>
-
-          {/* 주소 input */}
-          <input
-            type="text"
-            name="address"
-            disabled={isLoading}
-            value={formData.address}
-            onChange={handleChange}
-            placeholder="주소를 입력하세요"
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-
-          {/* 주소 찾기 */}
-          <button
-            type="button"
-            onClick={() =>
-              openPostcode(addr => {
-                setFormData(prev => ({ ...prev, address: addr }));
-                setTimeout(() => detailRef.current?.focus(), 100);
-              })
-            }
-            className="mt-2 px-3 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 text-sm"
-          >
-            주소 찾기
-          </button>
-
-          {/* 상세주소 */}
-          <input
-            ref={detailRef}
-            value={addressDetail}
-            disabled={isLoading}
-            onChange={e => setAddressDetail(e.target.value)}
-            placeholder="상세 주소를 입력하세요 (예: 101동 1203호)"
-            className="mt-2 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* 선호 지역 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">선호 지역 *</label>
-          <select
-            name="location"
-            required
-            disabled={isLoading}
-            value={formData.location}
-            onChange={handleChange}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">선택하세요</option>
-            {seoulDistricts.map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* 직무 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">직무 *</label>
-          <select
-            name="position"
-            required
-            disabled={isLoading}
-            value={formData.position}
-            onChange={handleChange}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">선택하세요</option>
-            <option value="프론트엔드">프론트엔드</option>
-            <option value="백엔드">백엔드</option>
-            <option value="풀스택">풀스택</option>
-            <option value="DevOps">DevOps</option>
-            <option value="데이터 엔지니어">데이터 엔지니어</option>
-            <option value="AI/ML">AI/ML</option>
-            <option value="기타">기타</option>
-          </select>
-        </div>
-
-        {/* 경력 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">경력 *</label>
-          <select
-            name="careerLevel"
-            required
-            disabled={isLoading}
-            value={formData.careerLevel}
-            onChange={handleChange}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">선택하세요</option>
-            <option value="신입">신입</option>
-            <option value="1년 미만">1년 미만</option>
-            <option value="1-3년">1-3년</option>
-            <option value="3-5년">3-5년</option>
-            <option value="5-10년">5-10년</option>
-            <option value="10년 이상">10년 이상</option>
-          </select>
-        </div>
-
-        {/* 학력 */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700">학력 *</label>
-          <select
-            name="education"
-            required
-            disabled={isLoading}
-            value={formData.education}
-            onChange={handleChange}
-            className="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">선택하세요</option>
-            <option value="고졸">고졸</option>
-            <option value="초대졸">초대졸</option>
-            <option value="대졸">대졸</option>
-            <option value="석사">석사</option>
-            <option value="박사">박사</option>
-          </select>
-        </div>
-
+    <div className="min-h-[80vh] bg-background-light dark:bg-background-dark font-display text-text-primary dark:text-white p-4 sm:p-8 md:p-12">
+      <div className="w-full max-w-sm mx-auto">
+        {/* 뒤로가기 */}
         <button
-          type="submit"
-          disabled={!isFormComplete || isLoading}
-          className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 disabled:opacity-50 font-medium"
+          onClick={handlePreviousStep}
+          className="text-xs sm:text-sm text-[#006AFF] mb-3 md:mb-4 hover:underline inline-block"
         >
-          {isLoading ? '저장 중...' : '완료'}
+          ← 이전으로
         </button>
-      </form>
+
+        <h1 className="text-text-primary dark:text-white text-2xl font-bold text-center mb-2">추가 정보 입력</h1>
+        <p className="text-text-primary dark:text-white text-sm text-center mb-6">Step {currentStep}/2</p>
+
+        {error && (
+          <div className="w-full mb-4 px-4 py-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="w-full space-y-4">
+          {currentStep === 1 && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-text-primary dark:text-white text-lg font-semibold mb-4">이력서 자동기입정보</h2>
+                <p className="text-text-secondary dark:text-gray-400 text-sm mb-4">
+                  이력서 작성 시 자동으로 채워지는 정보입니다.
+                </p>
+              </div>
+
+              {/* 생년월일 */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-text-primary dark:text-white text-sm font-medium">생년월일</label>
+                <input
+                  type="date"
+                  name="dob"
+                  value={step1Data.dob}
+                  onChange={handleStep1Change}
+                  disabled={isLoading}
+                  className="form-input rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
+                />
+              </div>
+
+              {/* 주소 */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-text-primary dark:text-white text-sm font-medium">주소</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={step1Data.address}
+                  onChange={handleStep1Change}
+                  disabled={isLoading}
+                  placeholder="주소를 입력하세요"
+                  className="form-input rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
+                />
+              </div>
+
+              {/* 성별 */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-text-primary dark:text-white text-sm font-medium">성별</label>
+                <select
+                  name="gender"
+                  value={step1Data.gender}
+                  onChange={handleStep1Change}
+                  disabled={isLoading}
+                  className="rounded-lg border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark text-[#0d141b] dark:text-white focus:border-[#006AFF] focus:outline-none h-14 pl-3 pr-8 transition-all appearance-none"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="MALE">남성</option>
+                  <option value="FEMALE">여성</option>
+                  <option value="UNKNOWN">선택 안 함</option>
+                </select>
+              </div>
+
+              {/* 버튼 */}
+              <div className="flex flex-col space-y-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={isLoading}
+                  className="w-full bg-[#006AFF] text-white rounded-lg h-14 font-medium hover:bg-[#0056CC] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  다음
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSkipStep}
+                  disabled={isLoading}
+                  className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg h-14 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+                >
+                  건너뛰기
+                </button>
+              </div>
+            </>
+          )}
+
+          {currentStep === 2 && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-text-primary dark:text-white text-lg font-semibold mb-4">AI 추천공고 기입정보</h2>
+                <p className="text-text-secondary dark:text-gray-400 text-sm mb-4">
+                  맞춤 공고 추천에 활용되는 정보입니다.
+                </p>
+              </div>
+
+              {/* 선호 지역 */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-text-primary dark:text-white text-sm font-medium">선호 지역</label>
+                <select
+                  name="location"
+                  value={step2Data.location}
+                  onChange={handleStep2Change}
+                  disabled={isLoading}
+                  className="rounded-lg border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark text-[#0d141b] dark:text-white focus:border-[#006AFF] focus:outline-none h-14 pl-3 pr-8 transition-all appearance-none"
+                >
+                  <option value="">선택하세요</option>
+                  {seoulDistricts.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 직무 */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-text-primary dark:text-white text-sm font-medium">직무</label>
+                <select
+                  name="position"
+                  value={step2Data.position}
+                  onChange={handleStep2Change}
+                  disabled={isLoading}
+                  className="rounded-lg border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark text-[#0d141b] dark:text-white focus:border-[#006AFF] focus:outline-none h-14 pl-3 pr-8 transition-all appearance-none"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="프론트엔드">프론트엔드</option>
+                  <option value="백엔드">백엔드</option>
+                  <option value="풀스택">풀스택</option>
+                  <option value="DevOps">DevOps</option>
+                  <option value="데이터 엔지니어">데이터 엔지니어</option>
+                  <option value="AI/ML">AI/ML</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+
+              {/* 경력 */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-text-primary dark:text-white text-sm font-medium">경력</label>
+                <select
+                  name="careerLevel"
+                  value={step2Data.careerLevel}
+                  onChange={handleStep2Change}
+                  disabled={isLoading}
+                  className="rounded-lg border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark text-[#0d141b] dark:text-white focus:border-[#006AFF] focus:outline-none h-14 pl-3 pr-8 transition-all appearance-none"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="신입">신입</option>
+                  <option value="1년 미만">1년 미만</option>
+                  <option value="1-3년">1-3년</option>
+                  <option value="3-5년">3-5년</option>
+                  <option value="5-10년">5-10년</option>
+                  <option value="10년 이상">10년 이상</option>
+                </select>
+              </div>
+
+              {/* 학력 */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-text-primary dark:text-white text-sm font-medium">학력</label>
+                <select
+                  name="education"
+                  value={step2Data.education}
+                  onChange={handleStep2Change}
+                  disabled={isLoading}
+                  className="rounded-lg border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark text-[#0d141b] dark:text-white focus:border-[#006AFF] focus:outline-none h-14 pl-3 pr-8 transition-all appearance-none"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="고졸">고졸</option>
+                  <option value="초대졸">초대졸</option>
+                  <option value="대졸">대졸</option>
+                  <option value="석사">석사</option>
+                  <option value="박사">박사</option>
+                </select>
+              </div>
+
+              {/* 버튼 */}
+              <div className="flex flex-col space-y-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => handleComplete(false)}
+                  disabled={isLoading}
+                  className="w-full bg-[#006AFF] text-white rounded-lg h-14 font-medium hover:bg-[#0056CC] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? '저장 중...' : '완료'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSkipStep}
+                  disabled={isLoading}
+                  className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg h-14 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+                >
+                  건너뛰기
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

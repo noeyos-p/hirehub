@@ -49,8 +49,7 @@ public class AuthRestController {
 
             // 1. 인증
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
             log.info("인증 성공: {}", request.getEmail());
 
@@ -68,10 +67,10 @@ public class AuthRestController {
                     "success", true,
                     "tokenType", "Bearer",
                     "accessToken", accessToken,
-                    "role", user.getRole().name(),  // ← ADMIN 또는 USER
+                    "role", user.getRole().name(), // ← ADMIN 또는 USER
                     "email", user.getEmail(),
                     "userId", user.getId(),
-                    "requiresOnboarding", false  // 로그인은 온보딩 불필요
+                    "requiresOnboarding", false // 로그인은 온보딩 불필요
             );
 
             log.info("✅ 로그인 완료 - 이메일: {}, Role: {}", user.getEmail(), user.getRole());
@@ -83,8 +82,7 @@ public class AuthRestController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of(
                             "success", false,
-                            "message", "이메일 또는 비밀번호가 올바르지 않습니다."
-                    ));
+                            "message", "이메일 또는 비밀번호가 올바르지 않습니다."));
         }
     }
 
@@ -94,26 +92,31 @@ public class AuthRestController {
      */
     @PostMapping("/signup")
     public ResponseEntity<Map<String, String>> signup(@Valid @RequestBody SignupAndLoginDto request) {
-        // [FIX] 클래스명이 아니라, 실제 파라미터 변수 request 를 전달해야 함
-        authService.signupEmail(request);   // ← 여기만 수정
+        try {
+            // [FIX] 클래스명이 아니라, 실제 파라미터 변수 request 를 전달해야 함
+            authService.signupEmail(request); // ← 여기만 수정
 
-        // 회원가입 후 자동 로그인 처리
-        Users user = usersRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            // 회원가입 후 자동 로그인 처리
+            Users user = usersRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String accessToken = tokenProvider.createToken(
-                user.getEmail(),
-                user.getId(),
-                user.getRole().name()
-        );
+            String accessToken = tokenProvider.createToken(
+                    user.getEmail(),
+                    user.getId(),
+                    user.getRole().name());
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "tokenType", "Bearer",
-                "accessToken", accessToken,
-                "role", user.getRole().name(),
-                "message", "회원가입이 완료되었습니다. 내정보를  기입해주세요.",
-                "requiresOnboarding", "true"
-        ));
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "tokenType", "Bearer",
+                    "accessToken", accessToken,
+                    "role", user.getRole().name(),
+                    "message", "회원가입이 완료되었습니다. 내정보를  기입해주세요.",
+                    "requiresOnboarding", "true"));
+        } catch (Exception e) {
+            log.error("❌ 회원가입 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "message", "회원가입 실패: " + e.getMessage()));
+        }
     }
 
     /**
@@ -139,8 +142,7 @@ public class AuthRestController {
     @GetMapping("/me")
     public ResponseEntity<?> me(
             Authentication authentication,
-            @RequestHeader(value = "Authorization", required = false) String authz
-    ) {
+            @RequestHeader(value = "Authorization", required = false) String authz) {
         try {
             String email = null;
 
@@ -171,8 +173,7 @@ public class AuthRestController {
                 return ResponseEntity.ok(Map.of(
                         "id", u.getId(),
                         "email", u.getEmail(),
-                        "role", u.getRole().name()
-                ));
+                        "role", u.getRole().name()));
             }
 
             // ⭐ USER/ADMIN 은 기존 로직 유지
@@ -180,20 +181,50 @@ public class AuthRestController {
                     "id", u.getId(),
                     "email", u.getEmail(),
                     "name", u.getName(),
-                    "role", u.getRole() != null ? u.getRole().name() : "USER"
-            ));
+                    "role", u.getRole() != null ? u.getRole().name() : "USER"));
 
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("message", "INVALID_TOKEN"));
         }
     }
 
-    private static boolean isBlank(String s){ return s == null || s.isBlank(); }
+    /**
+     * 이메일 중복 확인
+     * GET /api/auth/check-email?email={email}
+     */
+    @GetMapping("/check-email")
+    public ResponseEntity<Map<String, String>> checkEmail(@RequestParam String email) {
+        boolean exists = usersRepository.findByEmail(email).isPresent();
+        if (exists) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "이미 사용 중인 이메일입니다."));
+        }
+        return ResponseEntity.ok(Map.of("message", "사용 가능한 이메일입니다."));
+    }
+
+    /**
+     * 닉네임 중복 확인
+     * GET /api/auth/check-nickname?nickname={nickname}
+     */
+    @GetMapping("/check-nickname")
+    public ResponseEntity<Map<String, String>> checkNickname(@RequestParam String nickname) {
+        boolean exists = usersRepository.findByNickname(nickname).isPresent();
+        if (exists) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "이미 사용 중인 닉네임입니다."));
+        }
+        return ResponseEntity.ok(Map.of("message", "사용 가능한 닉네임입니다."));
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
     private boolean requiresOnboarding(Users u) {
         return isBlank(u.getName())
                 || isBlank(u.getNickname())
                 || isBlank(u.getPhone())
-                || u.getDob() == null              // 네 프로젝트에선 String/LocalDate 혼용했더라. null만 체크.
+                || u.getDob() == null // 네 프로젝트에선 String/LocalDate 혼용했더라. null만 체크.
                 || u.getGender() == null
                 || isBlank(u.getAddress())
                 || isBlank(u.getLocation())

@@ -41,9 +41,9 @@ export default function AuthCallback() {
 
     // ✅ 신규 사용자 여부로 분기
     if (isNewUser === "true") {
-      console.log("🆕 신규 사용자 → 온보딩 페이지로 이동");
-      // ⚠️ /signInfo로 이동 (온보딩 폼)
-      navigate("/signInfo");
+      console.log("🆕 신규 사용자 → 회원가입 페이지로 이동");
+      // ⚠️ /signup으로 이동 (회원가입 폼)
+      navigate("/signup");
     } else {
       console.log("👤 기존 사용자 → 메인페이지로 이동");
       // 기존 사용자는 바로 홈으로

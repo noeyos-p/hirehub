@@ -7,16 +7,24 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class SignupAndLoginDto {
-    @NotBlank @Email
+    @NotBlank
+    @Email
     private String email;
 
     @NotBlank
     private String password;
 
     @NotBlank
-    private String phone;   // 추가🔥
+    private String name; // 추가🔥
+
+    @NotBlank
+    private String nickname; // 추가🔥
+
+    @NotBlank
+    private String phone; // 추가🔥
 }

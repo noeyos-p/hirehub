@@ -120,16 +120,16 @@ export interface UsersResponse {
 
 
 export interface UsersRequest {
-  name: string;
-  nickname: string;
-  phone: string;
-  dob: string;        // LocalDate → "yyyy-MM-dd"
-  gender: string;
-  address: string;
-  location: string;
-  position: string;
-  careerLevel: string;
-  education: string;
+  name?: string;
+  nickname?: string;
+  phone?: string;
+  dob?: string;        // LocalDate → "yyyy-MM-dd"
+  gender?: string;
+  address?: string;
+  location?: string;
+  position?: string;
+  careerLevel?: string;
+  education?: string;
   age?: number;       // 선택값 (백엔드에서도 optional)
 }
 
