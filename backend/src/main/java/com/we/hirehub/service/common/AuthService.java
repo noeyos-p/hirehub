@@ -43,10 +43,10 @@ public class AuthService {
             throw new IllegalStateException("이미 사용 중인 이메일입니다.");
         });
 
-        // 🔥 휴대폰번호 중복 체크 (선택)
-        if (usersRepository.existsByPhoneAndEmailNot(req.getPhone(), req.getEmail())) {
-            throw new IllegalStateException("이미 가입된 전화번호입니다.");
-        }
+        // 🔥 휴대폰번호 중복 체크 (비활성화 - 동일 전화번호 가입 허용)
+        // if (usersRepository.existsByPhoneAndEmailNot(req.getPhone(), req.getEmail())) {
+        //     throw new IllegalStateException("이미 가입된 전화번호입니다.");
+        // }
         //
         // 🔥 SMS 인증 여부 체크
         if (!smsCodeService.isVerified(req.getPhone())) {

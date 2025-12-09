@@ -260,10 +260,26 @@ export default function Header() {
                   <Link
                     to="/chatBot"
                     onClick={() => setShowMobileMenu(false)}
-                    className="block px-4 pt-3 pb-1 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
+                    className="block px-4 pt-3 pb-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
                     고객 상담 센터
                   </Link>
+
+                  {/* 로그아웃 버튼 (로그인 시에만 표시) */}
+                  {isAuthenticated && (
+                    <>
+                      <hr className="my-1 border-gray-100" />
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full text-left block px-4 pt-3 pb-1 text-base font-medium text-red-600 hover:bg-gray-50 hover:text-red-700"
+                      >
+                        로그아웃
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
