@@ -412,7 +412,7 @@ export interface JobPostResponse {
   endAt: string;
   content?: string;
   photo?: string;
-  // ✅ 추가된 필드
+  // ✅ 추가된 필드  위도와 경도
   mainJob?: string;
   qualification?: string;
   preference?: string;
