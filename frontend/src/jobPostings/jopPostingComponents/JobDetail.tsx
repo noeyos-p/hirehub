@@ -281,6 +281,20 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                   )}
                 </section>
 
+                {/* 기술스택 */}
+                {job.techStacks && job.techStacks.length > 0 && (
+                  <section>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">기술스택</h2>
+                    <div className="flex flex-wrap gap-2">
+                      {job.techStacks.map((stack, index) => (
+                        <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm font-medium border border-gray-200">
+                          {stack}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 {/* 주요업무 */}
                 {job.mainJob && (
                   <section>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom"; // ✅ useNavigate 추가
 import {
   BookmarkIcon,
@@ -27,6 +27,8 @@ const JobPostings: React.FC = () => {
     education: "",
     location: "",
   });
+  const [selectedTechStacks, setSelectedTechStacks] = useState<string[]>([]); // ✅ 다중 선택된 기술스택
+  const [sortBy, setSortBy] = useState<"recent" | "deadline">("recent");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [jobListings, setJobListings] = useState<JobPostResponse[]>([]);
@@ -57,6 +59,7 @@ const JobPostings: React.FC = () => {
   const experienceRef = useRef<HTMLDivElement>(null);
   const educationRef = useRef<HTMLDivElement>(null);
   const locationRef = useRef<HTMLDivElement>(null);
+  const techStackRef = useRef<HTMLDivElement>(null); // ✅ 추가
 
   // 화면 크기 변경 감지
   useEffect(() => {
@@ -78,7 +81,9 @@ const JobPostings: React.FC = () => {
         educationRef.current &&
         !educationRef.current.contains(event.target as Node) &&
         locationRef.current &&
-        !locationRef.current.contains(event.target as Node)
+        !locationRef.current.contains(event.target as Node) &&
+        techStackRef.current && // ✅ 추가
+        !techStackRef.current.contains(event.target as Node)
       ) {
         setOpenDropdown(null);
       }
@@ -350,6 +355,79 @@ const JobPostings: React.FC = () => {
     "중랑구",
   ];
 
+  // ✅ 기술스택 데이터 정제를 위한 헬퍼 함수
+  const getJobTechStacks = (job: JobPostResponse) => {
+    if (!job.techStacks) return [];
+    // 콤마(,)로 구분된 문자열을 분리하고 공백 제거
+    return job.techStacks
+      .flatMap(stack => stack.split(','))
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  };
+
+  // ✅ 동적 기술스택 옵션 생성 (중복 제거 및 정렬)
+  // ✅ 기술스택 정규화 함수 (대소문자, 공백, 버전 무시) - 매칭용
+  const normalizeTechStack = (stack: string) => {
+    let s = stack.toLowerCase();
+    // 공백, 점(.), 하이픈(-) 제거
+    s = s.replace(/[\s\.\-]+/g, "");
+    // 버전 번호 제거 (숫자로 시작하는 뒷부분)
+    s = s.replace(/\d[\d\+x]*$/, "");
+    return s;
+  };
+
+  // ✅ 기술스택 표시용 정제 함수 (예: "Java 17+" -> "Java")
+  const cleanTechStack = (stack: string) => {
+    // 버전 패턴: 공백(옵션) + 숫자 + (숫자/./+/x/문자)의 반복이 끝에 옴
+    // 예: " 17", "17+", " 3.x", "5"
+    const cleaned = stack.replace(/\s?\d[\d\.\+x\-]*$/i, "");
+    // 너무 짧아지면(1글자 이하) 원본 유지 (예: "C++", "S3" 등 보호)
+    // S3 -> S (X)
+    // C++ -> C++ (숫자 없음, OK)
+    if (cleaned.length < 2) return stack;
+    return cleaned;
+  }
+
+  // ✅ 동적 기술스택 옵션 생성 (중복 제거 및 대소문자/버전 통합)
+  const techStackOptions = useMemo(() => {
+    const stackMap = new Map<string, string>();
+
+    jobListings.forEach(job => {
+      getJobTechStacks(job).forEach(stack => {
+        const normalized = normalizeTechStack(stack);
+        const display = cleanTechStack(stack).trim();
+
+        if (stackMap.has(normalized)) {
+          const current = stackMap.get(normalized)!;
+          // 더 일반적인(짧은) 이름을 선호 (Java17+ -> Java)
+          if (display.length < current.length) {
+            stackMap.set(normalized, display);
+          }
+          // 길이가 같다면 대문자가 포함된 쪽 선호
+          else if (display.length === current.length && display !== display.toLowerCase() && current === current.toLowerCase()) {
+            stackMap.set(normalized, display);
+          }
+        } else {
+          stackMap.set(normalized, display);
+        }
+      });
+    });
+
+    // 알파벳 순 정렬
+    const sortedStacks = Array.from(stackMap.values()).sort((a, b) =>
+      a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+
+    // 중복 제거 (cleanTechStack 후에 normalized가 다른데 display가 같아질 수도 있음. 예: Node.js vs Nodejs -> 둘다 Nodejs가 될 수 있음?)
+    // Set으로 한번 더 유니크하게 만듦
+    const uniqueStacks = Array.from(new Set(sortedStacks));
+
+    return [
+      { value: "", label: "전체" },
+      ...uniqueStacks.map(stack => ({ value: stack, label: stack }))
+    ];
+  }, [jobListings]);
+
   const filteredJobs = jobListings.filter((job) => {
     const jobTitle = job.title?.toLowerCase() || "";
     const jobCompany = job.companyName?.toLowerCase() || "";
@@ -369,7 +447,27 @@ const JobPostings: React.FC = () => {
     const matchesExperience = !filters.experience || jobCareer.includes(filters.experience.toLowerCase());
     const matchesEducation = !filters.education || jobEdu.includes(filters.education.toLowerCase());
     const matchesLocation = !filters.location || jobLoc.includes(filters.location.toLowerCase());
-    return matchesCompany && matchesSearch && matchesPosition && matchesExperience && matchesEducation && matchesLocation;
+
+    // ✅ 기술스택 필터 (다중 선택 OR 로직 + 정규화 적용)
+    const matchesTechStack = selectedTechStacks.length === 0 ||
+      getJobTechStacks(job).some(stack =>
+        selectedTechStacks.some(selected => normalizeTechStack(selected) === normalizeTechStack(stack))
+      );
+
+    return matchesCompany && matchesSearch && matchesPosition && matchesExperience && matchesEducation && matchesLocation && matchesTechStack;
+  });
+
+  // ✅ 정렬 로직 적용
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    if (sortBy === "recent") {
+      return b.id - a.id; // 최신순 (ID 역순)
+    } else {
+      // 마감일 순 (오름차순). null(상시채용)은 뒤로 보냄
+      if (!a.endAt && !b.endAt) return b.id - a.id;
+      if (!a.endAt) return 1;
+      if (!b.endAt) return -1;
+      return new Date(a.endAt).getTime() - new Date(b.endAt).getTime();
+    }
   });
 
   // 무한 스크롤용: 현재까지 표시할 공고
@@ -387,8 +485,8 @@ const JobPostings: React.FC = () => {
     }
   }, [displayedCount, isMobile]);
 
-  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
-  const paginatedJobs = filteredJobs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(sortedJobs.length / itemsPerPage);
+  const paginatedJobs = sortedJobs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // ✅ 필터 옵션 데이터
   const filterOptions = {
@@ -414,6 +512,7 @@ const JobPostings: React.FC = () => {
       { value: "학력무관", label: "학력무관" },
     ],
     location: [{ value: "", label: "전체" }, ...seoulDistricts.map((district) => ({ value: district, label: district }))],
+    techStack: techStackOptions, // ✅ 동적으로 생성된 옵션 사용
   };
 
   // ✅ 드롭다운 토글
@@ -423,29 +522,44 @@ const JobPostings: React.FC = () => {
 
   // ✅ 필터 선택 핸들러
   const handleFilterSelect = (filterType: string, value: string) => {
-    setFilters({ ...filters, [filterType]: value });
-    setOpenDropdown(null);
+    if (filterType === "techStack") {
+      if (!value) {
+        setSelectedTechStacks([]);
+      } else {
+        if (!selectedTechStacks.includes(value)) {
+          setSelectedTechStacks([...selectedTechStacks, value]);
+        }
+      }
+      setOpenDropdown(null);
+    } else {
+      setFilters({ ...filters, [filterType]: value });
+      setOpenDropdown(null);
+    }
+  };
+
+  // ✅ 선택된 기술스택 제거 핸들러
+  const removeTechStack = (stackToRemove: string) => {
+    setSelectedTechStacks(selectedTechStacks.filter(stack => stack !== stackToRemove));
   };
 
   // ✅ 선택된 값 표시 함수
   const getDisplayLabel = (filterType: string) => {
+    if (filterType === "techStack") {
+      return selectedTechStacks.length > 0 ? `기술스택 (${selectedTechStacks.length})` : "기술스택";
+    }
     const value = filters[filterType as keyof typeof filters];
     if (!value) {
-      return filterType === "position"
-        ? "직무"
-        : filterType === "experience"
-          ? "경력"
-          : filterType === "education"
-            ? "학력"
-            : "희망지역";
+      if (filterType === "position") return "직무";
+      if (filterType === "experience") return "경력";
+      if (filterType === "education") return "학력";
+      if (filterType === "location") return "희망지역";
+      return "전체";
     }
     return value;
   };
 
   // 지원하기 모달
   const ApplyModal = () => {
-    console.log("ApplyModal 렌더링됨");
-    console.log("resumes:", resumes);
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
@@ -524,6 +638,7 @@ const JobPostings: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-[1440px] mx-auto px-2 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-3">
+        {/* ... (Error, CompanyFilter, SearchQuery blocks) use same logic as existing ... */}
         {error && (
           <div className="mb-4 px-4 py-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">{error}</div>
         )}
@@ -550,9 +665,10 @@ const JobPostings: React.FC = () => {
             </button>
           </div>
         )}
+
         {/* ✅ 필터 드롭다운 */}
         <div className="flex items-center justify-center gap-2 mb-3 max-w-[390px] md:max-w-none md:justify-start">
-          {/* 직무 필터 */}
+          {/* Position Filter */}
           <div className="relative flex-1 md:flex-none" ref={positionRef}>
             <button
               onClick={() => toggleDropdown("position")}
@@ -579,7 +695,7 @@ const JobPostings: React.FC = () => {
               </div>
             )}
           </div>
-          {/* 경력 필터 */}
+          {/* Experience Filter */}
           <div className="relative flex-1 md:flex-none" ref={experienceRef}>
             <button
               onClick={() => toggleDropdown("experience")}
@@ -607,7 +723,7 @@ const JobPostings: React.FC = () => {
               </div>
             )}
           </div>
-          {/* 학력 필터 */}
+          {/* Education Filter */}
           <div className="relative flex-1 md:flex-none" ref={educationRef}>
             <button
               onClick={() => toggleDropdown("education")}
@@ -634,7 +750,7 @@ const JobPostings: React.FC = () => {
               </div>
             )}
           </div>
-          {/* 희망지역 필터 */}
+          {/* Location Filter */}
           <div className="relative flex-1 md:flex-none" ref={locationRef}>
             <button
               onClick={() => toggleDropdown("location")}
@@ -647,7 +763,7 @@ const JobPostings: React.FC = () => {
               />
             </button>
             {openDropdown === "location" && (
-              <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-[300px] overflow-y-auto">
+              <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                 {filterOptions.location.map((option) => (
                   <button
                     key={option.value}
@@ -661,7 +777,85 @@ const JobPostings: React.FC = () => {
               </div>
             )}
           </div>
+          {/* Tech Stack Filter */}
+          <div className="relative flex-1 md:flex-none" ref={techStackRef}>
+            <button
+              onClick={() => toggleDropdown("techStack")}
+              disabled={isLoading}
+              className="w-full md:w-auto flex items-center justify-between px-2 md:px-4 py-1.5 md:py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition font-light text-xs md:text-[16px] text-black disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
+            >
+              <span className="truncate text-xs md:text-base">{getDisplayLabel("techStack")}</span>
+              <ChevronDownIcon
+                className={`w-3 md:w-4 h-3 md:h-4 text-gray-500 transition-transform ${openDropdown === "techStack" ? "rotate-180" : ""}`}
+              />
+            </button>
+            {openDropdown === "techStack" && (
+              <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-[300px] overflow-y-auto">
+                {filterOptions.techStack.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleFilterSelect("techStack", option.value)}
+                    className={`block w-full text-left px-4 py-2 text-[14px] transition focus:outline-none ${selectedTechStacks.includes(option.value) ? "text-[#006AFF] font-medium bg-blue-50" : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* ✅ 선택된 기술스택 칩 표시 */}
+        {selectedTechStacks.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {selectedTechStacks.map((stack) => (
+              <span
+                key={stack}
+                className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+              >
+                {stack}
+                <button
+                  onClick={() => removeTechStack(stack)}
+                  className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 text-blue-600 focus:outline-none"
+                >
+                  <XMarkIcon className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            <button
+              onClick={() => setSelectedTechStacks([])}
+              className="text-xs text-gray-500 hover:text-gray-700 underline self-center focus:outline-none"
+            >
+              초기화
+            </button>
+          </div>
+        )}
+
+        {/* 우측 정렬 옵션 (최신순 / 마감일순) */}
+        <div className="flex justify-end mb-4">
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setSortBy("recent")}
+              className={`px-3 py-1.5 text-xs md:text-sm rounded-md transition-all focus:outline-none ${sortBy === "recent"
+                ? "bg-white text-blue-600 shadow-sm font-semibold"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
+            >
+              최신 작성순
+            </button>
+            <button
+              onClick={() => setSortBy("deadline")}
+              className={`px-3 py-1.5 text-xs md:text-sm rounded-md transition-all focus:outline-none ${sortBy === "deadline"
+                ? "bg-white text-blue-600 shadow-sm font-semibold"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
+            >
+              마감일 순
+            </button>
+          </div>
+        </div>
+
         {/* 공고 목록 */}
         {isLoading ? (
           <div className="text-center py-10 text-gray-600">로딩 중...</div>
@@ -752,7 +946,7 @@ const JobPostings: React.FC = () => {
                     key={job.id}
                     className="flex flex-col sm:flex-row justify-between items-start hover:bg-gray-50 px-2 sm:px-4 md:px-6 rounded-md transition py-4 sm:py-5 md:py-[26px] gap-3 sm:gap-0"
                   >
-                    {/* 왼쪽: 회사명 + 세로선 + 공고 정보 */}
+                    {/* 우측 정렬 옵션 (최신순 / 마감일순) */}
                     <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-4 cursor-pointer w-full sm:w-auto" onClick={() => handleJobClick(job.id)}>
                       {/* 회사명 */}
                       <div className="w-full sm:w-[140px] md:w-[160px] flex items-center gap-2">
@@ -898,8 +1092,8 @@ const JobPostings: React.FC = () => {
         )}
         {/* ✅ ApplyModal은 항상 렌더링 가능하도록 */}
         {showApplyModal && <ApplyModal />}
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

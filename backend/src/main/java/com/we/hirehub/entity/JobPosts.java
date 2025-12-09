@@ -87,10 +87,15 @@ public class JobPosts {
     @Column(columnDefinition = "JSON")
     private String embedding; // JSON 문자열로 저장 (vector)
 
+<<<<<<< Updated upstream
     //위도와 경도
     @Column(name = "lat")
     private Double lat;
 
     @Column(name = "lng")
     private Double lng;
+=======
+    @OneToMany(mappedBy = "jobPost", fetch = FetchType.LAZY)
+    private java.util.List<TechStack> techStacks;
+>>>>>>> Stashed changes
 }

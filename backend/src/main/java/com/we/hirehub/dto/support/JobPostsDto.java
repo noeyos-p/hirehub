@@ -89,6 +89,9 @@ public class JobPostsDto {
                 .qualification(entity.getQualification())
                 .preference(entity.getPreference())
                 .hireType(entity.getHireType())
+                .techStacks(entity.getTechStacks() != null 
+                        ? entity.getTechStacks().stream().map(com.we.hirehub.entity.TechStack::getName).collect(Collectors.toList())
+                        : null)
                 .build();
     }
 
