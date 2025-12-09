@@ -2,7 +2,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { myPageApi } from "../../api/myPageApi";
-import type { FavoriteCompanyResponse, FavoriteCompanyGroup, JobPosts, PagedResponse } from "../../types/interface";
+import { jobPostApi } from "../../api/jobPostApi";
+import type { FavoriteCompanyResponse, FavoriteCompanyGroup, JobPosts, PagedResponse, CompanyResponse } from "../../types/interface";
 
 const yoil = ["일", "월", "화", "수", "목", "금", "토"];
 const prettyMDW = (iso?: string) => {
@@ -71,6 +72,7 @@ const FavoriteCompanies: React.FC = () => {
   const [expandedCompanyId, setExpandedCompanyId] = useState<number | null>(null);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [postsCache, setPostsCache] = useState<Record<number, JobPosts[]>>({});
+  const [companyDetailsCache, setCompanyDetailsCache] = useState<Record<number, CompanyResponse>>({});
 
   /** 목록 조회 - FavoriteCompanyResponse 타입 사용 */
   const fetchList = useCallback(async () => {
@@ -108,18 +110,33 @@ const FavoriteCompanies: React.FC = () => {
             companyName: String(r.companyName ?? ""),
             postCount: count,
             ids: [Number(r.id)],
+            companyPhoto: r.companyPhoto,
+            industry: r.industry,
           });
         }
       }
-      setRows(Array.from(map.values()));
+      const companies = Array.from(map.values());
+      setRows(companies);
       setSelectedIds([]);
+
+      // 회사 상세 정보 가져오기 (로고, 산업 분야 등)
+      companies.forEach(async (company) => {
+        if (!companyDetailsCache[company.companyId]) {
+          try {
+            const details = await jobPostApi.getCompanyById(company.companyId);
+            setCompanyDetailsCache(prev => ({ ...prev, [company.companyId]: details }));
+          } catch (error) {
+            console.error(`회사 ${company.companyId} 상세 정보 조회 실패:`, error);
+          }
+        }
+      });
     } catch (e: any) {
       console.error("관심기업 목록 조회 실패:", e?.response?.status, e?.response?.data || e);
       setRows([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [companyDetailsCache]);
 
   useEffect(() => { fetchList(); }, [fetchList]);
 
@@ -214,9 +231,9 @@ const FavoriteCompanies: React.FC = () => {
 
   return (
     <div className="flex">
-      <div className="flex-1 px-6 py-10 max-w-3xl lg:max-w-4xl mx-auto">
+      <div className="flex-1 max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900">관심 기업</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">관심 기업</h2>
           <button onClick={handleSelectAll} className="text-sm text-gray-600 hover:text-gray-800">
             {allSelected ? "전체해제" : "전체선택"}
           </button>
@@ -231,45 +248,104 @@ const FavoriteCompanies: React.FC = () => {
             const isOpen = expandedCompanyId === r.companyId;
             const cached = postsCache[r.companyId] || [];
             const postsToShow = cached.slice(0, r.postCount || undefined);
+            const companyDetails = companyDetailsCache[r.companyId];
 
             return (
-              <div key={r.companyId} className="border-b border-gray-200 pb-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      className="mt-[-2px] accent-blue-500"
-                      checked={selectedIds.includes(r.companyId)}
-                      onChange={() => handleCheckboxChange(r.companyId)}
-                      disabled={loading}
-                    />
-                    <div
-                      className="text-gray-900 font-semibold text-[16px] py-[20px] cursor-pointer hover:text-blue-600 transition-colors"
-                      onClick={() => goCompanyPage(r.companyId)}
-                      title="기업 페이지로 이동"
+              <div key={r.companyId}>
+                {/* 데스크톱 레이아웃 */}
+                <div className="hidden md:block border-b border-gray-200 pb-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        className="mt-[-2px] accent-blue-500"
+                        checked={selectedIds.includes(r.companyId)}
+                        onChange={() => handleCheckboxChange(r.companyId)}
+                        disabled={loading}
+                      />
+                      <div
+                        className="text-gray-900 font-semibold text-[16px] py-[20px] cursor-pointer hover:text-blue-600 transition-colors"
+                        onClick={() => goCompanyPage(r.companyId)}
+                        title="기업 페이지로 이동"
+                      >
+                        {r.companyName}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => goCompanyJobListings(r.companyId)}
+                      className="text-sm cursor-pointer hover:text-blue-600 transition-colors"
+                      title="기업 공고 모아보기"
                     >
-                      {r.companyName}
+                      채용 중{" "}
+                      <span className="text-blue-800 font-semibold">
+                        {r.postCount ?? 0}
+                      </span>
+                      개
+                    </button>
+                  </div>
+                </div>
+
+                {/* 모바일 레이아웃 */}
+                <div className="md:hidden bg-white rounded-lg p-4 mb-4 border border-gray-200">
+                  <div className="flex gap-3">
+                    {/* 회사 로고/아이콘 */}
+                    <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                      {(companyDetails?.photo || r.companyPhoto) ? (
+                        <img
+                          src={companyDetails?.photo || r.companyPhoto}
+                          alt={r.companyName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerText = r.companyName.substring(0, 2);
+                          }}
+                        />
+                      ) : (
+                        r.companyName.substring(0, 2)
+                      )}
+                    </div>
+
+                    {/* 회사 정보 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div
+                          className="cursor-pointer hover:opacity-80"
+                          onClick={() => goCompanyPage(r.companyId)}
+                        >
+                          <div className="text-base font-bold text-gray-900">
+                            {r.companyName}
+                          </div>
+                          <div className="text-sm text-gray-500 mt-0.5">
+                            {companyDetails?.industry || r.industry || "IT, 컨텐츠"}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 회사 설명 */}
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                        {companyDetails?.content || `${r.companyName}은(는) 소프트웨어&인공지능 교육을 혁신하는 플랫폼, 콘텐츠, 솔루션을 제공합니다.`}
+                      </p>
+
+                      {/* 채용 정보 */}
+                      {r.postCount > 0 && (
+                        <button
+                          onClick={() => goCompanyJobListings(r.companyId)}
+                          className="text-sm text-blue-600 font-medium hover:underline"
+                        >
+                          채용 중 {r.postCount}개
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => goCompanyJobListings(r.companyId)}
-                    className="text-sm cursor-pointer hover:text-blue-600 transition-colors"
-                    title="기업 공고 모아보기"
-                  >
-                    채용 중{" "}
-                    <span className="text-blue-800 font-semibold">
-                      {r.postCount ?? 0}
-                    </span>
-                    개
-                  </button>
                 </div>
               </div>
             );
           })}
         </div>
 
-        <div className="flex justify-end mt-6">
+        {/* 데스크톱 삭제 버튼 */}
+        <div className="hidden md:flex justify-end mt-6">
           <button
             onClick={handleDelete}
             disabled={!selectedIds.length || loading}
@@ -278,6 +354,19 @@ const FavoriteCompanies: React.FC = () => {
             삭제
           </button>
         </div>
+
+        {/* 모바일 삭제 버튼 */}
+        {selectedIds.length > 0 && (
+          <div className="md:hidden fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-200">
+            <button
+              onClick={handleDelete}
+              disabled={loading}
+              className="w-full py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 disabled:opacity-50"
+            >
+              선택한 {selectedIds.length}개 삭제
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

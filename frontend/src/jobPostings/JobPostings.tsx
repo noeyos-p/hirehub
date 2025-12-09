@@ -875,17 +875,19 @@ const JobPostings: React.FC = () => {
                 {displayedJobs.map((job) => (
                   <div
                     key={job.id}
-                    className="relative w-[180px] h-[200px] bg-white border border-gray-200 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
+                    className="relative w-[180px] sm:w-[200px] md:w-[253px] h-[200px] sm:h-[260px] md:h-[288px] bg-white border border-gray-200 rounded-2xl md:rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
                     onClick={() => handleJobClick(job.id)}
                   >
-                    {/* 회사 이미지 - 메인페이지와 동일한 크기/비율 */}
-                    <div className="w-full h-[100px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-3">
+                    {/* ✅ 회사 이미지 - companyPhotos 사용 */}
+                    <div className="w-full h-[100px] sm:h-[120px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-2 md:p-3">
                       {companyPhotos[job.companyId] ? (
                         <img
                           src={companyPhotos[job.companyId]}
                           alt={job.companyName}
-                          className="max-w-[70%] max-h-[70%] object-contain"
+                          className="max-w-[95%] md:max-w-[95%] max-h-[95%] md:max-h-[95%] object-contain rounded-lg"
                           onError={(e) => {
+                            console.error(`❌ 이미지 로드 실패: ${job.companyName}`, companyPhotos[job.companyId]);
+                            // 이미지 로드 실패 시 대체 UI 표시
                             const target = e.currentTarget as HTMLImageElement;
                             target.style.display = 'none';
                             const parent = target.parentElement;
@@ -904,35 +906,35 @@ const JobPostings: React.FC = () => {
                       )}
                     </div>
 
-                    {/* 텍스트 정보 */}
-                    <div className="pt-2.5 pb-2.5 px-3">
-                      <p className="font-bold text-gray-800 text-sm truncate">{job.companyName}</p>
-                      <p className="text-gray-900 font-normal text-xs mt-1 truncate">
+                    {/* 텍스트 */}
+                    <div className="pt-2.5 md:pt-[16px] pb-2.5 md:pb-[20px] px-3 md:px-[24px]">
+                      <p className="font-bold text-gray-800 text-sm md:text-[20px] truncate">{job.companyName}</p>
+                      <p className="text-gray-900 font-normal text-xs md:text-[16px] mt-1 md:mt-[4px] truncate">
                         {job.title}
                       </p>
-                      <p className="text-gray-500 text-[10px] truncate mt-1">
+                      <p className="text-gray-500 text-[10px] md:text-[14px] truncate mt-1">
                         {job.position} / {job.careerLevel}
                       </p>
-                      {/* 날짜 */}
-                      <p className="text-gray-400 text-sm text-right mt-4">
-                        {!job.endAt
-                          ? "상시채용"
-                          : `~ ${new Date(job.endAt)
-                            .toLocaleDateString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit" })
-                            .replace(/\. /g, ".")}`}
+
+                      <p className="text-gray-400 text-[10px] sm:text-[11px] md:text-[14px] lg:text-[16px] text-right mt-1.5 md:mt-2">
+                        {!job.endAt ? '상시채용' : `~${new Date(job.endAt).toLocaleDateString("ko-KR", {
+                          year: "2-digit",
+                          month: "2-digit",
+                          day: "2-digit",
+                        }).replace(/\. /g, '.')}`}
                       </p>
                     </div>
 
                     {/* 북마크 버튼 */}
                     <button
                       onClick={(e) => handleBookmarkClick(e, job.id)}
-                      className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors z-10"
-                      title={scrappedJobs.has(job.id) ? "북마크 해제" : "북마크 추가"}
+                      className="absolute top-2 right-2 md:top-3 md:right-3 p-1.5 md:p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors z-10"
+                      aria-label={scrappedJobs.has(job.id) ? "북마크 제거" : "북마크 추가"}
                     >
                       {scrappedJobs.has(job.id) ? (
-                        <BookmarkSolidIcon className="w-4 h-4 text-[#006AFF]" />
+                        <BookmarkSolidIcon className="w-4 h-4 md:w-5 md:h-5 text-[#006AFF]" />
                       ) : (
-                        <BookmarkIcon className="w-4 h-4 text-gray-600" />
+                        <BookmarkIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
                       )}
                     </button>
                   </div>

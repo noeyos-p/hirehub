@@ -61,6 +61,8 @@ public class FavoriteDto {
         private Long companyId;
         private String companyName;
         private Long postCount;
+        private String companyPhoto;
+        private String industry;
 
         /** Entity → DTO */
         public static FavoriteCompanyDto toDto(FavoriteCompany e) {
@@ -71,6 +73,8 @@ public class FavoriteDto {
                     .userId(e.getUsers().getId())
                     .companyId(e.getCompany().getId())
                     .companyName(e.getCompany().getName())
+                    .companyPhoto(e.getCompany().getPhoto())
+                    .industry(e.getCompany().getIndustry())
                     .build();
         }
 

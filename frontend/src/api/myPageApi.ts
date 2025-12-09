@@ -130,6 +130,11 @@ export const myPageApi = {
         await api.delete(`/api/mypage/favorites/jobposts/${id}`);
     },
 
+    getJobPostDetail: async (jobPostId: number): Promise<any> => {
+        const { data } = await api.get(`/api/jobposts/${jobPostId}`);
+        return data;
+    },
+
     applyJob: async (payload: { jobPostId: number; resumeId: number }): Promise<void> => {
         await api.post('/api/mypage/applies', payload);
     },

@@ -248,12 +248,12 @@ const AttentionSection: React.FC = () => {
               onClick={() => handleJobClick(job.id)}
             >
               {/* ✅ 회사 이미지 - companyPhotos 사용 */}
-              <div className="w-full h-[100px] sm:h-[120px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-3 md:p-4">
+              <div className="w-full h-[100px] sm:h-[120px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-2 md:p-3">
                 {companyPhotos[job.companyId] ? (
                   <img
                     src={companyPhotos[job.companyId]}
                     alt={job.companyName}
-                    className="max-w-[70%] md:max-w-[80%] max-h-[70%] md:max-h-[80%] object-contain"
+                    className="max-w-[95%] md:max-w-[95%] max-h-[95%] md:max-h-[95%] object-contain rounded-lg"
                     onError={(e) => {
                       console.error(`❌ 이미지 로드 실패: ${job.companyName}`, companyPhotos[job.companyId]);
                       // 이미지 로드 실패 시 대체 UI 표시
@@ -285,7 +285,7 @@ const AttentionSection: React.FC = () => {
                   {job.position} / {job.careerLevel}
                 </p>
 
-                <p className="text-gray-400 text-[11px] md:text-[16px] text-right mt-1.5 md:mt-2">
+                <p className="text-gray-400 text-[10px] sm:text-[11px] md:text-[14px] lg:text-[16px] text-right mt-1.5 md:mt-2">
                   {!job.endAt ? '상시채용' : `~${new Date(job.endAt).toLocaleDateString("ko-KR", {
                     year: "2-digit",
                     month: "2-digit",

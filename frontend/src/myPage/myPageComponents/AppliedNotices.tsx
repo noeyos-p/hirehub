@@ -110,9 +110,9 @@ const AppliedNotices: React.FC = () => {
 
 
   return (
-    <div className="max-w-3xl lg:max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">지원 내역</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">지원 내역</h2>
       </div>
 
       {items.length === 0 ? (
@@ -122,33 +122,35 @@ const AppliedNotices: React.FC = () => {
           {items.map((notice) => (
             <div
               key={notice.id}
-              className="flex items-center justify-between border-b border-gray-200 pb-4"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 pb-4 gap-3"
             >
-              <div className="flex items-center gap-3">
-                <div>
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div
-                    className="text-gray-900 font-semibold cursor-pointer hover:text-[#006AFF] transition-colors"
+                    className="text-gray-900 font-semibold cursor-pointer hover:text-[#006AFF] transition-colors truncate"
                     onClick={() => handleGoToJobPost(notice.jobPostsId)}
                     title="공고 상세 보기"
                   >
                     {notice.companyName}
                   </div>
-                  <div className="text-gray-700 mt-1">
+                  <div className="text-gray-700 text-sm sm:text-base mt-1 line-clamp-2 sm:line-clamp-1">
                     {notice.jobPostTitle || notice.resumeTitle}
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-2 flex-shrink-0">
+                <span className="text-sm text-gray-500 order-2 sm:order-2">
+                  {prettyMDW(notice.appliedAt)}
+                </span>
                 <button
-                  className="hover:bg-gray-300 text-gray-700 text-sm px-4 py-1.5 rounded-md cursor-pointer"
+                  className="hover:bg-gray-300 text-gray-700 text-sm px-4 py-1.5 rounded-md cursor-pointer whitespace-nowrap order-1 sm:order-1"
                   style={{ backgroundColor: '#D6E4F0' }}
                   onClick={() => handleOpenResume(notice)}
                   disabled={loading}
                 >
                   이력서 보기
                 </button>
-                <span className="text-sm text-gray-500">- {prettyMDW(notice.appliedAt)}</span>
               </div>
             </div>
           ))}

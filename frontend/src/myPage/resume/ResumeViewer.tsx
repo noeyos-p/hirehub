@@ -52,8 +52,8 @@ const prettyBirthAge = (birth?: string | null) => {
 };
 
 const ViewerSection: React.FC<{ title: string; children?: React.ReactNode }> = ({ title, children }) => (
-  <div className="mt-6">
-    <h3 className="text-base font-semibold text-gray-800 mb-2">{title}</h3>
+  <div className="mt-4 sm:mt-6">
+    <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">{title}</h3>
     <div className="border-t border-gray-200 pt-3">{children}</div>
   </div>
 );
@@ -205,10 +205,10 @@ const ResumeViewer: React.FC = () => {
   if (!data) return <div className="max-w-5xl mx-auto px-6 py-10">데이터가 없습니다.</div>;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 bg-white">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 bg-white">
       {/* 상단: 프로필 */}
-      <div className="flex gap-6 items-start">
-        <div className="w-[96px] h-[120px] bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
+        <div className="w-[96px] h-[120px] bg-gray-100 rounded overflow-hidden flex items-center justify-center flex-shrink-0">
           {data.idPhoto ? (
             <img src={data.idPhoto} alt="증명사진" className="w-full h-full object-cover" />
           ) : (
@@ -216,36 +216,36 @@ const ResumeViewer: React.FC = () => {
           )}
         </div>
 
-        <div className="flex-1">
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-lg font-bold text-gray-900">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+            <h1 className="text-base sm:text-lg font-bold text-gray-900">
               {data.profile?.name ?? "이름 없음"}
             </h1>
-            <div className="text-sm text-gray-500">
+            <div className="text-xs sm:text-sm text-gray-500">
               {birthText ? `${birthText}` : ""}
               {ageText ? ` (${ageText})` : ""}
             </div>
           </div>
 
-          <div className="mt-1 text-sm text-gray-600">
+          <div className="mt-1 text-xs sm:text-sm text-gray-600">
             {[gender].filter(Boolean).join(" · ")}
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-1 text-sm text-gray-700">
+          <div className="mt-3 grid grid-cols-1 gap-1 text-xs sm:text-sm text-gray-700">
             {headerRightRows.map((r, i) => (
-              <div key={i} className="flex gap-3">
-                <span className="w-14 text-gray-500">{r.label}</span>
-                <span>{r.value}</span>
+              <div key={i} className="flex gap-2 sm:gap-3">
+                <span className="w-12 sm:w-14 text-gray-500 flex-shrink-0">{r.label}</span>
+                <span className="break-all">{r.value}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* 오른쪽 상단 타이틀(이력서 제목) + 스냅샷 메타 */}
-        <div className="text-right">
-          <div className="text-sm text-gray-500 mb-1">이력서 제목</div>
-          <div className="text-base font-semibold text-gray-800">{data.title}</div>
-          <div className="mt-2 text-xs text-gray-500">
+        <div className="w-full sm:w-auto text-left sm:text-right">
+          <div className="text-xs sm:text-sm text-gray-500 mb-1">이력서 제목</div>
+          <div className="text-sm sm:text-base font-semibold text-gray-800 break-words">{data.title}</div>
+          <div className="mt-2 text-[10px] sm:text-xs text-gray-500">
             {data.companyName ? <>제출 기업: {data.companyName} · </> : null}
             {data.appliedAt ? <>제출일: {new Date(`${data.appliedAt}T00:00:00`).toLocaleDateString("ko-KR")}</> : null}
           </div>
@@ -255,24 +255,24 @@ const ResumeViewer: React.FC = () => {
       {/* 학력 */}
       {extra.educations.length > 0 && (
         <ViewerSection title="학력">
-          <div className="space-y-2">
+          <div className="space-y-4">
             {extra.educations.map((ed, i) => (
-              <div key={i} className="grid grid-cols-4 gap-4 text-sm">
+              <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
                 <div>
-                  <div className="text-gray-400 text-xs">학교명</div>
-                  <div className="text-gray-800">{ed.school}</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">학교명</div>
+                  <div className="text-gray-800 break-words">{ed.school}</div>
                 </div>
                 <div>
-                  <div className="text-gray-400 text-xs">재학기간</div>
-                  <div className="text-gray-800">{ed.period}</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">재학기간</div>
+                  <div className="text-gray-800 break-words">{ed.period}</div>
                 </div>
                 <div>
-                  <div className="text-gray-400 text-xs">졸업상태</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">졸업상태</div>
                   <div className="text-gray-800">{ed.status}</div>
                 </div>
                 <div>
-                  <div className="text-gray-400 text-xs">전공</div>
-                  <div className="text-gray-800">{ed.major}</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">전공</div>
+                  <div className="text-gray-800 break-words">{ed.major}</div>
                 </div>
               </div>
             ))}
@@ -283,28 +283,28 @@ const ResumeViewer: React.FC = () => {
       {/* 경력 */}
       {extra.careers.length > 0 && (
         <ViewerSection title="경력">
-          <div className="space-y-2">
+          <div className="space-y-4">
             {extra.careers.map((c, i) => (
-              <div key={i} className="grid grid-cols-5 gap-4 text-sm">
+              <div key={i} className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 text-xs sm:text-sm">
                 <div>
-                  <div className="text-gray-400 text-xs">회사명</div>
-                  <div className="text-gray-800">{c.company}</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">회사명</div>
+                  <div className="text-gray-800 break-words">{c.company}</div>
                 </div>
                 <div>
-                  <div className="text-gray-400 text-xs">근무기간</div>
-                  <div className="text-gray-800">{c.period}</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">근무기간</div>
+                  <div className="text-gray-800 break-words">{c.period}</div>
                 </div>
                 <div>
-                  <div className="text-gray-400 text-xs">직책</div>
-                  <div className="text-gray-800">{c.role}</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">직책</div>
+                  <div className="text-gray-800 break-words">{c.role}</div>
                 </div>
                 <div>
-                  <div className="text-gray-400 text-xs">직무</div>
-                  <div className="text-gray-800">{c.job}</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">직무</div>
+                  <div className="text-gray-800 break-words">{c.job}</div>
                 </div>
-                <div>
-                  <div className="text-gray-400 text-xs">업무내용</div>
-                  <div className="text-gray-800 whitespace-pre-wrap">{c.desc}</div>
+                <div className="col-span-2 sm:col-span-1">
+                  <div className="text-gray-400 text-[10px] sm:text-xs">업무내용</div>
+                  <div className="text-gray-800 whitespace-pre-wrap break-words">{c.desc}</div>
                 </div>
               </div>
             ))}
@@ -314,28 +314,28 @@ const ResumeViewer: React.FC = () => {
 
       {/* 자격증 / 언어 / 스킬 */}
       {(extra.certs.length > 0 || extra.langs.length > 0 || extra.skills.length > 0) && (
-        <div className="grid grid-cols-3 gap-8 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 mt-6">
           {extra.certs.length > 0 && (
             <div>
-              <h3 className="text-base font-semibold text-gray-800 mb-2">자격증</h3>
-              <ul className="list-disc pl-5 text-sm text-gray-800 space-y-1">
-                {extra.certs.map((v, i) => <li key={i}>{v}</li>)}
+              <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">자격증</h3>
+              <ul className="list-disc pl-5 text-xs sm:text-sm text-gray-800 space-y-1">
+                {extra.certs.map((v, i) => <li key={i} className="break-words">{v}</li>)}
               </ul>
             </div>
           )}
           {extra.langs.length > 0 && (
             <div>
-              <h3 className="text-base font-semibold text-gray-800 mb-2">언어</h3>
-              <ul className="list-disc pl-5 text-sm text-gray-800 space-y-1">
-                {extra.langs.map((v, i) => <li key={i}>{v}</li>)}
+              <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">언어</h3>
+              <ul className="list-disc pl-5 text-xs sm:text-sm text-gray-800 space-y-1">
+                {extra.langs.map((v, i) => <li key={i} className="break-words">{v}</li>)}
               </ul>
             </div>
           )}
           {extra.skills.length > 0 && (
             <div>
-              <h3 className="text-base font-semibold text-gray-800 mb-2">스킬</h3>
-              <ul className="list-disc pl-5 text-sm text-gray-800 space-y-1">
-                {extra.skills.map((v, i) => <li key={i}>{v}</li>)}
+              <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">스킬</h3>
+              <ul className="list-disc pl-5 text-xs sm:text-sm text-gray-800 space-y-1">
+                {extra.skills.map((v, i) => <li key={i} className="break-words">{v}</li>)}
               </ul>
             </div>
           )}
@@ -344,12 +344,12 @@ const ResumeViewer: React.FC = () => {
 
       {/* 자기소개서 */}
       {(data.essayTitle || data.essayContent) && (
-        <div className="mt-8">
-          <h3 className="text-base font-semibold text-gray-800 mb-2">자기소개서</h3>
+        <div className="mt-6 sm:mt-8">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">자기소개서</h3>
           {data.essayTitle && (
-            <div className="text-sm text-gray-700 mb-2">{data.essayTitle}</div>
+            <div className="text-xs sm:text-sm text-gray-700 mb-2 break-words">{data.essayTitle}</div>
           )}
-          <div className="border border-gray-200 rounded p-4 text-sm text-gray-800 whitespace-pre-wrap leading-6">
+          <div className="border border-gray-200 rounded p-3 sm:p-4 text-xs sm:text-sm text-gray-800 whitespace-pre-wrap leading-5 sm:leading-6 break-words">
             {data.essayContent || ""}
           </div>
         </div>

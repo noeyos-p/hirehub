@@ -320,6 +320,8 @@ export interface FavoriteCompanyResponse {
   companyId: number;
   companyName: string;
   postCount: number;
+  companyPhoto?: string;
+  industry?: string;
 };
 
 export interface FavoriteCompanyGroup {
@@ -327,6 +329,8 @@ export interface FavoriteCompanyGroup {
   companyName: string;
   postCount: number;
   ids: number[];
+  companyPhoto?: string;
+  industry?: string;
 }
 
 
@@ -347,6 +351,8 @@ export interface ScrapPostResponse {
   title: string;
   companyName: string;
   endAt: string; // LocalDate -> string (YYYY-MM-DD)
+  companyPhoto?: string;
+  jobPostPhoto?: string;
 }
 
 // Board DTOs

@@ -218,7 +218,7 @@ const MyInfo: React.FC = () => {
         </h2>
 
         {/* 프로필 섹션 */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex items-center gap-4">
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-[#006AFF] to-[#0056CC] flex items-center justify-center shadow-lg flex-shrink-0">
             <svg
@@ -269,7 +269,6 @@ const MyInfo: React.FC = () => {
 
         {/* 기본 정보 섹션 */}
         <section className="mb-8">
-          <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4 px-2">기본 정보</h3>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {/* 이메일 */}
@@ -331,7 +330,7 @@ const MyInfo: React.FC = () => {
 
         {/* 이력서 자동기입정보 섹션 */}
         <section className="mb-8">
-          <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4 px-2">이력서 자동기입정보</h3>
+          <h3 className="text-base font-medium text-text-primary dark:text-white mb-4 px-2">이력서 자동기입정보</h3>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {/* 생년월일 */}
@@ -452,7 +451,7 @@ const MyInfo: React.FC = () => {
 
         {/* AI 추천공고 기입정보 섹션 */}
         <section className="mb-8">
-          <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4 px-2">AI 추천공고 기입정보</h3>
+          <h3 className="text-base font-medium text-text-primary dark:text-white mb-4 px-2">AI 추천공고 기입정보</h3>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
 

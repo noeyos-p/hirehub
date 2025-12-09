@@ -138,7 +138,8 @@ const Resume = () => {
 
   return (
     <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+      {/* 데스크톱 헤더 */}
+      <div className="hidden md:flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">이력서 관리</h2>
         <button
           onClick={handleCreate}
@@ -150,46 +151,109 @@ const Resume = () => {
         </button>
       </div>
 
+      {/* 모바일 액션 버튼 */}
+      <div className="md:hidden mb-6">
+        <button
+          onClick={handleCreate}
+          className="w-full bg-white border border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors"
+          disabled={loading}
+        >
+          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <span className="text-sm text-gray-600 font-medium">새 이력서 작성</span>
+        </button>
+      </div>
+
+      {/* 이력서 목록 */}
       <div className="space-y-4 sm:space-y-5">
         {resumes.map((resume) => (
-          <div
-            key={resume.id}
-            className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-200 pb-3 sm:pb-4 gap-3 sm:gap-0"
-          >
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <input
-                type="checkbox"
-                className="mt-0 sm:mt-[-2px] accent-[#006AFF] flex-shrink-0"
-                checked={selectedIds.includes(resume.id)}
-                onChange={() => handleCheckboxChange(resume.id)}
-                disabled={loading || resume.locked}
-              />
-              <div className="text-gray-900 font-semibold text-sm sm:text-[15px] md:text-[16px] py-2 sm:py-3 md:py-[20px] min-w-0 flex-1">
-                <span className="truncate block sm:inline">{resume.title}</span>
-                {resume.locked && (
-                  <span className="ml-0 sm:ml-2 mt-1 sm:mt-0 inline-block text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 align-middle">
-                    제출됨
-                  </span>
+          <div key={resume.id}>
+            {/* 모바일 카드 레이아웃 */}
+            <div className="md:hidden bg-white border border-gray-200 rounded-2xl p-5">
+              <div className="flex items-start justify-between mb-3">
+                <h3
+                  className="text-base font-semibold text-gray-900 flex-1 cursor-pointer hover:text-blue-600"
+                  onClick={() => navigate(`/myPage/resume/ResumeViewer/${resume.id}`)}
+                >
+                  {resume.title}
+                  {resume.locked && (
+                    <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 align-middle">
+                      제출됨
+                    </span>
+                  )}
+                </h3>
+                <button className="text-gray-400 p-1">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-gray-500">
+                  {dateOf(resume)}
+                </div>
+                {!resume.locked && (
+                  <button
+                    className="text-xs px-3 py-1.5 rounded-md whitespace-nowrap text-gray-700 transition-colors"
+                    style={{ backgroundColor: '#D6E4F0' }}
+                    onClick={() => navigate(`/myPage/resume/ResumeDetail?id=${resume.id}`)}
+                    disabled={loading}
+                  >
+                    수정하기
+                  </button>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
-              <button
-                className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap text-gray-700 transition-colors"
-                style={{ backgroundColor: resume.locked ? '#EFF4F8' : '#D6E4F0' }}
-                onClick={() => handleEdit(resume.id, resume.locked)}
-                disabled={loading}
-              >
-                {resume.locked ? "조회하기" : "수정하기"}
-              </button>
-              <span className="text-xs sm:text-sm text-gray-500">- {dateOf(resume)}</span>
+            {/* 데스크톱 레이아웃 */}
+            <div className="hidden md:flex items-center justify-between border-b border-gray-200 pb-3 sm:pb-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-0 sm:mt-[-2px] accent-[#006AFF] flex-shrink-0"
+                  checked={selectedIds.includes(resume.id)}
+                  onChange={() => handleCheckboxChange(resume.id)}
+                  disabled={loading || resume.locked}
+                />
+                <div
+                  className="text-gray-900 font-semibold text-sm sm:text-[15px] md:text-[16px] py-2 sm:py-3 md:py-[20px] cursor-pointer hover:text-blue-600"
+                  onClick={() => navigate(`/myPage/resume/ResumeViewer/${resume.id}`)}
+                >
+                  {resume.title}
+                  {resume.locked && (
+                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 align-middle">
+                      제출됨
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end gap-2">
+                {!resume.locked && (
+                  <button
+                    className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 rounded-md whitespace-nowrap text-gray-700 transition-colors"
+                    style={{ backgroundColor: '#D6E4F0' }}
+                    onClick={() => handleEdit(resume.id, resume.locked)}
+                    disabled={loading}
+                  >
+                    수정하기
+                  </button>
+                )}
+                <span className="text-xs sm:text-sm text-gray-500">- {dateOf(resume)}</span>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 sm:mt-6 gap-2 sm:gap-0">
+      {/* 데스크톱 하단 버튼 */}
+      <div className="hidden md:flex justify-between items-center mt-4 sm:mt-6">
         <button
           onClick={handleSelectAll}
           className="text-xs sm:text-sm text-gray-600 hover:text-gray-800"

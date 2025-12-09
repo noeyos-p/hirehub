@@ -92,12 +92,12 @@ const MyPosts: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl lg:max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-10">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">작성한 게시물</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">작성한 게시물</h2>
         <button
           onClick={handleSelectAll}
-          className="text-sm text-gray-600 hover:text-gray-800"
+          className="text-sm text-gray-600 hover:text-gray-800 whitespace-nowrap"
           disabled={loading || posts.length === 0}
         >
           {allSelected ? "전체해제" : "전체선택"}
@@ -108,48 +108,102 @@ const MyPosts: React.FC = () => {
         {posts.map((post) => (
           <div
             key={post.id}
-            className="flex justify-between border-b border-gray-200 pb-4"
+            className="border-b border-gray-200 pb-4"
           >
-            <div className="flex items-start gap-3">
+            {/* 모바일: 2줄 레이아웃, 데스크탑: 원래 레이아웃 */}
+
+            {/* 모바일 레이아웃 (sm 미만) */}
+            <div className="sm:hidden flex gap-3">
+              {/* 체크박스 - 전체 높이의 가운데 */}
               <input
                 type="checkbox"
-                className="mt-5 accent-blue-500"
+                className="accent-blue-500 flex-shrink-0 self-center"
                 checked={selectedIds.includes(post.id)}
                 onChange={() => handleCheckboxChange(post.id)}
                 disabled={loading}
               />
-              <div>
-                {/* ✅ 제목 클릭 시 게시글 상세 페이지로 이동 */}
-                <div
-                  className="text-gray-900 font-semibold cursor-pointer hover:text-blue-600"
-                  onClick={() => navigate(`/board/${post.id}`)}
-                >
-                  {post.title}
+
+              {/* 오른쪽 컨텐츠 영역 */}
+              <div className="flex-1 min-w-0">
+                {/* 첫 번째 줄: 제목 + 수정하기 버튼 */}
+                <div className="flex items-center justify-between gap-3">
+                  <div
+                    className="flex-1 text-gray-900 font-semibold cursor-pointer hover:text-blue-600 truncate"
+                    onClick={() => navigate(`/board/${post.id}`)}
+                  >
+                    {post.title}
+                  </div>
+                  <button
+                    className="text-gray-700 text-sm px-4 py-1.5 rounded-md transition-colors whitespace-nowrap"
+                    style={{ backgroundColor: '#D6E4F0' }}
+                    onClick={() => handleEdit(post.id)}
+                    disabled={loading}
+                  >
+                    수정하기
+                  </button>
                 </div>
 
-                <div className="text-sm text-gray-600 mt-1 leading-relaxed line-clamp-2 w-[600px]">
-                  {post.content}
+                {/* 두 번째 줄: 내용 미리보기 + 조회수/댓글수 */}
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600 leading-relaxed line-clamp-2 flex-1 mr-4">
+                    {post.content}
+                  </div>
+                  <div className="flex items-center space-x-3 flex-shrink-0">
+                    <div className="flex items-center space-x-1 text-sm text-gray-500">
+                      <EyeIcon className="w-4 h-4" />
+                      <span>{post.views ?? 0}</span>
+                    </div>
+                    <div className="flex items-center space-x-1 text-sm text-gray-500">
+                      <ChatBubbleLeftIcon className="w-4 h-4" />
+                      <span>{commentCounts[post.id] || 0}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-end justify-between">
-              <button
-                className="text-gray-700 text-sm px-4 py-1.5 rounded-md transition-colors"
-                style={{ backgroundColor: '#D6E4F0' }}
-                onClick={() => handleEdit(post.id)}
-                disabled={loading}
-              >
-                수정하기
-              </button>
-              <div className="flex items-center space-x-3 mt-2">
-                <div className="flex items-center space-x-1 text-sm text-gray-500">
-                  <EyeIcon className="w-4 h-4" />
-                  <span>{post.views ?? 0}</span>
+            {/* 데스크탑 레이아웃 (sm 이상) - 원래대로 */}
+            <div className="hidden sm:flex sm:justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <input
+                  type="checkbox"
+                  className="mt-5 accent-blue-500 flex-shrink-0"
+                  checked={selectedIds.includes(post.id)}
+                  onChange={() => handleCheckboxChange(post.id)}
+                  disabled={loading}
+                />
+                <div className="min-w-0 flex-1">
+                  <div
+                    className="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 break-words"
+                    onClick={() => navigate(`/board/${post.id}`)}
+                  >
+                    {post.title}
+                  </div>
+
+                  <div className="text-sm text-gray-600 mt-1 leading-relaxed line-clamp-2 max-w-[600px] lg:max-w-[700px]">
+                    {post.content}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1 text-sm text-gray-500">
-                  <ChatBubbleLeftIcon className="w-4 h-4" />
-                  <span>{commentCounts[post.id] || 0}</span>
+              </div>
+
+              <div className="flex flex-col items-end justify-between flex-shrink-0">
+                <button
+                  className="text-gray-700 text-sm px-4 py-1.5 rounded-md transition-colors whitespace-nowrap"
+                  style={{ backgroundColor: '#D6E4F0' }}
+                  onClick={() => handleEdit(post.id)}
+                  disabled={loading}
+                >
+                  수정하기
+                </button>
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-1 text-sm text-gray-500">
+                    <EyeIcon className="w-4 h-4" />
+                    <span>{post.views ?? 0}</span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-sm text-gray-500">
+                    <ChatBubbleLeftIcon className="w-4 h-4" />
+                    <span>{commentCounts[post.id] || 0}</span>
+                  </div>
                 </div>
               </div>
             </div>

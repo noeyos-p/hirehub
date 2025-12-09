@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { myPageApi } from "../../api/myPageApi";
 import type { ScrapPostResponse, PagedResponse, ResumeItem } from "../../types/interface";
@@ -17,6 +18,7 @@ const prettyMDW = (iso?: string) => {
 const LS_APPLIED = "hirehub_applied_job_ids";
 
 const FavoriteNotices: React.FC = () => {
+  const navigate = useNavigate();
   const [notices, setNotices] = useState<ScrapPostResponse[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,7 +65,25 @@ const FavoriteNotices: React.FC = () => {
     try {
       const data = await myPageApi.getScrapPosts({ page: 0, size: 100 });
       const list = firstArrayIn(data) as ScrapPostResponse[];
-      setNotices(list);
+
+      // 각 공고의 이미지 정보 가져오기
+      const enrichedList = await Promise.all(
+        list.map(async (item) => {
+          try {
+            const jobPostDetail = await myPageApi.getJobPostDetail(item.jobPostId);
+            return {
+              ...item,
+              companyPhoto: jobPostDetail?.companyPhoto || jobPostDetail?.companies?.companyPhoto,
+              jobPostPhoto: jobPostDetail?.jobPostPhoto,
+            };
+          } catch (error) {
+            console.error(`공고 ${item.jobPostId} 상세 정보 조회 실패:`, error);
+            return item;
+          }
+        })
+      );
+
+      setNotices(enrichedList);
       setSelectedIds([]);
     } catch (e: any) {
       console.error("스크랩 공고 목록 조회 실패:", e?.response?.status, e?.response?.data || e);
@@ -266,28 +286,95 @@ const FavoriteNotices: React.FC = () => {
   );
 
   return (
-    <div className="max-w-3xl lg:max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">관심 공고</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">관심 공고</h2>
         <button onClick={handleSelectAll} className="text-sm text-gray-600 hover:text-gray-800">
           {allSelected ? "전체해제" : "전체선택"}
         </button>
       </div>
 
-      <div className="space-y-5">
-        {notices.length === 0 && !loading && <div className="text-sm text-gray-500">스크랩한 공고가 없습니다.</div>}
+      {notices.length === 0 && !loading && (
+        <div className="text-sm text-gray-500">스크랩한 공고가 없습니다.</div>
+      )}
 
+      {/* 모바일: 카드 형태 */}
+      <div className="md:hidden grid grid-cols-2 gap-3">
+        {notices.map((n) => {
+          const applied = appliedIds.has(n.jobPostId);
+          return (
+            <div
+              key={n.id}
+              className="relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/jobPostings/${n.jobPostId}`)}
+            >
+              {/* 체크박스 - 오른쪽 상단 */}
+              <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 accent-[#006AFF] rounded-md cursor-pointer appearance-none border-2 border-gray-300 checked:bg-[#006AFF] checked:border-[#006AFF] relative checked:after:content-['✓'] checked:after:absolute checked:after:left-1/2 checked:after:top-1/2 checked:after:-translate-x-1/2 checked:after:-translate-y-1/2 checked:after:text-white checked:after:text-xs checked:after:font-light"
+                  checked={selectedIds.includes(n.id)}
+                  onChange={() => handleCheckboxChange(n.id)}
+                  disabled={loading}
+                />
+              </div>
+
+              {/* 공고 이미지 영역 */}
+              <div className="w-full h-[120px] bg-white flex items-center justify-center border-b border-gray-100 p-2">
+                {(n.jobPostPhoto || n.companyPhoto) ? (
+                  <img
+                    src={n.jobPostPhoto || n.companyPhoto}
+                    alt={n.title}
+                    className="max-w-[95%] max-h-[95%] object-contain rounded-lg"
+                  />
+                ) : (
+                  <div className="text-gray-400 text-xs">이미지 없음</div>
+                )}
+              </div>
+
+              {/* 공고 정보 */}
+              <div className="p-3">
+                <h3 className="text-sm font-bold text-gray-900 truncate mb-1">{n.title}</h3>
+                <p className="text-xs text-gray-600 truncate mb-2">{n.companyName}</p>
+
+                {/* 지원하기 버튼과 마감일 */}
+                <div className="flex flex-col gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => openApplyModal(n.jobPostId)}
+                    disabled={applied}
+                    className={`w-full text-xs px-3 py-1.5 rounded-md transition-colors ${
+                      applied
+                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        : "text-gray-700 hover:bg-opacity-80 cursor-pointer"
+                    }`}
+                    style={applied ? {} : { backgroundColor: '#D6E4F0' }}
+                  >
+                    {applied ? "지원 완료" : "지원하기"}
+                  </button>
+                  <span className="text-[10px] text-gray-400 text-center">
+                    {n.endAt ? `~ ${prettyMDW(n.endAt)}` : '상시채용'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 데스크톱: 리스트 형태 */}
+      <div className="hidden md:block space-y-5">
         {notices.map((n) => {
           const applied = appliedIds.has(n.jobPostId);
           return (
             <div key={n.id} className="flex items-center justify-between border-b border-gray-200 pb-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => navigate(`/jobPostings/${n.jobPostId}`)}>
                 <input
                   type="checkbox"
                   className="accent-blue-500"
                   checked={selectedIds.includes(n.id)}
                   onChange={() => handleCheckboxChange(n.id)}
                   disabled={loading}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <div>
                   <div className="text-gray-900 font-semibold">{n.companyName}</div>
@@ -299,10 +386,11 @@ const FavoriteNotices: React.FC = () => {
                 <button
                   onClick={() => openApplyModal(n.jobPostId)}
                   disabled={applied}
-                  className={`text-sm px-4 py-1.5 rounded-md ${applied
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "text-gray-700 hover:bg-gray-300 cursor-pointer"
-                    }`}
+                  className={`text-sm px-4 py-1.5 rounded-md ${
+                    applied
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "text-gray-700 hover:bg-gray-300 cursor-pointer"
+                  }`}
                   style={applied ? {} : { backgroundColor: '#D6E4F0' }}
                 >
                   {applied ? "지원 완료" : "지원하기"}

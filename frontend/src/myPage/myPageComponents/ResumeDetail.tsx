@@ -488,17 +488,17 @@ const ResumeDetail: React.FC = () => {
   /** ---------------- UI ---------------- */
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-8 bg-white">
-      <div className="mb-10">
-        <h2 className="text-2xl font-bold text-gray-900">이력서 작성</h2>
+    <div className="max-w-5xl mx-auto py-6 sm:py-10 px-4 sm:px-8 bg-white">
+      <div className="mb-6 sm:mb-10">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">이력서 작성</h2>
       </div>
 
       {/* 프로필 */}
-      <div className="flex gap-8 mb-12">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mb-8 sm:mb-12">
         <button
           type="button"
           onClick={handlePickPhoto}
-          className="w-[140px] h-[140px] bg-gray-200 flex items-center justify-center text-sm text-gray-500 overflow-hidden rounded"
+          className="w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] bg-gray-200 flex items-center justify-center text-xs sm:text-sm text-gray-500 overflow-hidden rounded flex-shrink-0"
         >
           {photoPreview ? (
             <img src={photoPreview} alt="프로필" className="w-full h-full object-cover" />
@@ -507,23 +507,23 @@ const ResumeDetail: React.FC = () => {
           )}
         </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-        <div className="flex-1">
-          <p className="text-lg font-semibold text-gray-900">{profile?.name || ""}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-base sm:text-lg font-semibold text-gray-900">{profile?.name || ""}</p>
           {(genderAge || birth) && (
-            <p className="text-sm text-gray-500">{[genderAge, birth].filter(Boolean).join(" / ")}</p>
+            <p className="text-xs sm:text-sm text-gray-500">{[genderAge, birth].filter(Boolean).join(" / ")}</p>
           )}
-          <div className="mt-2 text-sm text-gray-600 space-y-1">
-            {profile?.phone ? <p>{profile.phone}</p> : null}
-            {profile?.email ? <p>{profile.email}</p> : null}
-            {profile?.address ? <p>{profile.address}</p> : profile?.region ? <p>{profile.region}</p> : null}
+          <div className="mt-2 text-xs sm:text-sm text-gray-600 space-y-1">
+            {profile?.phone ? <p className="break-all">{profile.phone}</p> : null}
+            {profile?.email ? <p className="break-all">{profile.email}</p> : null}
+            {profile?.address ? <p className="break-words">{profile.address}</p> : profile?.region ? <p>{profile.region}</p> : null}
           </div>
         </div>
       </div>
 
       {/* 이력서 제목 */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <input
-          className="text-lg font-semibold focus:outline-none w-full border-b border-gray-200 pb-2"
+          className="text-base sm:text-lg font-semibold focus:outline-none w-full border-b border-gray-200 pb-2"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="이력서 제목"
@@ -531,14 +531,13 @@ const ResumeDetail: React.FC = () => {
       </div>
 
       {/* 학력 */}
-      <div className="mb-12">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"> {/* flex items-center gap-2 추가 */}
+      <div className="mb-8 sm:mb-12">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
           학력
-          {/* 작은 원형 플러스 버튼 (Tailwind CSS 스타일링) */}
           <button
-            type="button"  // 이 부분 추가
+            type="button"
             onClick={addEducation}
-            className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-base sm:text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
             aria-label="학력 추가"
           >
             +
@@ -547,40 +546,40 @@ const ResumeDetail: React.FC = () => {
 
         {/* 추가된 학력 리스트 */}
         {extra.educations.map((ed, i) => (
-          <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+          <div key={i} className="mb-3 sm:mb-4 p-3 sm:p-4 border border-gray-100 rounded-lg relative">
             <button
               onClick={() => removeEducation(i)}
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg sm:text-xl font-light"
               aria-label="remove education"
             >
               ×
             </button>
-            <div className="space-y-2">
-              <p className="font-medium text-gray-900">{ed.school}</p>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>{ed.period || "-"}</p>
-                <p>{ed.status} {ed.major && `· ${ed.major}`}</p>
+            <div className="space-y-1 sm:space-y-2">
+              <p className="text-sm sm:text-base font-medium text-gray-900 break-words">{ed.school}</p>
+              <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                <p className="break-words">{ed.period || "-"}</p>
+                <p className="break-words">{ed.status} {ed.major && `· ${ed.major}`}</p>
               </div>
             </div>
           </div>
         ))}
 
         {/* 새 학력 추가 폼 */}
-        <div className="border border-gray-100 rounded-lg p-4 bg-white">
-          <div className="space-y-3">
+        <div className="border border-gray-100 rounded-lg p-3 sm:p-4 bg-white">
+          <div className="space-y-2 sm:space-y-3">
 
             <div>
               <input
                 ref={eduSchoolRef}
                 placeholder="학교명"
-                className="w-full bg-transparent py-1 focus:outline-none text-14"
+                className="w-full bg-transparent py-1 focus:outline-none text-xs sm:text-14"
               />
             </div>
 
-            {/* 입학/졸업 연월, 졸업상태, 전공을 한 줄에 배치 - 레이아웃 수정: grid-cols-[auto_auto_1fr] */}
-            <div className="grid grid-cols-[auto_auto_1fr] gap-2">
+            {/* 입학/졸업 연월, 졸업상태, 전공을 한 줄에 배치 */}
+            <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[auto_auto_1fr] sm:gap-1">
               {/* 입학/졸업연월 통합 */}
-              <div className="relative flex items-center gap-1 border-r border-gray-200 pr-5">
+              <div className="relative flex items-center gap-1 sm:border-r border-gray-200 sm:pr-5">
                 {/* 입학연월 */}
                 <button
                   type="button"
@@ -588,12 +587,12 @@ const ResumeDetail: React.FC = () => {
                     setShowStartPicker(!showStartPicker);
                     setShowEndPicker(false);
                   }}
-                  className="py-1 text-14 text-left focus:outline-none flex-0"
+                  className="py-1 text-xs sm:text-14 text-left focus:outline-none flex-0"
                 >
                   {eduStart ? <span className="text-gray-900">{eduStart.replace('-', '.')}</span> : <span className="text-gray-500">YYYY.MM</span>}
                 </button>
 
-                <span className="text-gray-400 text-sm">-</span>
+                <span className="text-gray-400 text-xs sm:text-sm">-</span>
 
                 {/* 졸업연월 */}
                 <button
@@ -602,7 +601,7 @@ const ResumeDetail: React.FC = () => {
                     setShowEndPicker(!showEndPicker);
                     setShowStartPicker(false);
                   }}
-                  className="py-1 text-14 text-left focus:outline-none flex-0"
+                  className="py-1 text-xs sm:text-14 text-left focus:outline-none flex-0"
                 >
                   {eduEnd ? <span className="text-gray-900">{eduEnd.replace('-', '.')}</span> : <span className="text-gray-500">YYYY.MM</span>}
                 </button>
@@ -689,10 +688,11 @@ const ResumeDetail: React.FC = () => {
               </div>
 
               {/* 졸업 상태 드롭다운 */}
-              <div className="relative border-r border-gray-200 pr-2">
+              <div className="relative sm:border-r border-gray-200 sm:pr-2 w-full sm:w-auto -ml-2 sm:ml-0">
                 <button
+                  type="button"
                   onClick={() => setOpenGrad(!openGrad)}
-                  className="flex items-center justify-between w-21 px-3 py-1 bg-white text-14 text-gray-800 hover:bg-gray-50"
+                  className="flex items-center justify-between w-full sm:w-21 px-2 sm:px-3 py-1 bg-white text-xs sm:text-14 text-gray-800 hover:bg-gray-50"
                 >
                   <span className={gradStatus ? "text-gray-900" : "text-gray-500"}>
                     {gradStatus ? gradStatus : "졸업 상태"}
@@ -700,7 +700,7 @@ const ResumeDetail: React.FC = () => {
                 </button>
 
                 {openGrad && (
-                  <div className="absolute left-0 w-21 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div className="absolute left-0 w-full sm:w-21 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     {["재학중", "졸업"].map((status) => (
                       <button
                         key={status}
@@ -709,7 +709,7 @@ const ResumeDetail: React.FC = () => {
                           setGradStatus(status);
                           setOpenGrad(false);
                         }}
-                        className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700"
+                        className="block w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-gray-50 text-gray-700"
                       >
                         {status}
                       </button>
@@ -723,7 +723,7 @@ const ResumeDetail: React.FC = () => {
               <input
                 ref={eduMajorRef}
                 placeholder="전공 및 학위"
-                className="bg-transparent py-1 focus:outline-none text-14 pl-2" // <- pl-2 추가
+                className="bg-transparent py-1 focus:outline-none text-xs sm:text-14 pl-0 sm:pl-2 w-full"
                 onKeyDown={(e) => {
                   if (e.nativeEvent.isComposing) return;
                   if (e.key === "Enter") addEducation();
@@ -734,13 +734,13 @@ const ResumeDetail: React.FC = () => {
         </div>
       </div>
       {/* 경력 */}
-      <div className="mb-12">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+      <div className="mb-8 sm:mb-12">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
           경력
           <button
             type="button"
             onClick={addCareer}
-            className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-base sm:text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
             aria-label="경력 추가"
           >
             +
@@ -749,39 +749,39 @@ const ResumeDetail: React.FC = () => {
 
         {/* 추가된 경력 리스트 */}
         {extra.careers.map((c, i) => (
-          <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+          <div key={i} className="mb-3 sm:mb-4 p-3 sm:p-4 border border-gray-100 rounded-lg relative">
             <button
               onClick={() => removeCareer(i)}
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg sm:text-xl font-light"
               aria-label="remove career"
             >
               ×
             </button>
-            <div className="space-y-2">
-              <p className="font-medium text-gray-900">{c.company}</p>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>{c.period || "-"} {c.role && `· ${c.role}`} {c.job && `· ${c.job}`}</p>
-                {c.desc && <p className="text-gray-700">{c.desc}</p>}
+            <div className="space-y-1 sm:space-y-2">
+              <p className="text-sm sm:text-base font-medium text-gray-900 break-words">{c.company}</p>
+              <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                <p className="break-words">{c.period || "-"} {c.role && `· ${c.role}`} {c.job && `· ${c.job}`}</p>
+                {c.desc && <p className="text-gray-700 break-words">{c.desc}</p>}
               </div>
             </div>
           </div>
         ))}
 
         {/* 새 경력 추가 폼 */}
-        <div className="border border-gray-100 rounded-lg p-4 bg-white">
-          <div className="space-y-3">
+        <div className="border border-gray-100 rounded-lg p-3 sm:p-4 bg-white">
+          <div className="space-y-2 sm:space-y-3">
             <div>
               <input
                 ref={carCompanyRef}
                 placeholder="회사명"
-                className="w-full bg-transparent py-1 focus:outline-none text-14"
+                className="w-full bg-transparent py-1 focus:outline-none text-xs sm:text-14"
               />
             </div>
 
             {/* 입사/퇴사연월, 직책, 직무를 한 줄에 배치 */}
-            <div className="grid grid-cols-[auto_auto_1fr] gap-2">
+            <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[auto_auto_1fr] sm:gap-2">
               {/* 입사/퇴사연월 통합 */}
-              <div className="relative flex items-center gap-1 border-r border-gray-200 pr-5">
+              <div className="relative flex items-center gap-1 sm:border-r border-gray-200 sm:pr-5">
                 {/* 입사연월 */}
                 <button
                   type="button"
@@ -789,12 +789,12 @@ const ResumeDetail: React.FC = () => {
                     setShowCarStartPicker(!showCarStartPicker);
                     setShowCarEndPicker(false);
                   }}
-                  className="py-1 text-14 text-left focus:outline-none flex-0"
+                  className="py-1 text-xs sm:text-14 text-left focus:outline-none flex-0"
                 >
                   {carStart ? <span className="text-gray-900">{carStart.replace('-', '.')}</span> : <span className="text-gray-500">YYYY.MM</span>}
                 </button>
 
-                <span className="text-gray-400 text-sm">-</span>
+                <span className="text-gray-400 text-xs sm:text-sm">-</span>
 
                 {/* 퇴사연월 */}
                 <button
@@ -803,7 +803,7 @@ const ResumeDetail: React.FC = () => {
                     setShowCarEndPicker(!showCarEndPicker);
                     setShowCarStartPicker(false);
                   }}
-                  className="py-1 text-14 text-left focus:outline-none flex-0"
+                  className="py-1 text-xs sm:text-14 text-left focus:outline-none flex-0"
                 >
                   {carEnd ? <span className="text-gray-900">{carEnd.replace('-', '.')}</span> : <span className="text-gray-500">YYYY.MM</span>}
                 </button>
@@ -893,14 +893,14 @@ const ResumeDetail: React.FC = () => {
               <input
                 ref={carRoleRef}
                 placeholder="직책"
-                className="bg-transparent py-1 focus:outline-none text-14 border-r border-gray-200 pr-2 pl-2"
+                className="bg-transparent py-1 focus:outline-none text-xs sm:text-14 sm:border-r border-gray-200 sm:pr-2 pl-0 sm:pl-2 w-full"
               />
 
               {/* 직무 */}
               <input
                 ref={carJobRef}
                 placeholder="직무"
-                className="bg-transparent py-1 focus:outline-none text-14 pl-2"
+                className="bg-transparent py-1 focus:outline-none text-xs sm:text-14 pl-0 sm:pl-2 w-full"
               />
             </div>
 
@@ -908,7 +908,7 @@ const ResumeDetail: React.FC = () => {
               <input
                 ref={carDescRef}
                 placeholder="내용 (Enter 추가)"
-                className="w-full bg-transparent py-1 focus:outline-none text-14"
+                className="w-full bg-transparent py-1 focus:outline-none text-xs sm:text-14"
                 onKeyDown={(e) => {
                   if (e.nativeEvent.isComposing) return;
                   if (e.key === "Enter") addCareer();
@@ -920,15 +920,15 @@ const ResumeDetail: React.FC = () => {
       </div>
 
       {/* 자격증/스킬/언어 */}
-      <div className="grid grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
         {/* 자격증 */}
         <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
             자격증
             <button
               type="button"
               onClick={addCert}
-              className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-base sm:text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
               aria-label="자격증 추가"
             >
               +
@@ -937,24 +937,24 @@ const ResumeDetail: React.FC = () => {
 
           {/* 추가된 자격증 리스트 */}
           {extra.certs.map((c, i) => (
-            <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+            <div key={i} className="mb-3 sm:mb-4 p-3 sm:p-4 border border-gray-100 rounded-lg relative">
               <button
                 onClick={() => removeCert(i)}
-                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg sm:text-xl font-light"
                 aria-label="remove certificate"
               >
                 ×
               </button>
-              <p className="font-medium text-gray-900 pr-6">{c}</p>
+              <p className="text-sm sm:text-base font-medium text-gray-900 pr-6 break-words">{c}</p>
             </div>
           ))}
 
           {/* 새 자격증 추가 폼 */}
-          <div className="border border-gray-100 rounded-lg p-4 bg-white">
+          <div className="border border-gray-100 rounded-lg p-3 sm:p-4 bg-white">
             <input
               ref={certRef}
               placeholder="자격증 (Enter 추가)"
-              className="w-full bg-transparent py-1 focus:outline-none text-14"
+              className="w-full bg-transparent py-1 focus:outline-none text-xs sm:text-14"
               onKeyDown={(e) => {
                 if (e.nativeEvent.isComposing) return;
                 if (e.key === "Enter") addCert();
@@ -965,12 +965,12 @@ const ResumeDetail: React.FC = () => {
 
         {/* 스킬 */}
         <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
             스킬
             <button
               type="button"
               onClick={addSkill}
-              className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-base sm:text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
               aria-label="스킬 추가"
             >
               +
@@ -979,24 +979,24 @@ const ResumeDetail: React.FC = () => {
 
           {/* 추가된 스킬 리스트 */}
           {extra.skills.map((s, i) => (
-            <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+            <div key={i} className="mb-3 sm:mb-4 p-3 sm:p-4 border border-gray-100 rounded-lg relative">
               <button
                 onClick={() => removeSkill(i)}
-                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg sm:text-xl font-light"
                 aria-label="remove skill"
               >
                 ×
               </button>
-              <p className="font-medium text-gray-900 pr-6">{s}</p>
+              <p className="text-sm sm:text-base font-medium text-gray-900 pr-6 break-words">{s}</p>
             </div>
           ))}
 
           {/* 새 스킬 추가 폼 */}
-          <div className="border border-gray-100 rounded-lg p-4 bg-white">
+          <div className="border border-gray-100 rounded-lg p-3 sm:p-4 bg-white">
             <input
               ref={skillRef}
               placeholder="스킬 (Enter 추가)"
-              className="w-full bg-transparent py-1 focus:outline-none text-14"
+              className="w-full bg-transparent py-1 focus:outline-none text-xs sm:text-14"
               onKeyDown={(e) => {
                 if (e.nativeEvent.isComposing) return;
                 if (e.key === "Enter") addSkill();
@@ -1007,12 +1007,12 @@ const ResumeDetail: React.FC = () => {
 
         {/* 언어 */}
         <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
             언어
             <button
               type="button"
               onClick={addLang}
-              className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
+              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-base sm:text-18 font-normal leading-none hover:bg-gray-300 transition-colors cursor-pointer"
               aria-label="언어 추가"
             >
               +
@@ -1021,24 +1021,24 @@ const ResumeDetail: React.FC = () => {
 
           {/* 추가된 언어 리스트 */}
           {extra.langs.map((l, i) => (
-            <div key={i} className="mb-4 p-4 border border-gray-100 rounded-lg relative">
+            <div key={i} className="mb-3 sm:mb-4 p-3 sm:p-4 border border-gray-100 rounded-lg relative">
               <button
                 onClick={() => removeLang(i)}
-                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-light"
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg sm:text-xl font-light"
                 aria-label="remove language"
               >
                 ×
               </button>
-              <p className="font-medium text-gray-900 pr-6">{l}</p>
+              <p className="text-sm sm:text-base font-medium text-gray-900 pr-6 break-words">{l}</p>
             </div>
           ))}
 
           {/* 새 언어 추가 폼 */}
-          <div className="border border-gray-100 rounded-lg p-4 bg-white">
+          <div className="border border-gray-100 rounded-lg p-3 sm:p-4 bg-white">
             <input
               ref={langRef}
               placeholder="언어 (Enter 추가)"
-              className="w-full bg-transparent py-1 focus:outline-none text-14"
+              className="w-full bg-transparent py-1 focus:outline-none text-xs sm:text-14"
               onKeyDown={(e) => {
                 if (e.nativeEvent.isComposing) return;
                 if (e.key === "Enter") addLang();
@@ -1049,13 +1049,13 @@ const ResumeDetail: React.FC = () => {
       </div>
 
       {/* 자기소개서 */}
-      <div className="mb-10">
-        <h3 className="text-lg font-semibold mb-3">자기소개서</h3>
+      <div className="mb-8 sm:mb-10">
+        <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3">자기소개서</h3>
         <input
           type="text"
           value={essayTitle}
           onChange={(e) => setEssayTitle(e.target.value)}
-          className="w-full border-b border-gray-200 p-1 mb-3 focus:outline-none focus:border-gray-400"
+          className="w-full border-b border-gray-200 p-1 mb-2 sm:mb-3 focus:outline-none focus:border-gray-400 text-xs sm:text-sm"
           placeholder="제목을 입력하세요."
         />
         <div className="relative">
@@ -1063,19 +1063,19 @@ const ResumeDetail: React.FC = () => {
             rows={5}
             value={essayContent}
             onChange={(e) => setEssayContent(e.target.value)}
-            className="w-full border border-gray-200 p-2 rounded focus:outline-none focus:border-gray-400"
+            className="w-full border border-gray-200 p-2 sm:p-3 rounded focus:outline-none focus:border-gray-400 text-xs sm:text-sm"
             placeholder="내용을 입력하세요."
             maxLength={5000}
           />
-          <div className="text-right text-sm text-gray-500 mt-1">
+          <div className="text-right text-xs sm:text-sm text-gray-500 mt-1">
             {essayContent.length}/5000
           </div>
         </div>
       </div>
 
-      <div className="flex justify-end gap-4">
-        <button onClick={() => navigate(-1)} className="border border-gray-200 px-4 py-2 rounded hover:bg-gray-50 transition-colors">다음에 하기</button>
-        <button onClick={handleSave} className="bg-gray-200 px-5 py-2 rounded hover:bg-[#006AFF] hover:text-white transition-colors disabled:hover:bg-gray-200 disabled:hover:text-black" disabled={saving}>
+      <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
+        <button onClick={() => navigate(-1)} className="border border-gray-200 px-4 py-2 rounded hover:bg-gray-50 transition-colors text-sm sm:text-base">다음에 하기</button>
+        <button onClick={handleSave} className="bg-gray-200 px-5 py-2 rounded hover:bg-[#006AFF] hover:text-white transition-colors disabled:hover:bg-gray-200 disabled:hover:text-black text-sm sm:text-base" disabled={saving}>
           {saving ? "저장 중..." : "저장하기"}
         </button>
       </div>
