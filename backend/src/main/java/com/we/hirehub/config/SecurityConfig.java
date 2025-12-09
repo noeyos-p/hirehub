@@ -61,6 +61,7 @@ public class SecurityConfig {
                                 "/login/**", "/oauth2/**",
                                 "/google", "/kakao", "/naver",
                                 "/api/mypage/resumes/**",
+                                "/api/cover-letter/**",
                                 "/naver/**", "/kakao/**", "/google/**"
                         ).permitAll()
 
