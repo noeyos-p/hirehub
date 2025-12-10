@@ -108,7 +108,7 @@ public class BoardAiController {
         req.setDays(2);
         req.setLimit(10);
         req.setStyle("bullet");
-        req.setBotUserId(2L);  // 시스템봇 ID
+        req.setBotUserId(102L);  // 시스템봇 ID
 
         return publish(req);
     }
