@@ -798,16 +798,18 @@ export interface AdminResumeDto {
   users?: {
     userId?: number;
     nickname?: string;
-    email?: string;
   };
-  createAt: string;
-  updateAt: string;
 }
 
-export interface AdminPageInfo {
-  totalElements: number;
-  totalPages: number;
-  currentPage: number;
+export interface AiBoardControl {
+  id: number;
+  board: {
+    id: number;
+    title: string;
+    hidden: boolean;
+  };
+  role: string;
+  reason: string;
 }
 
 export interface AdminResponse<T> {
