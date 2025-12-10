@@ -7,7 +7,8 @@ import {
   SparklesIcon,
   CheckCircleIcon,
   ClockIcon,
-  BookmarkIcon
+  BookmarkIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { myPageApi } from '../api/myPageApi';
 import api from '../api/api';
@@ -119,33 +120,39 @@ export default function JobMatchingPage() {
             </div>
             <button
               onClick={() => navigate('/job-matching/history')}
-              className="flex items-center px-4 py-2 text-sm md:text-base bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              className="flex items-center px-4 py-2 text-sm md:text-base bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm"
             >
               <ClockIcon className="w-5 h-5 mr-2" />
               매칭 이력
             </button>
           </div>
-          <p className="text-sm md:text-base text-gray-600 text-center">
+          <p className="text-sm md:text-base text-gray-600 text-center max-w-2xl mx-auto">
             내 이력서와 가장 잘 맞는 채용 공고를 AI가 분석하여 추천해드립니다.
           </p>
         </div>
 
         {/* 이력서 선택 */}
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
-          <div className="flex items-center mb-4">
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-gray-100">
+          <div className="flex items-center mb-6">
             <DocumentTextIcon className="w-6 h-6 text-gray-700 mr-2" />
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">이력서 선택</h2>
+            <h2 className="text-xl font-bold text-gray-900">이력서 선택</h2>
           </div>
 
           {loadingResumes ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#006AFF]"></div>
             </div>
           ) : resumes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <DocumentTextIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>작성된 이력서가 없습니다.</p>
-              <p className="text-sm mt-1">마이페이지에서 이력서를 먼저 작성해주세요.</p>
+            <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+              <DocumentTextIcon className="w-16 h-16 mx-auto mb-3 text-gray-300" />
+              <p className="text-gray-600 font-medium">작성된 이력서가 없습니다.</p>
+              <p className="text-sm text-gray-500 mt-1">마이페이지에서 이력서를 먼저 작성해주세요.</p>
+              <button
+                onClick={() => navigate('/myPage/resume')}
+                className="mt-4 px-4 py-2 bg-[#006AFF] text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition"
+              >
+                이력서 작성하기
+              </button>
             </div>
           ) : (
             <>
@@ -157,44 +164,45 @@ export default function JobMatchingPage() {
                       setSelectedResumeId(resume.id);
                       setSelectedResumeTitle(resume.title);
                     }}
-                    className={`p-4 border rounded-lg text-left transition ${selectedResumeId === resume.id
-                        ? 'border-[#4E98FF] bg-withe'
-                        : 'border-gray-200 hover:border-[#4E98FF]'
+                    className={`group p-5 border rounded-xl text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-md ${selectedResumeId === resume.id
+                      ? 'border-[#006AFF] bg-blue-50/30 ring-1 ring-[#006AFF]'
+                      : 'border-gray-100 bg-white hover:border-blue-200'
                       }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-gray-900 truncate">{resume.title}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-bold text-gray-900 truncate group-hover:text-[#006AFF] transition-colors">{resume.title}</h3>
                           {resume.locked && (
-                            <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 flex-shrink-0">
+                            <span className="inline-block text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium flex-shrink-0">
                               제출됨
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 flex items-center">
+                          <ClockIcon className="w-4 h-4 mr-1" />
                           {new Date(resume.createAt).toLocaleDateString()}
                         </p>
                       </div>
                       {selectedResumeId === resume.id && (
-                        <CheckCircleIcon className="w-6 h-6 text-blue-600 flex-shrink-0 ml-2" />
+                        <CheckCircleIcon className="w-6 h-6 text-[#006AFF] flex-shrink-0 ml-2" />
                       )}
                     </div>
                   </button>
                 ))}
               </div>
 
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-8 flex justify-end space-x-3">
                 <button
                   onClick={handleReset}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm sm:text-base"
+                  className="px-5 py-2.5 text-gray-700 font-medium text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                 >
                   초기화
                 </button>
                 <button
                   onClick={handleMatch}
                   disabled={matching || !selectedResumeId}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center text-sm sm:text-base"
+                  className="px-8 py-2.5 bg-[#006AFF] text-white font-semibold text-sm rounded-lg hover:bg-blue-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center shadow-lg hover:shadow-xl active:scale-[0.98] disabled:shadow-none disabled:scale-100"
                 >
                   {matching ? (
                     <>
@@ -202,11 +210,12 @@ export default function JobMatchingPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      매칭 중...
+                      AI 매칭 분석 중...
                     </>
                   ) : (
                     <>
-                      공고 매칭
+                      <SparklesIcon className="w-5 h-5 mr-2" />
+                      AI 공고 매칭 시작
                     </>
                   )}
                 </button>
@@ -217,22 +226,22 @@ export default function JobMatchingPage() {
 
         {/* 매칭 결과 */}
         {matchResults.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div className="flex items-center">
-                <BriefcaseIcon className="w-6 h-6 text-blue-600 mr-2" />
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">매칭 결과</h2>
-                <span className="ml-3 text-sm text-gray-500">
-                  총 {matchResults.length}개의 공고
+                <BriefcaseIcon className="w-6 h-6 text-[#006AFF] mr-2" />
+                <h2 className="text-xl font-bold text-gray-900">매칭 결과</h2>
+                <span className="ml-3 text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  총 {matchResults.length}건
                 </span>
               </div>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                className="flex items-center px-5 py-2.5 bg-green-600 text-white font-semibold text-sm rounded-lg hover:bg-green-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed shadow-sm active:scale-[0.98]"
               >
-                <BookmarkIcon className="w-4 h-4 mr-1" />
-                {isSaving ? '저장 중...' : '저장하기'}
+                <BookmarkIcon className="w-5 h-5 mr-2" />
+                {isSaving ? '저장 중...' : '결과 저장하기'}
               </button>
             </div>
 
@@ -240,79 +249,79 @@ export default function JobMatchingPage() {
               {matchResults.map((result, index) => (
                 <div
                   key={result.jobId || index}
-                  className="border border-gray-200 rounded-lg p-4 sm:p-5 hover:shadow-md transition"
+                  className="group border border-gray-100 rounded-2xl p-5 hover:border-blue-200 hover:shadow-md transition-all duration-300 bg-white"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 gap-3">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-gray-500">
-                          #{index + 1}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-xs font-bold text-gray-500">
+                          {index + 1}
                         </span>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#006AFF] transition-colors line-clamp-1">
                           {result.jobTitle}
                         </h3>
                       </div>
-                      <p className="text-gray-600">{result.companyName}</p>
-                    </div>
-                    <div className={`self-start sm:self-auto px-4 py-2 rounded-lg border ${getGradeColor(result.grade)} flex flex-row sm:flex-col items-center gap-2 sm:gap-0`}>
-                      <div className="text-xl sm:text-2xl font-bold">{result.grade}</div>
-                      <div className="text-xs sm:text-center">
-                        <span className="sm:hidden mr-1">등급</span>
-                        <span className="hidden sm:block">등급</span>
-                        <span className="text-gray-600 sm:mt-1">({result.score}점)</span>
+                      <p className="text-gray-600 font-medium mb-4 flex items-center">
+                        <BuildingOfficeIcon className="w-4 h-4 mr-1 text-gray-400" />
+                        {result.companyName}
+                      </p>
+
+                      <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
+                        <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center">
+                          <SparklesIcon className="w-4 h-4 text-[#006AFF] mr-1.5" />
+                          AI 매칭 분석
+                        </h4>
+                        <ul className="space-y-1.5">
+                          {result.reasons.map((reason, idx) => (
+                            <li key={idx} className="flex items-start text-sm text-gray-700">
+                              <CheckCircleIcon className="w-4 h-4 text-[#006AFF] mr-2 mt-0.5 flex-shrink-0" />
+                              <span className="leading-relaxed">{reason}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mt-2 sm:mt-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                      매칭 이유
-                    </h4>
-                    <ul className="space-y-1">
-                      {result.reasons.map((reason, idx) => (
-                        <li key={idx} className="flex items-start text-sm text-gray-600">
-                          <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                          <span>{reason}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-4 md:min-w-[140px]">
+                      <div className={`px-4 py-2 rounded-xl border flex flex-row md:flex-col items-center gap-2 md:gap-1 shadow-sm ${getGradeColor(result.grade)}`}>
+                        <div className="text-2xl md:text-3xl font-black">{result.grade}</div>
+                        <div className="text-xs font-bold opacity-80">매칭 점수 {result.score}점</div>
+                      </div>
 
-                  {result.jobId && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
-                      <button
-                        onClick={() => window.open(`/jobPostings/${result.jobId}`, '_blank')}
-                        className="w-full sm:w-auto px-4 py-2 bg-[#006AFF] text-white rounded-lg hover:bg-[#0055DD] transition text-sm"
-                      >
-                        공고 보기
-                      </button>
+                      {result.jobId && (
+                        <button
+                          onClick={() => window.open(`/jobPostings/${result.jobId}`, '_blank')}
+                          className="w-full md:w-auto px-5 py-2.5 bg-[#006AFF] text-white rounded-lg hover:bg-blue-600 transition text-sm font-semibold shadow-sm hover:shadow active:scale-[0.98]"
+                        >
+                          공고 상세보기
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* 사용 가이드 */}
-        <div className="mt-8 bg-[#EFF4F8] border border-[#D6E4F0] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">사용 가이드</h3>
-          <ul className="space-y-2 text-gray-700">
+        {/* 이용 가이드 */}
+        <div className="mt-10 bg-gradient-to-br from-[#EFF4F8] to-white border border-[#D6E4F0] rounded-xl p-6 md:p-8">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <CheckCircleIcon className="w-6 h-6 text-[#006AFF] mr-2" />
+            이용 가이드
+          </h3>
+          <ul className="space-y-3 text-gray-700 text-sm md:text-base">
             <li className="flex items-start">
-              <span className="mr-2">-</span>
-              <span>매칭에 사용할 이력서를 선택해주세요.</span>
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#006AFF] mt-2 mr-2 flex-shrink-0"></span>
+              <span>매칭 분석에 사용할 이력서를 선택해주세요.</span>
             </li>
             <li className="flex items-start">
-              <span className="mr-2">-</span>
-              <span>"AI 공고 매칭" 버튼을 클릭하면 AI가 이력서를 분석하여 가장 적합한 공고를 찾아드립니다.</span>
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#006AFF] mt-2 mr-2 flex-shrink-0"></span>
+              <span>"AI 공고 매칭" 버튼을 클릭하면 내 이력서 항목을 정밀 분석하여 가장 적합한 공고를 찾아드립니다.</span>
             </li>
             <li className="flex items-start">
-              <span className="mr-2">-</span>
-              <span>매칭도가 높을수록 지원자의 경력과 역량이 공고 요구사항과 잘 맞습니다.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">-</span>
-              <span>매칭 이유를 확인하고 관심있는 공고에 바로 지원하세요.</span>
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#006AFF] mt-2 mr-2 flex-shrink-0"></span>
+              <span>매칭 등급(S~C)과 상세 분석 사유를 확인하고, 관심 있는 공고에 바로 지원해보세요.</span>
             </li>
           </ul>
         </div>

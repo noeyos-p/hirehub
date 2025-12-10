@@ -9,9 +9,9 @@ declare global {
 }
 
 const tokenProducts = [
-  { tokens: 10, price: 1000, color: "#4A90E2" },
-  { tokens: 30, price: 2900, color: "#3CC757" },
-  { tokens: 50, price: 4800, color: "#FF9500" },
+  { tokens: 10, price: 1000, color: "#7CAEF2" }, // Soft Blue
+  { tokens: 30, price: 2900, color: "#66D294" }, // Soft Green
+  { tokens: 50, price: 4800, color: "#FFB358" }, // Soft Orange
 ];
 
 const MyPageTokenPayment = () => {
@@ -113,57 +113,36 @@ const MyPageTokenPayment = () => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>토큰 결제</h2>
-      <p>원하는 토큰 상품을 선택하여 결제를 진행하세요.</p>
+    <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] py-8">
+      <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">토큰 결제</h2>
+      <p className="text-sm md:text-base text-gray-600 mb-6 md:mb-8">원하는 토큰 상품을 선택하여 결제를 진행하세요.</p>
 
       {/* ====================== */}
       {/* 🔥 토큰 상품 카드 UI */}
       {/* ====================== */}
-      <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
         {tokenProducts.map((item) => (
           <div
             key={item.tokens}
-            style={{
-              width: "220px",
-              padding: "20px",
-              borderRadius: "12px",
-              border: `2px solid ${item.color}`,
-              background: "#fff",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-              textAlign: "center",
-            }}
+            className="group flex flex-col items-center p-6 rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-[#006AFF]"
           >
             <div
-              style={{
-                fontWeight: "bold",
-                fontSize: "18px",
-                marginBottom: "10px",
-                color: item.color,
-              }}
+              className="font-bold text-lg md:text-xl mb-3 transition-colors"
+              style={{ color: item.color }}
             >
               ● {item.tokens} Tokens
             </div>
 
-            <div style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "15px" }}>
+            <div className="text-2xl md:text-3xl font-extrabold mb-6 text-gray-900">
               {item.price.toLocaleString()}원
             </div>
 
             <button
               disabled={loading}
               onClick={() => requestPayment(item.price, item.tokens)}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "none",
-                background: item.color,
-                color: "#fff",
-                fontSize: "16px",
-                cursor: "pointer",
-              }}
+              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm md:text-base shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-[#006AFF]"
             >
-              구매하기
+              {loading ? "처리중..." : "구매하기"}
             </button>
           </div>
         ))}
@@ -172,35 +151,31 @@ const MyPageTokenPayment = () => {
       {/* ====================== */}
       {/* 🟡 결제수단 선택 UI */}
       {/* ====================== */}
-      <h3 style={{ marginTop: "40px" }}>결제 수단 선택</h3>
-      <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-        {/* 카드 선택 */}
-        <button
-          onClick={() => setPayMethod("card")}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "8px",
-            border: payMethod === "card" ? "2px solid #4A90E2" : "1px solid #ccc",
-            background: payMethod === "card" ? "#E6F2FF" : "#fff",
-            cursor: "pointer",
-          }}
-        >
-          💳 카드 결제 (이니시스)
-        </button>
+      <div className="mt-10 md:mt-14 border-t border-gray-100 pt-8">
+        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">결제 수단 선택</h3>
+        <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+          {/* 카드 선택 */}
+          <button
+            onClick={() => setPayMethod("card")}
+            className={`flex items-center justify-center px-6 py-4 rounded-xl border-2 transition-all duration-200 text-sm md:text-base font-semibold ${payMethod === "card"
+              ? "border-[#4A90E2] bg-[#F0F7FF] text-[#2B5F8C] shadow-sm"
+              : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:border-gray-300"
+              }`}
+          >
+            <span className="mr-2 text-xl">💳</span> 카드 결제 (이니시스)
+          </button>
 
-        {/* 카카오페이 선택 */}
-        <button
-          onClick={() => setPayMethod("kakaopay")}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "8px",
-            border: payMethod === "kakaopay" ? "2px solid #F7C600" : "1px solid #ccc",
-            background: payMethod === "kakaopay" ? "#FFF6C8" : "#fff",
-            cursor: "pointer",
-          }}
-        >
-          🟡 카카오페이 결제
-        </button>
+          {/* 카카오페이 선택 */}
+          <button
+            onClick={() => setPayMethod("kakaopay")}
+            className={`flex items-center justify-center px-6 py-4 rounded-xl border-2 transition-all duration-200 text-sm md:text-base font-semibold ${payMethod === "kakaopay"
+              ? "border-[#F7C600] bg-[#FFFBE6] text-[#6B5700] shadow-sm"
+              : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:border-gray-300"
+              }`}
+          >
+            <span className="mr-2 text-xl">🟡</span> 카카오페이 결제
+          </button>
+        </div>
       </div>
     </div>
   );
