@@ -775,8 +775,6 @@ export interface AdminResumeDto {
   essayContent?: string | null;
   htmlContent?: string | null;
   locked: boolean;
-  createAt: string;
-  updateAt?: string;
   educationList?: Array<{
     name?: string;
     major?: string;
@@ -802,6 +800,8 @@ export interface AdminResumeDto {
     nickname?: string;
     email?: string;
   };
+  createAt: string;
+  updateAt: string;
 }
 
 export interface AiBoardControl {

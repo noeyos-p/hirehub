@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PencilIcon, TrashIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from '@heroicons/react/24/outline';
 import { adminApi } from '../../api/adminApi';
-import type { AdminPost } from '../../types/interface';
+import type { AdminPost, AiBoardControl } from '../../types/interface';
 
 interface PostDetailModalProps {
   post: AdminPost | null;
@@ -250,6 +250,7 @@ const BoardManagement: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<AdminPost | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -462,12 +463,20 @@ const BoardManagement: React.FC = () => {
       {/* 상단 타이틀 + 새로고침 버튼 */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">게시판 관리</h2>
-        <button
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsAiModalOpen(true)}
+            className="bg-purple-100 text-purple-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-purple-200"
+          >
+            봇 상태 확인
+          </button>
+          <button
           onClick={() => setIsCreateModalOpen(true)}
           className="bg-blue-100 text-blue-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-200"
         >
           신규
         </button>
+        </div>
       </div>
 
       {/* ✅ 전체선택 / 선택삭제 영역 */}
@@ -479,11 +488,10 @@ const BoardManagement: React.FC = () => {
             onChange={toggleSelectAll}
             className="sr-only peer"
           />
-          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-            allSelected
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${allSelected
               ? 'bg-blue-600 border-blue-600'
               : 'bg-white border-gray-300 group-hover:border-blue-400'
-          }`}>
+            }`}>
             {allSelected && (
               <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -557,9 +565,8 @@ const BoardManagement: React.FC = () => {
               <div
                 key={post.id}
                 onClick={() => handlePostClick(post.id)}
-                className={`relative flex justify-between items-center border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${
-                  selectedIds.includes(post.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-                }`}
+                className={`relative flex justify-between items-center border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${selectedIds.includes(post.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                  }`}
               >
                 {/* ✅ 개별 선택 체크박스 */}
                 <div
@@ -573,11 +580,10 @@ const BoardManagement: React.FC = () => {
                       onChange={() => toggleSelect(post.id)}
                       className="sr-only peer"
                     />
-                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                      selectedIds.includes(post.id)
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selectedIds.includes(post.id)
                         ? 'bg-blue-600 border-blue-600'
                         : 'bg-white border-gray-300 hover:border-blue-400'
-                    }`}>
+                      }`}>
                       {selectedIds.includes(post.id) && (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -679,6 +685,155 @@ const BoardManagement: React.FC = () => {
       />
       {/* ✅ 신규 등록 모달 */}
       <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      {/* ✅ AI 봇 차단 관리 모달 */}
+      <AiControlModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
+    </div>
+  );
+};
+
+
+
+// ✅ AI 봇 차단 관리 모달
+const AiControlModal = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  const [logs, setLogs] = useState<AiBoardControl[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchLogs();
+    }
+  }, [isOpen]);
+
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    try {
+      const res = await adminApi.getAiBoardControls();
+      if (res.success) {
+        setLogs(res.data);
+      } else {
+        alert(res.message || "데이터를 불러오지 못했습니다.");
+      }
+    } catch (err: any) {
+      console.error("❌ AI 로그 조회 실패:", err);
+      alert("AI 로그를 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRestore = async (id: number) => {
+    if (!window.confirm("정말로 이 게시글을 복구하시겠습니까?")) return;
+    try {
+      const res = await adminApi.restoreAiBoardControl(id);
+      if (res.success) {
+        alert("게시글이 복구되었습니다.");
+        fetchLogs(); // 목록 갱신
+      } else {
+        alert(res.message || "복구에 실패했습니다.");
+      }
+    } catch (err: any) {
+      console.error("❌ 복구 실패:", err);
+      alert("복구 중 오류가 발생했습니다.");
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        {/* 헤더 */}
+        <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            AI 봇 차단 관리
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* 본문 */}
+        <div className="p-6">
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">로딩 중...</div>
+          ) : logs.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              차단된 내역이 없습니다.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                  <tr>
+                    <th className="px-6 py-3">ID</th>
+                    <th className="px-6 py-3">게시글 제목</th>
+                    <th className="px-6 py-3">차단 사유</th>
+                    <th className="px-6 py-3">상태</th>
+                    <th className="px-6 py-3">관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr
+                      key={log.id}
+                      className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    >
+                      <td className="px-6 py-4">{log.id}</td>
+                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                        {log.board?.title || "삭제된 게시글"}
+                      </td>
+                      <td className="px-6 py-4 max-w-xs truncate" title={log.reason}>
+                        {log.reason}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            log.role === "BOT"
+                              ? "bg-red-100 text-red-600"
+                              : "bg-green-100 text-green-600"
+                          }`}
+                        >
+                          {log.role === "BOT" ? "차단됨" : "복구됨"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {/* 🔥 복구 버튼: role이 BOT이거나, ADMIN이지만 hidden이 true인 경우 활성화 */}
+                        {(log.role === "BOT" || (log.role === "ADMIN" && log.board?.hidden)) && (
+                          <button
+                            onClick={() => handleRestore(log.id)}
+                            className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                          >
+                            복구
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* 푸터 */}
+        <div className="flex justify-end gap-2 p-6 border-t dark:border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -16,73 +16,62 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AsyncModerationService {
 
-  private final BoardRepository boardRepository;
-  private final ModerationService moderationService;
-  private final AiBoardControlRepository controlRepo;
+    private final BoardRepository boardRepository;
+    private final ModerationService moderationService;
+    private final AiBoardControlRepository controlRepo;
 
-  @Async
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void moderateBoardAsync(Long boardId, int delaySeconds) {
-    try {
-      // 지연 시간
-      if (delaySeconds > 0) {
-        Thread.sleep(delaySeconds * 1000L);
-      }
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void moderateBoardAsync(Long boardId, int delaySeconds) {
+        try {
+            // 지연 시간
+            if (delaySeconds > 0) {
+                Thread.sleep(delaySeconds * 1000L);
+            }
 
-      Board board = boardRepository.findById(boardId).orElse(null);
-      if (board == null) {
-        log.warn("⚠️ [ASYNC_MOD] 게시글 없음 boardId={}", boardId);
-        return;
-      }
+            Board board = boardRepository.findById(boardId).orElse(null);
+            if (board == null) {
+                log.warn("⚠️ [ASYNC_MOD] 게시글 없음 boardId={}", boardId);
+                return;
+            }
 
-      log.info("🔄 [ASYNC_MOD] 비동기 검열 시작 boardId={}", boardId);
+            log.info("🔄 [ASYNC_MOD] 비동기 검열 시작 boardId={}", boardId);
 
-      var mres = moderationService.moderate(board.getTitle(), board.getContent());
-      applyModeration(board, mres);
-      boardRepository.save(board);
+            var mres = moderationService.moderate(board.getTitle(), board.getContent());
+            applyModeration(board, mres);
+            boardRepository.save(board);
 
-      log.info("✅ [ASYNC_MOD] 검열 완료 boardId={}, hidden={}", boardId, board.getHidden());
+            log.info("✅ [ASYNC_MOD] 검열 완료 boardId={}, hidden={}", boardId, board.getHidden());
 
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      log.error("❌ [ASYNC_MOD] 비동기 검열 중단 boardId={}", boardId);
-    } catch (Exception e) {
-      log.error("💥 [ASYNC_MOD] 비동기 검열 실패 boardId={}", boardId, e);
-    }
-  }
-
-  private void applyModeration(Board board, ModerationService.ModerationResult mres) {
-    log.info("🔍 [DEBUG-ASYNC] applyModeration 시작 - boardId={}", board.getId());
-    boolean before = Boolean.TRUE.equals(board.getHidden());
-    boolean approved = mres.approved();
-
-    // 🔥 관리자가 이미 복구(ADMIN)한 이력이 있으면 AI가 다시 숨기지 않음
-    log.info("🔍 [DEBUG-ASYNC] ADMIN 체크 시작 - boardId={}", board.getId());
-    boolean hasAdminRole = controlRepo.existsByBoardIdAndRole(board.getId(), "ADMIN");
-    log.info("🔍 [DEBUG-ASYNC] ADMIN 체크 결과 - boardId={}, hasAdminRole={}", board.getId(), hasAdminRole);
-
-    if (hasAdminRole) {
-      log.info("🛡️ [AI_SKIP] 관리자가 복구한 게시글입니다. AI 차단을 건너뜁니다. boardId={}", board.getId());
-      return;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("❌ [ASYNC_MOD] 비동기 검열 중단 boardId={}", boardId);
+        } catch (Exception e) {
+            log.error("💥 [ASYNC_MOD] 비동기 검열 실패 boardId={}", boardId, e);
+        }
     }
 
-    board.setHidden(!approved);
+    private void applyModeration(Board board, ModerationService.ModerationResult mres) {
+        boolean before = Boolean.TRUE.equals(board.getHidden());
+        boolean approved = mres.approved();
 
-    log.info("🧩 [MODERATION] boardId={}, before={}, after={}, approved={}, reason={}",
-        board.getId(), before, board.getHidden(), approved, mres.reason());
+        board.setHidden(!approved);
 
-    if (!approved) {
-      try {
-        AiBoardControl control = AiBoardControl.builder()
-            .board(board)
-            .reason(mres.reason())
-            .role("BOT")
-            .build();
-        controlRepo.save(control);
-        log.info("📝 [AI_CONTROL] 저장완료 - boardId={}, reason={}", board.getId(), mres.reason());
-      } catch (Exception e) {
-        log.error("⚠️ [AI_CONTROL] 저장 실패 - boardId={}", board.getId(), e);
-      }
+        log.info("🧩 [MODERATION] boardId={}, before={}, after={}, approved={}, reason={}",
+                board.getId(), before, board.getHidden(), approved, mres.reason());
+
+        if (!approved) {
+            try {
+                AiBoardControl control = AiBoardControl.builder()
+                        .board(board)
+                        .reason(mres.reason())
+                        .role(board.getRole() == null ? "USER" : board.getRole())
+                        .build();
+                controlRepo.save(control);
+                log.info("📝 [AI_CONTROL] 저장완료 - boardId={}, reason={}", board.getId(), mres.reason());
+            } catch (Exception e) {
+                log.error("⚠️ [AI_CONTROL] 저장 실패 - boardId={}", board.getId(), e);
+            }
+        }
     }
-  }
 }
