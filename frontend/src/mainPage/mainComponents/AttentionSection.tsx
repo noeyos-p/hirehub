@@ -27,7 +27,7 @@ const AttentionSection: React.FC = () => {
   // 반응형 페이지당 카드 수 계산
   const getCardsPerPage = () => {
     if (typeof window === 'undefined') return 5;
-    return window.innerWidth < 768 ? 2 : 5; // 모바일: 2개, 데스크톱: 5개
+    return window.innerWidth < 768 ? 2 : 5;
   };
 
   const [cardsPerPage, setCardsPerPage] = useState(getCardsPerPage());
@@ -52,14 +52,31 @@ const AttentionSection: React.FC = () => {
     setCompanyPhotos((prev) => ({ ...prev, ...photos }));
   };
 
+  // 🔥 공고 불러오기 (로그인 시 AI 추천, 비로그인 시 조회수 기준)
   useEffect(() => {
     const fetchJobs = async () => {
       try {
+        const token = localStorage.getItem('token');
+
+        if (token) {
+          // 🔥 로그인 시: AI 추천 공고 API 호출
+          try {
+            const recommendedJobs = await jobPostApi.getRecommendedJobs();
+            if (recommendedJobs && recommendedJobs.length > 0) {
+              console.log("🤖 AI 추천 공고:", recommendedJobs.length, "개");
+              setPopularJobs(recommendedJobs.slice(0, 15));
+              fetchCompanyPhotos(recommendedJobs.slice(0, 15));
+              return;
+            }
+          } catch (err) {
+            console.warn("⚠️ 추천 공고 실패, 조회수 기준으로 fallback:", err);
+          }
+        }
+
+        // 🔥 비로그인 또는 추천 실패 시: 조회수 기준 인기 공고
         const jobs = await jobPostApi.getJobPosts();
+        console.log("📊 조회수 기준 인기 공고:", jobs.length, "개");
 
-        console.log("✅ 받아온 공고 데이터:", jobs[0]); // 디버깅용
-
-        // ✅ 조회수 기준 내림차순 정렬 후 상위 15개
         const sortedJobs = jobs
           .sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
           .slice(0, 15);
@@ -71,7 +88,7 @@ const AttentionSection: React.FC = () => {
       }
     };
     fetchJobs();
-  }, []);
+  }, [isLoggedIn]);
 
   // 스크랩 상태 확인
   useEffect(() => {
@@ -119,7 +136,6 @@ const AttentionSection: React.FC = () => {
     }
   };
 
-  // 카드 클릭 시 조회수 증가 후 상세 페이지로 이동
   const handleJobClick = async (jobId: number) => {
     try {
       await jobPostApi.incrementJobView(jobId);
@@ -132,7 +148,6 @@ const AttentionSection: React.FC = () => {
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 0));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
 
-  // 터치 스와이프 핸들러
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
   };
@@ -159,7 +174,6 @@ const AttentionSection: React.FC = () => {
     setTouchEnd(0);
   };
 
-  // 각 페이지마다 이동할 거리 계산 (반응형 + 동적)
   const getSlideDistance = (page: number) => {
     if (typeof window === 'undefined') return page * 1345;
 
@@ -167,28 +181,24 @@ const AttentionSection: React.FC = () => {
     const isMobile = width < 768;
 
     if (isMobile) {
-      // 모바일: 카드 2개 폭 + gap 계산 (화면 너비 390px 기준)
-      const cardWidth = 180; // w-[180px]
-      const gap = 4; // space-x-1
+      const cardWidth = 180;
+      const gap = 4;
       return page * (cardWidth * 2 + gap);
     }
 
-    // 데스크톱: 기존 로직 유지
-    if (width < 1024) return page * 900;       // 태블릿
-    if (width < 1280) return page * 1100;      // 작은 데스크톱
-    return page * 1345;                         // 데스크톱
+    if (width < 1024) return page * 900;
+    if (width < 1280) return page * 1100;
+    return page * 1345;
   };
 
-  // 윈도우 리사이즈 시 슬라이드 거리 및 페이지 수 재계산
   useEffect(() => {
     const handleResize = () => {
       const newCardsPerPage = getCardsPerPage();
       if (newCardsPerPage !== cardsPerPage) {
         setCardsPerPage(newCardsPerPage);
-        setCurrentPage(0); // 페이지 리셋
+        setCurrentPage(0);
       }
 
-      // 슬라이드 거리 재계산
       if (cardsContainerRef.current) {
         const distance = getSlideDistance(currentPage);
         cardsContainerRef.current.style.transform = `translateX(-${distance}px)`;
@@ -201,35 +211,26 @@ const AttentionSection: React.FC = () => {
 
   return (
     <section className="relative max-w-[1440px] mx-auto w-full">
-      {/* 제목 */}
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className="text-lg md:text-xl font-bold text-gray-800">
           {isLoggedIn ? 'AI 추천 공고' : '모두가 주목하는 공고'}
         </h2>
-
-        {/* 페이지 버튼 - 데스크톱만 표시 */}
-        <div
-          ref={buttonsContainerRef}
-          className="hidden md:flex space-x-2"
-        >
+        <div ref={buttonsContainerRef} className="hidden md:flex space-x-2">
           <button
             onClick={goToPreviousPage}
-            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-7 h-7 flex items-center justify-center text-white text-base z-10 ${currentPage === 0 ? 'invisible' : ''
-              }`}
+            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-7 h-7 flex items-center justify-center text-white text-base z-10 ${currentPage === 0 ? 'invisible' : ''}`}
           >
             ‹
           </button>
           <button
             onClick={goToNextPage}
-            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-7 h-7 flex items-center justify-center text-white text-base z-10 ${currentPage === totalPages - 1 ? 'invisible' : ''
-              }`}
+            className={`bg-gray-300 hover:bg-gray-400 rounded-full w-7 h-7 flex items-center justify-center text-white text-base z-10 ${currentPage === totalPages - 1 ? 'invisible' : ''}`}
           >
             ›
           </button>
         </div>
       </div>
 
-      {/* 카드 리스트 - 슬라이드 애니메이션 적용 */}
       <div
         className="overflow-hidden -ml-1 md:ml-0"
         onTouchStart={handleTouchStart}
@@ -247,25 +248,15 @@ const AttentionSection: React.FC = () => {
               className="relative w-[180px] sm:w-[200px] md:w-[253px] h-[200px] sm:h-[260px] md:h-[288px] bg-white border border-gray-200 rounded-2xl md:rounded-3xl overflow-hidden flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleJobClick(job.id)}
             >
-              {/* ✅ 회사 이미지 - companyPhotos 사용 */}
               <div className="w-full h-[100px] sm:h-[120px] md:h-[144px] bg-white overflow-hidden flex items-center justify-center border-b border-gray-100 p-2 md:p-3">
                 {companyPhotos[job.companyId] ? (
                   <img
                     src={companyPhotos[job.companyId]}
                     alt={job.companyName}
-                    className="max-w-[95%] md:max-w-[95%] max-h-[95%] md:max-h-[95%] object-contain rounded-lg"
+                    className="max-w-[95%] max-h-[95%] object-contain rounded-lg"
                     onError={(e) => {
-                      console.error(`❌ 이미지 로드 실패: ${job.companyName}`, companyPhotos[job.companyId]);
-                      // 이미지 로드 실패 시 대체 UI 표시
                       const target = e.currentTarget as HTMLImageElement;
                       target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent && !parent.querySelector('.error-message')) {
-                        const errorDiv = document.createElement('div');
-                        errorDiv.className = 'error-message w-full h-full flex items-center justify-center text-gray-400 text-sm';
-                        errorDiv.textContent = '이미지 없음';
-                        parent.appendChild(errorDiv);
-                      }
                     }}
                   />
                 ) : (
@@ -275,30 +266,22 @@ const AttentionSection: React.FC = () => {
                 )}
               </div>
 
-              {/* 텍스트 */}
               <div className="pt-2.5 md:pt-[16px] pb-2.5 md:pb-[20px] px-3 md:px-[24px]">
                 <p className="font-bold text-gray-800 text-sm md:text-[20px] truncate">{job.companyName}</p>
-                <p className="text-gray-900 font-normal text-xs md:text-[16px] mt-1 md:mt-[4px] truncate">
-                  {job.title}
-                </p>
+                <p className="text-gray-900 font-normal text-xs md:text-[16px] mt-1 truncate">{job.title}</p>
                 <p className="text-gray-500 text-[10px] md:text-[14px] truncate mt-1">
                   {job.position} / {job.careerLevel}
                 </p>
-
-                <p className="text-gray-400 text-[10px] sm:text-[11px] md:text-[14px] lg:text-[16px] text-right mt-1.5 md:mt-2">
+                <p className="text-gray-400 text-[10px] md:text-[14px] text-right mt-1.5">
                   {!job.endAt ? '상시채용' : `~${new Date(job.endAt).toLocaleDateString("ko-KR", {
-                    year: "2-digit",
-                    month: "2-digit",
-                    day: "2-digit",
+                    year: "2-digit", month: "2-digit", day: "2-digit",
                   }).replace(/\. /g, '.')}`}
                 </p>
               </div>
 
-              {/* 북마크 버튼 */}
               <button
                 onClick={(e) => handleBookmarkClick(e, job.id)}
                 className="absolute top-2 right-2 md:top-3 md:right-3 p-1.5 md:p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors z-10"
-                aria-label={scrappedJobs.has(job.id) ? "북마크 제거" : "북마크 추가"}
               >
                 {scrappedJobs.has(job.id) ? (
                   <BookmarkSolidIcon className="w-4 h-4 md:w-5 md:h-5 text-[#006AFF]" />
