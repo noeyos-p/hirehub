@@ -37,6 +37,7 @@ public class AiBoardControlService {
 
     // 게시글 숨김 해제
     board.setHidden(false);
+    board.setAdminApproved(true); // 관리자 승인 - AI가 재차단 못함
 
     // AI 제어 기록의 역할을 ADMIN으로 변경 (관리자가 개입함)
     aiBoardControl.setRole("ADMIN");

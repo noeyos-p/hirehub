@@ -55,6 +55,12 @@ public class AsyncModerationService {
     boolean before = Boolean.TRUE.equals(board.getHidden());
     boolean approved = mres.approved();
 
+    // 🔥 관리자가 승인한 게시글이면 AI가 다시 숨기지 않음
+    if (Boolean.TRUE.equals(board.getAdminApproved())) {
+      log.info("🛡️ [AI_SKIP] 관리자 승인 게시글입니다. AI 차단을 건너뜁니다. boardId={}", board.getId());
+      return;
+    }
+
     board.setHidden(!approved);
 
     log.info("🧩 [MODERATION] boardId={}, before={}, after={}, approved={}, reason={}",
