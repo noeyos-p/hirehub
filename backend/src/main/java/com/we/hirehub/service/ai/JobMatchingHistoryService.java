@@ -39,6 +39,10 @@ public class JobMatchingHistoryService {
     Resume resume = resumeRepository.findById(request.getResumeId())
         .orElseThrow(() -> new RuntimeException("이력서를 찾을 수 없습니다."));
 
+    if (!resume.getUsers().getId().equals(user.getId())) {
+      throw new RuntimeException("본인의 이력서만 사용할 수 있습니다.");
+    }
+
     List<Matching> savedMatches = new ArrayList<>();
 
     for (SaveJobMatchingRequest.MatchResultDto result : request.getMatchResults()) {
@@ -60,6 +64,7 @@ public class JobMatchingHistoryService {
           .jobPosts(jobPost)
           .company(company)
           .ranking(result.getGrade() + " (" + result.getScore() + ")")
+          .reason(result.getReasons() != null ? String.join("\n", result.getReasons()) : "") // 이유 저장
           .build();
 
       savedMatches.add(matchingRepository.save(matching));
@@ -173,13 +178,19 @@ public class JobMatchingHistoryService {
             grade = ranking;
           }
 
+          // 이유 복원
+          List<String> reasons = new ArrayList<>();
+          if (m.getReason() != null && !m.getReason().isEmpty()) {
+            reasons = List.of(m.getReason().split("\n"));
+          }
+
           return SaveJobMatchingRequest.MatchResultDto.builder()
               .jobId(m.getJobPosts().getId())
               .jobTitle(m.getJobPosts().getTitle())
               .companyName(m.getCompany().getName())
               .grade(grade)
               .score(score)
-              .reasons(List.of()) // 저장되지 않음
+              .reasons(reasons) // ✅ 복원된 이유 설정
               .build();
         })
         .collect(Collectors.toList());
