@@ -8,10 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface AiBoardControlRepository extends JpaRepository<AiBoardControl, Long> {
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("delete from AiBoardControl c where c.board.id = :boardId")
-    void deleteByBoardId(Long boardId);
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("delete from AiBoardControl c where c.board.id = :boardId")
+  void deleteByBoardId(Long boardId);
 
-    List<AiBoardControl> findAll();
+  List<AiBoardControl> findAll();
 
+  // 최신순 정렬해서 가져오기
+  List<AiBoardControl> findAllByOrderByIdDesc();
 }
