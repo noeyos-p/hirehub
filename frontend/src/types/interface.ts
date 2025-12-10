@@ -775,6 +775,8 @@ export interface AdminResumeDto {
   essayContent?: string | null;
   htmlContent?: string | null;
   locked: boolean;
+  createAt: string;
+  updateAt?: string;
   educationList?: Array<{
     name?: string;
     major?: string;
@@ -798,6 +800,7 @@ export interface AdminResumeDto {
   users?: {
     userId?: number;
     nickname?: string;
+    email?: string;
   };
 }
 
@@ -810,6 +813,12 @@ export interface AiBoardControl {
   };
   role: string;
   reason: string;
+}
+
+export interface AdminPageInfo {
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
 }
 
 export interface AdminResponse<T> {
