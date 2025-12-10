@@ -29,6 +29,8 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final TokenPackageRepository tokenPackageRepository;
 
+    private final TokenService tokenService; // 🔥 추가 (토큰 적립 + 히스토리)
+
     /**
      * ✔ PortOne 결제 검증 + DB 저장 + 토큰 지급
      */
@@ -74,27 +76,38 @@ public class PaymentService {
                         .totalPrice(amount)
                         .user(user)
                         .tokenPackage(pkg)
-                        .status("PAID")        // PortOne 실제 결제 상태
-                        .role("COMPLETED")      // 내부적으로 완료 상태
+                        .status("PAID")       // PortOne 실제 결제 상태
+                        .role("COMPLETED")    // 내부 처리 상태
                         .payMethod(payMethod)
                         .createAt(LocalDateTime.now())
                         .updateAt(LocalDateTime.now())
                         .build()
         );
 
-        // 🎉 토큰 충전
-        user.setTokenBalance(user.getTokenBalance() + pkg.getTokenAmount());
-        usersRepository.save(user);
+
+        /**
+         * 🎉 수정된 부분 (핵심)
+         * - TokenService 를 이용하여 토큰 적립 + 토큰 내역 저장
+         */
+        tokenService.addTokens(
+                user.getId(),
+                pkg.getTokenAmount(),
+                "PAYMENT",
+                "토큰 패키지 구매"
+        );
 
         log.info("🎉 토큰 충전 완료: user={}, 충전량={}, 현재 토큰={}",
                 user.getEmail(), pkg.getTokenAmount(), user.getTokenBalance());
+        log.info("🔥 VERIFY 호출됨: impUid={}, packageId={}", req.getImpUid(), req.getPackageId());
 
         return PaymentDto.from(payment);
     }
 
-    /**
-     * ✔ 유저 결제 내역 조회
-     */
+
+
+    // =============================
+    // ✔ 유저 결제 내역 조회
+    // =============================
     public List<PaymentDto> getMyPayments() {
 
         JwtUserPrincipal principal =
@@ -107,9 +120,9 @@ public class PaymentService {
                 .toList();
     }
 
-    /**
-     * ✔ 관리자 전체 결제 조회
-     */
+    // =============================
+    // ✔ 관리자 전체 결제 리스트
+    // =============================
     public List<PaymentDto> getAllPayments() {
         return paymentRepository.findAllByOrderByCreateAtDesc()
                 .stream()
@@ -117,9 +130,10 @@ public class PaymentService {
                 .toList();
     }
 
-    /**
-     * ✔ 관리자 검색 기능 (email or status)
-     */
+
+    // =============================
+    // ✔ 관리자 검색
+    // =============================
     public List<PaymentDto> searchPayments(String email, String status) {
 
         List<Payment> list;

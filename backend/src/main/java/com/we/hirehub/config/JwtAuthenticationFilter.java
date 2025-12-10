@@ -72,6 +72,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long userId = tokenProvider.getUserId(token);
                 String email = tokenProvider.getEmail(token);
 
+                // ⭐⭐⭐ 핵심 추가 — MyPage, Token API 에 userId 전달 ⭐⭐⭐
+                request.setAttribute("userId", userId);
+
                 List<GrantedAuthority> authorities =
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
 

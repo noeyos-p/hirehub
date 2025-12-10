@@ -7,17 +7,19 @@ import {
   CheckCircleIcon,
   BriefcaseIcon,
   BuildingOfficeIcon,
-  UserIcon,
   ClockIcon,
-  BookmarkIcon
 } from '@heroicons/react/24/outline';
+
 import { useNavigate } from 'react-router-dom';
 import { myPageApi } from '../api/myPageApi';
-import { jobPostApi } from '../api/jobPostApi';
 import { interviewCoachingApi, type InterviewSession } from '../api/interviewCoachingApi';
-import type { ResumeDto, JobPostResponse, CompanyResponse } from '../types/interface';
+import type { ResumeDto } from '../types/interface';
 import api from '../api/api';
 import axios from "axios";
+
+import { useHireTokens } from "../utils/useHireTokens";
+import TokenModal from "../popUp/TokenModal";
+import { notifyHire } from "../utils/notifyHire";
 
 interface InterviewQuestion {
   id: number;
@@ -25,146 +27,111 @@ interface InterviewQuestion {
   category: string;
 }
 
-interface InterviewContext {
-  resumeId: number;
-  resumeTitle: string;
-  jobPostId?: number;
-  jobPostTitle?: string;
-  companyId?: number;
-  companyName?: string;
-}
-
 const InterviewCoachingPage: React.FC = () => {
   const navigate = useNavigate();
+
+  // STEP 상태
   const [step, setStep] = useState<'select' | 'context' | 'interview' | 'feedback'>('select');
+
+  // 데이터 관련
   const [resumes, setResumes] = useState<ResumeDto[]>([]);
   const [selectedResume, setSelectedResume] = useState<ResumeDto | null>(null);
-  const [jobPostLink, setJobPostLink] = useState<string>('');
-  const [companyLink, setCompanyLink] = useState<string>('');
+
+  const [jobPostLink, setJobPostLink] = useState('');
+  const [companyLink, setCompanyLink] = useState('');
+
+  // 인터뷰 질문/답변 진행 상태
   const [currentQuestion, setCurrentQuestion] = useState<InterviewQuestion | null>(null);
-  const [answer, setAnswer] = useState<string>('');
-  const [feedback, setFeedback] = useState<string>('');
+  const [answer, setAnswer] = useState('');
+  const [feedback, setFeedback] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
   const [questionIndex, setQuestionIndex] = useState(0);
   const [interviewSessions, setInterviewSessions] = useState<InterviewSession[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 로그인 여부 확인
+  // 🔥 HIRE TOKEN 훅
+  const {
+    useTokens,
+    modalOpen,
+    neededTokens,
+    handleConfirm,
+    handleClose
+  } = useHireTokens();
+
+  // 로그인 체크
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      alert('로그인이 필요한 서비스입니다.');
-      navigate('/login');
+      alert("로그인이 필요합니다.");
+      navigate("/login");
     }
   }, [navigate]);
 
-  // 이력서 목록 불러오기
+  // 이력서 목록 가져오기
   useEffect(() => {
-    const fetchResumes = async () => {
+    const loadResumes = async () => {
       try {
-        const response = await myPageApi.getResumes({ page: 0, size: 50 });
-        const resumeList = response.rows || response.content || [];
+        const res = await myPageApi.getResumes({ page: 0, size: 50 });
+        const resumeList = res.rows || res.content || [];
 
-        // 이력서 상세 정보 가져오기
-        const detailedResumes = await Promise.all(
-          resumeList.map(async (resume: any) => {
+        const detailList = await Promise.all(
+          resumeList.map(async r => {
             try {
-              const detail = await myPageApi.getResumeDetail(resume.id);
+              const detail = await myPageApi.getResumeDetail(r.id);
               return detail;
-            } catch (error) {
-              console.error(`이력서 ${resume.id} 상세 조회 실패:`, error);
-              return resume;
+            } catch {
+              return r;
             }
           })
         );
 
-        setResumes(detailedResumes);
-      } catch (error) {
-        console.error('이력서 불러오기 실패:', error);
-        setResumes([]);
+        setResumes(detailList);
+      } catch (err) {
+        console.error("이력서 로딩 실패:", err);
       }
     };
 
-    fetchResumes();
+    loadResumes();
   }, []);
 
-
-  // 이력서 내용 요약 추출
+  // 이력서 요약 파싱 함수 (그대로 유지)
   const getResumeSummary = (resume: ResumeDto) => {
     try {
-      console.log('이력서 원본 데이터:', resume);
-
-      // JSON 파싱 시도
       let educations: any[] = [];
       let careers: any[] = [];
       let skills: any[] = [];
 
-      // educations 파싱 - educationList 우선
-      if ((resume as any).educationList && Array.isArray((resume as any).educationList)) {
-        educations = (resume as any).educationList;
-      } else if (resume.educations && Array.isArray(resume.educations)) {
-        educations = resume.educations;
-      } else if (resume.educationJson && resume.educationJson !== 'null' && resume.educationJson !== '[]') {
-        try {
-          educations = JSON.parse(resume.educationJson);
-        } catch (e) {
-          console.error('educationJson 파싱 실패:', e);
-        }
-      }
+      if ((resume as any).educationList) educations = (resume as any).educationList;
+      else if (resume.educations) educations = resume.educations;
+      else if (resume.educationJson) educations = JSON.parse(resume.educationJson);
 
-      // careers 파싱 - careerList 우선
-      if ((resume as any).careerList && Array.isArray((resume as any).careerList)) {
-        careers = (resume as any).careerList;
-      } else if (resume.careers && Array.isArray(resume.careers)) {
-        careers = resume.careers;
-      } else if (resume.careerJson && resume.careerJson !== 'null' && resume.careerJson !== '[]') {
-        try {
-          careers = JSON.parse(resume.careerJson);
-        } catch (e) {
-          console.error('careerJson 파싱 실패:', e);
-        }
-      }
+      if ((resume as any).careerList) careers = (resume as any).careerList;
+      else if (resume.careers) careers = resume.careers;
+      else if (resume.careerJson) careers = JSON.parse(resume.careerJson);
 
-      // skills 파싱 - skillList 우선
-      if ((resume as any).skillList && Array.isArray((resume as any).skillList)) {
-        skills = (resume as any).skillList;
-      } else if (resume.skills && Array.isArray(resume.skills)) {
-        skills = resume.skills;
-      } else if (resume.skillJson && resume.skillJson !== 'null' && resume.skillJson !== '[]') {
-        try {
-          skills = JSON.parse(resume.skillJson);
-        } catch (e) {
-          console.error('skillJson 파싱 실패:', e);
-        }
-      }
+      if ((resume as any).skillList) skills = (resume as any).skillList;
+      else if (resume.skills) skills = resume.skills;
+      else if (resume.skillJson) skills = JSON.parse(resume.skillJson);
 
-      console.log('파싱된 educations:', educations);
-      console.log('파싱된 careers:', careers);
-      console.log('파싱된 skills:', skills);
+      const education = educations.length > 0 ? (educations[0].name || '정보 없음') : '정보 없음';
+      const career =
+        careers.length > 0
+          ? `${careers[0].companyName || careers[0].company || '회사'} ${careers[0].position || ''}`
+          : '신입';
 
-      // 학력 추출 (name 필드 사용)
-      const education = educations.length > 0
-        ? (educations[0].name || educations[0].school || educations[0].schoolName || '정보 없음')
-        : '정보 없음';
-
-      // 경력 추출 (companyName 필드 사용)
-      const career = careers.length > 0
-        ? `${careers[0].companyName || careers[0].company || '회사'} ${careers[0].position || careers[0].role || ''}`.trim()
-        : '신입';
-
-      // 기술 추출 (name 필드 사용)
-      const skillList = skills.length > 0
-        ? skills.map((s: any) => s.name || s.skill || s.skillName || s).filter(Boolean).join(', ')
-        : '정보 없음';
-
-      console.log('추출 결과:', { education, career, skillList });
+      const skillList =
+        skills.length > 0
+          ? skills.map(s => s.name || s.skill || s.skillName || s).join(', ')
+          : '정보 없음';
 
       return { education, career, skillList };
-    } catch (error) {
-      console.error('이력서 요약 추출 실패:', error, resume);
-      return { education: '정보 없음', career: '신입', skillList: '정보 없음' };
+    } catch (err) {
+      return { education: "정보 없음", career: "신입", skillList: "정보 없음" };
     }
   };
+
+
 
   // 이력서 선택
   const handleResumeSelect = (resume: ResumeDto) => {
@@ -178,156 +145,85 @@ const InterviewCoachingPage: React.FC = () => {
     }
   };
 
-  // 컨텍스트 설정 완료 및 질문 생성
+  // ⭐ 면접 시작 (질문 생성) + 토큰 5 차감
   const handleStartInterview = async () => {
     if (!selectedResume) return;
 
     setIsLoading(true);
-    setStep('interview');
+
+    // 1) 토큰 차감
+    const ok = await useTokens(
+      5,
+      "USE_INTERVIEW_COACHING",
+      "AI 면접 질문 받기"
+    );
+    if (!ok) {
+      setIsLoading(false);
+      return; // 모달 뜸
+    }
+
+    notifyHire("HIRE 5개가 사용되었습니다.");
+    setStep("interview");
 
     try {
-      // 이전 질문 목록 가져오기 (중복 질문 방지)
+      // 이전 질문 목록 가져오기
       let previousQuestions: string[] = [];
       try {
         const historyList = await interviewCoachingApi.getHistoryList();
-        historyList.forEach(history => {
-          history.sessions.forEach(session => {
-            if (session.question) {
-              previousQuestions.push(session.question);
-            }
-          });
-        });
-        console.log('📚 이전 질문 목록 로드 완료:', previousQuestions.length, '개');
-      } catch (error) {
-        console.warn('이전 질문 목록 로드 실패 (중복 방지 기능 비활성화):', error);
-      }
+        historyList.forEach(h =>
+          h.sessions.forEach(s => s.question && previousQuestions.push(s.question))
+        );
+      } catch { }
 
-      // ID 추출 로직 (내부 링크일 경우)
+      // 공고/기업 ID 추출
       let extractedJobPostId: number | undefined = undefined;
       let extractedCompanyId: number | undefined = undefined;
 
-      // 공고 ID 추출 (예: /jobPostings/123)
       if (jobPostLink) {
-        const match = jobPostLink.match(/\/jobPostings\/(\d+)/) || jobPostLink.match(/\/job-post\/(\d+)/);
-        if (match) {
-          extractedJobPostId = parseInt(match[1], 10);
-          console.log('🆔 공고 ID 추출됨:', extractedJobPostId);
-        }
+        const m = jobPostLink.match(/\/jobPostings\/(\d+)/) || jobPostLink.match(/\/job-post\/(\d+)/);
+        if (m) extractedJobPostId = parseInt(m[1], 10);
       }
-
-      // 기업 ID 추출 (예: /company/123)
       if (companyLink) {
-        const match = companyLink.match(/\/company\/(\d+)/);
-        if (match) {
-          extractedCompanyId = parseInt(match[1], 10);
-          console.log('🆔 기업 ID 추출됨:', extractedCompanyId);
-        }
+        const m = companyLink.match(/\/company\/(\d+)/);
+        if (m) extractedCompanyId = parseInt(m[1], 10);
       }
 
-      // TODO: 백엔드 API 연동 - 이력서, 공고, 기업 정보 기반 면접 질문 생성
+      // 질문 생성 API 호출
       const response = await axios.post('http://localhost:8000/interview/generate-questions', {
         resumeId: selectedResume.id,
-        jobPostId: extractedJobPostId, // ✅ 추출된 ID 전달
-        companyId: extractedCompanyId, // ✅ 추출된 ID 전달
+        jobPostId: extractedJobPostId,
+        companyId: extractedCompanyId,
         jobPostLink: jobPostLink || undefined,
         companyLink: companyLink || undefined,
-        previousQuestions: previousQuestions, // ✅ 추가: 이전 질문 목록 전달
-      }, {
-        timeout: 10000  // 10초 타임아웃 설정
+        previousQuestions,
       });
 
-      console.log('✅ API 응답 받음:', response.data); // 디버깅 로그
-
       const questions = response.data;
-
-      if (questions && Array.isArray(questions) && questions.length > 0) {
+      if (Array.isArray(questions) && questions.length > 0) {
         setCurrentQuestion(questions[0]);
         setIsLoading(false);
-        console.log('✅ 질문 설정 완료');
         return;
       }
 
-      console.warn('⚠️ API 응답이 비어있음, fallback 사용');
-      throw new Error('질문이 생성되지 않음');
-
+      throw new Error('질문 없음');
     } catch (error) {
-      console.error('❌ 질문 생성 실패:', error);
+      console.error("질문 생성 실패 → fallback 사용");
 
-      // fallback: 임시 질문 생성
       const summary = getResumeSummary(selectedResume);
-      const questions: InterviewQuestion[] = [];
-
-      // 이력서 기반 질문
-      try {
-        const careers = (selectedResume as any).careerList || selectedResume.careers ||
-          (selectedResume.careerJson && selectedResume.careerJson !== 'null'
-            ? JSON.parse(selectedResume.careerJson)
-            : []);
-
-        if (careers.length > 0 && (careers[0].companyName || careers[0].company)) {
-          questions.push({
-            id: 1,
-            question: `이력서에 ${careers[0].companyName || careers[0].company}에서 ${careers[0].position || '근무'} 경험을 작성하셨는데, 가장 기억에 남는 프로젝트와 본인의 역할에 대해 말씀해 주세요.`,
-            category: '경험',
-          });
-        }
-      } catch (error) {
-        console.error('경력 정보 파싱 실패:', error);
-      }
-
-      // 기술 스택 질문
-      if (summary.skillList !== '정보 없음') {
-        questions.push({
-          id: 2,
-          question: `이력서에 ${summary.skillList} 기술을 보유하고 계신다고 하셨는데, 이 중 가장 자신 있는 기술과 실제 프로젝트 적용 경험을 말씀해 주세요.`,
-          category: '기술',
-        });
-      }
-
-      // 공고 링크가 있을 경우
-      if (jobPostLink.trim()) {
-        questions.push({
-          id: 3,
-          question: `해당 공고에 지원하시는 이유와, 본인이 이 직무에 적합한 이유를 말씀해 주세요.`,
-          category: '지원동기',
-        });
-
-        questions.push({
-          id: 4,
-          question: `해당 직무에서 요구하는 역량과 경험에 대해, 본인의 이력서 내용이 어떻게 부합하는지 설명해 주세요.`,
-          category: '직무적합성',
-        });
-      }
-
-      // 기업 링크가 있을 경우
-      if (companyLink.trim()) {
-        questions.push({
-          id: 5,
-          question: `해당 기업에 대해 알고 계신 것과, 이 회사에서 이루고 싶은 목표를 말씀해 주세요.`,
-          category: '기업이해도',
-        });
-      }
-
-      // 자기소개서 기반 질문
-      if (selectedResume.essayContent) {
-        questions.push({
-          id: 6,
-          question: `자기소개서에 작성하신 내용을 바탕으로, 본인의 강점을 뒷받침할 수 있는 구체적인 사례를 말씀해 주세요.`,
-          category: '인성',
-        });
-      }
-
-      // 기본 질문 (이력서 정보가 부족할 경우)
-      if (questions.length === 0) {
-        questions.push({
+      const fallbackQuestions = [
+        {
           id: 1,
-          question: '본인의 강점과 약점에 대해 말씀해 주세요.',
-          category: '인성',
-        });
-      }
+          question: `이력서 기반 질문: ${summary.career} 관련 경험을 설명해주세요.`,
+          category: "경험",
+        },
+        {
+          id: 2,
+          question: `가장 자신 있는 기술(${summary.skillList})을 설명해주세요.`,
+          category: "기술",
+        },
+      ];
 
-      console.log('📝 Fallback 질문 생성됨:', questions.length, '개');
-      setCurrentQuestion(questions[0]);
+      setCurrentQuestion(fallbackQuestions[0]);
       setIsLoading(false);
     }
   };
@@ -818,10 +714,19 @@ ${contextFeedback}
             </div>
           </div>
         )}
+
+        {/* ⭐ TOKEN MODAL */}
+        <TokenModal
+          isOpen={modalOpen}
+          onClose={handleClose}
+          onConfirm={handleConfirm}
+          needed={neededTokens}
+        />
+
       </div>
     </div>
-
   );
 };
+
 
 export default InterviewCoachingPage;

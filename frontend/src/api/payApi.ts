@@ -11,7 +11,7 @@ export const payApi = {
 
   /** 🔥 마이페이지: 내 결제내역 */
   myPayments: () =>
-    api.get("/api/pay/my"),
+    api.get("/api/payment/my"),
 
   /** 🔥 마이페이지: 내 토큰 보유량 */
   myTokens: () =>

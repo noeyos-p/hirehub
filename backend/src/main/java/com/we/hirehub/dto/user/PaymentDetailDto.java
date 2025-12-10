@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-public class PaymentDto {
+public class PaymentDetailDto {
 
     private Long id;
 
@@ -37,11 +37,11 @@ public class PaymentDto {
 
 
     /** 엔티티 -> DTO 변환 */
-    public static PaymentDto from(Payment payment) {
+    public static PaymentDetailDto from(Payment payment) {
 
         TokenPackage tp = payment.getTokenPackage();
 
-        return PaymentDto.builder()
+        return PaymentDetailDto.builder()
                 .id(payment.getId())
                 .userId(payment.getUser().getId())
                 .tokenPackageId(tp != null ? tp.getId() : null)

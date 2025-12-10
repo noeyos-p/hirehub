@@ -1,15 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SparklesIcon, DocumentTextIcon, ClipboardDocumentIcon, CheckCircleIcon, ClockIcon, BookmarkIcon } from '@heroicons/react/24/outline';
+import {
+  SparklesIcon, DocumentTextIcon, ClipboardDocumentIcon,
+  CheckCircleIcon, ClockIcon, BookmarkIcon
+} from '@heroicons/react/24/outline';
 import { myPageApi } from '../api/myPageApi';
 import api from '../api/api';
 import { coverLetterApi } from '../api/coverLetterApi';
 import type { ResumeItem } from '../types/interface';
 
+/** ⭐ 추가: 토큰 훅 + 모달 + 알림 */
+import { useHireTokens } from "../utils/useHireTokens";
+import TokenModal from "../popUp/TokenModal";
+import { notifyHire } from "../utils/notifyHire";
+
 type InputMode = 'text' | 'essay' | 'resume';
 
 export default function CoverLetterPage() {
   const navigate = useNavigate();
+
+  /** 로그인 체크 */
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인이 필요한 서비스입니다.');
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  /** ⭐ 토큰 훅 적용 */
+  const {
+    useTokens,
+    modalOpen,
+    neededTokens,
+    handleConfirm,
+    handleClose
+  } = useHireTokens();
+
   const [inputMode, setInputMode] = useState<InputMode>('text');
   const [originalText, setOriginalText] = useState('');
   const [improvedText, setImprovedText] = useState('');
@@ -20,7 +47,7 @@ export default function CoverLetterPage() {
   const [loadingResumes, setLoadingResumes] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 이력서 목록 불러오기
+  /** 이력서 목록 */
   useEffect(() => {
     if (inputMode === 'resume' || inputMode === 'essay') {
       fetchResumes();
@@ -33,140 +60,111 @@ export default function CoverLetterPage() {
       const response = await myPageApi.getResumes({ page: 0, size: 100 });
       setResumes(response.content);
     } catch (error) {
-      console.error('이력서 목록 불러오기 실패:', error);
-      alert('이력서 목록을 불러오는데 실패했습니다.');
+      alert('이력서 목록을 불러오지 못했습니다.');
     } finally {
       setLoadingResumes(false);
     }
   };
 
-  // 이력서 선택 시 텍스트 추출
+  /** 이력서 선택 시 원본 텍스트 구성 */
   const handleResumeSelect = async (resumeId: number) => {
     setSelectedResumeId(resumeId);
     try {
       const resume = await myPageApi.getResumeDetail(resumeId);
       setSelectedResumeTitle(resume.title || '');
 
-      console.log('📄 불러온 이력서 데이터:', resume);
-
       let text = '';
-
-      // essayTitle과 essayTittle 둘 다 처리 (백엔드 필드명 불일치 대응)
       const essayTitle = resume.essayTitle ?? resume.essayTittle ?? '';
       const essayContent = resume.essayContent ?? '';
 
-      // htmlContent 파싱 (학력, 경력 등의 정보가 여기 저장됨)
       let parsedData: any = null;
       if (resume.htmlContent) {
         try {
           parsedData = JSON.parse(resume.htmlContent);
-          console.log('📦 htmlContent 파싱 결과:', parsedData);
-        } catch (e) {
-          console.error('❌ htmlContent 파싱 실패:', e);
-        }
+        } catch { }
       }
 
-      // 자기소개서만 모드
       if (inputMode === 'essay') {
-        if (essayContent) {
-          text = essayContent;
-        } else {
-          text = '자기소개서 내용이 없습니다.';
-        }
-        console.log('✅ 자기소개서만 모드 - 추출된 텍스트:', text.substring(0, 100));
-      }
-      // 이력서 전체 모드
-      else if (inputMode === 'resume') {
+        text = essayContent || '자기소개서 내용이 없습니다.';
+      } else if (inputMode === 'resume') {
         text = `제목: ${resume.title}\n\n`;
 
         if (essayTitle && essayContent) {
-          text += `=== 자기소개서 ===\n`;
-          text += `${essayTitle}\n\n`;
-          text += `${essayContent}\n\n`;
+          text += `=== 자기소개서 ===\n${essayTitle}\n\n${essayContent}\n\n`;
         }
 
-        // 학력 정보 (htmlContent 우선, 없으면 직접 필드)
         const educations = parsedData?.education ?? resume.educationDtos ?? [];
-        console.log('🎓 학력 데이터:', educations, '길이:', educations.length);
         if (educations.length > 0) {
           text += `=== 학력 ===\n`;
           educations.forEach((edu: any) => {
             text += `${edu.name} | ${edu.major || ''} | ${edu.status}\n`;
           });
-          text += '\n';
+          text += `\n`;
         }
 
-        // 경력 정보 (htmlContent 우선, 없으면 직접 필드)
         const careers = parsedData?.career ?? resume.careerLevelDtos ?? (resume as any).careers ?? [];
-        console.log('💼 경력 데이터:', careers, '길이:', careers.length);
         if (careers.length > 0) {
           text += `=== 경력 ===\n`;
-          careers.forEach((career: any) => {
-            text += `${career.companyName} | ${career.position}\n`;
-            text += `${career.content || ''}\n\n`;
+          careers.forEach((c: any) => {
+            text += `${c.companyName} | ${c.position}\n${c.content || ''}\n\n`;
           });
         }
 
-        // 자격증 (htmlContent 우선, 없으면 직접 필드)
         const certificates = parsedData?.certificate ?? resume.certificateDtos ?? [];
-        console.log('📜 자격증 데이터:', certificates, '길이:', certificates.length);
         if (certificates.length > 0) {
           text += `=== 자격증 ===\n`;
           certificates.forEach((cert: any) => {
             text += `- ${cert.name}\n`;
           });
-          text += '\n';
+          text += `\n`;
         }
 
-        // 스킬 (htmlContent 우선, 없으면 직접 필드)
         const skills = parsedData?.skill ?? resume.skillDtos ?? [];
-        console.log('⚡ 스킬 데이터:', skills, '길이:', skills.length);
         if (skills.length > 0) {
-          text += `=== 기술 스택 ===\n`;
-          text += skills.map((s: any) => s.name).join(', ');
-          text += '\n\n';
+          text += `=== 기술 스택 ===\n${skills.map((s: any) => s.name).join(', ')}\n\n`;
         }
 
-        // 언어 정보도 추가
         const languages = parsedData?.language ?? [];
         if (languages.length > 0) {
-          text += `=== 언어 ===\n`;
-          text += languages.map((lang: any) => lang.name).join(', ');
-          text += '\n\n';
+          text += `=== 언어 ===\n${languages.map((lang: any) => lang.name).join(', ')}\n\n`;
         }
-
-        console.log('✅ 이력서 전체 모드 - 최종 텍스트 길이:', text.length, '글자');
-        console.log('📝 최종 텍스트 내용:', text);
       }
 
       setOriginalText(text);
-    } catch (error) {
-      console.error('이력서 불러오기 실패:', error);
-      alert('이력서를 불러오는데 실패했습니다.');
+    } catch {
+      alert('이력서를 불러오는 중 오류가 발생했습니다.');
     }
   };
 
+  /** ⭐ AI 첨삭 + 토큰 차감 1코인 */
   const handleImprove = async () => {
     if (!originalText.trim()) {
       alert('자기소개서 내용을 입력해주세요.');
       return;
     }
 
-    setIsLoading(true);
+    /** 🔥 useTokens 사용 → 부족하면 모달 자동 오픈 */
+    const ok = await useTokens(
+      1,
+      "USE_AI_REVIEW",
+      "AI 자기소개서 첨삭 실행"
+    );
+    if (!ok) return;
 
+    notifyHire("HIRE 1개가 사용되었습니다.");
+
+    setIsLoading(true);
     try {
       const res = await api.post("/api/resume/ai-review", { content: originalText });
-      console.log("🧠 AI 첨삭 결과:", res.data);
-
       setImprovedText(res.data.feedback || "첨삭 결과가 없습니다.");
     } catch (error: any) {
-      console.error('❌ AI 첨삭 요청 실패:', error);
-      alert('AI 첨삭 요청 중 오류가 발생했습니다: ' + (error.response?.data?.message || error.message));
+      alert('AI 첨삭 오류: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsLoading(false);
     }
   };
 
+  /** 초기화 */
   const handleReset = () => {
     setOriginalText('');
     setImprovedText('');
@@ -174,9 +172,10 @@ export default function CoverLetterPage() {
     setSelectedResumeTitle('');
   };
 
+  /** 저장 */
   const handleSave = async () => {
     if (!improvedText.trim()) {
-      alert('저장할 첨삭 결과가 없습니다.');
+      alert('저장할 내용이 없습니다.');
       return;
     }
 
@@ -191,8 +190,7 @@ export default function CoverLetterPage() {
       });
       alert('첨삭 이력이 저장되었습니다!');
     } catch (error: any) {
-      console.error('저장 실패:', error);
-      alert('저장 중 오류가 발생했습니다: ' + (error.response?.data?.message || error.message));
+      alert('저장 실패: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsSaving(false);
     }
@@ -455,6 +453,13 @@ export default function CoverLetterPage() {
           </ul>
         </div>
       </div>
+      {/* ⭐ 토큰 모달 반드시 맨 아래 추가 */}
+      <TokenModal
+        isOpen={modalOpen}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+        needed={neededTokens}
+      />
     </div>
   );
 }

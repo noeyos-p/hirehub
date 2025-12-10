@@ -14,6 +14,12 @@ import { myPageApi } from '../api/myPageApi';
 import api from '../api/api';
 import { jobMatchingApi } from '../api/jobMatchingApi';
 import type { ResumeItem } from '../types/interface';
+
+/** ⭐ 추가된 import */
+import { useHireTokens } from "../utils/useHireTokens";
+import TokenModal from "../popUp/TokenModal";
+import { notifyHire } from "../utils/notifyHire";
+
 interface MatchResult {
   jobId?: number;
   jobTitle: string;
@@ -25,6 +31,25 @@ interface MatchResult {
 
 export default function JobMatchingPage() {
   const navigate = useNavigate();
+
+  /** ⭐ 토큰 훅 */
+  const {
+    useTokens,
+    modalOpen,
+    neededTokens,
+    handleConfirm,
+    handleClose
+  } = useHireTokens();
+
+  /** 로그인 체크 */
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인이 필요한 서비스입니다.');
+      navigate('/login');
+    }
+  }, [navigate]);
+
   const [resumes, setResumes] = useState<ResumeItem[]>([]);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [selectedResumeTitle, setSelectedResumeTitle] = useState<string>('');
@@ -42,14 +67,14 @@ export default function JobMatchingPage() {
     try {
       const response = await myPageApi.getResumes({ page: 0, size: 100 });
       setResumes(response.content);
-    } catch (error) {
-      console.error('이력서 목록 불러오기 실패:', error);
-      alert('이력서 목록을 불러오는데 실패했습니다.');
+    } catch {
+      alert('이력서를 불러오지 못했습니다.');
     } finally {
       setLoadingResumes(false);
     }
   };
 
+  /** ⭐ 공고 매칭 실행 (3코인 차감) */
   const handleMatch = async () => {
     if (!selectedResumeId) {
       alert('이력서를 선택해주세요.');
@@ -58,16 +83,26 @@ export default function JobMatchingPage() {
 
     setMatching(true);
 
-    try {
-      const res = await api.post("/api/match", { resumeId: selectedResumeId });
+    /** ⭐ 토큰 차감 먼저 */
+    const ok = await useTokens(
+      3,
+      "USE_JOBMATCHING",
+      "AI 공고 매칭 실행"
+    );
+    if (!ok) {
+      setMatching(false);
+      return;
+    }
 
-      console.log("✅ 매칭 서버 응답:", res.status);
-      console.log("📦 매칭 데이터:", res.data);
+    notifyHire("HIRE 3개가 사용되었습니다.");
+
+    try {
+      /** AI 매칭 API 호출 */
+      const res = await api.post("/api/match", { resumeId: selectedResumeId });
 
       setMatchResults(res.data.results || []);
     } catch (error: any) {
-      console.error('🔥 공고 매칭 실패:', error);
-      alert('공고 매칭 중 오류가 발생했습니다: ' + (error.response?.data?.message || error.message));
+      alert('매칭 중 오류 발생: ' + (error.response?.data?.message || error.message));
     } finally {
       setMatching(false);
     }
@@ -92,21 +127,22 @@ export default function JobMatchingPage() {
         resumeTitle: selectedResumeTitle,
         matchResults,
       });
+
       alert('매칭 결과가 저장되었습니다!');
     } catch (error: any) {
-      console.error('저장 실패:', error);
-      alert('저장 중 오류가 발생했습니다: ' + (error.response?.data?.message || error.message));
+      alert('저장 실패: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsSaving(false);
     }
   };
 
   const getGradeColor = (grade: string) => {
-    const gradeUpper = grade?.toUpperCase();
-    if (gradeUpper === 'S' || gradeUpper === 'A') return 'text-green-600 bg-green-50 border-green-200';
-    if (gradeUpper === 'B' || gradeUpper === 'C') return 'text-blue-600 bg-blue-50 border-blue-200';
+    const g = grade.toUpperCase();
+    if (g === 'S' || g === 'A') return 'text-green-600 bg-green-50 border-green-200';
+    if (g === 'B' || g === 'C') return 'text-blue-600 bg-blue-50 border-blue-200';
     return 'text-orange-600 bg-orange-50 border-orange-200';
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -326,6 +362,13 @@ export default function JobMatchingPage() {
           </ul>
         </div>
       </div>
+      {/* ⭐ 토큰 모달은 return 안, but 페이지 div 밖에 둬야 overlay 정상 */}
+      <TokenModal
+        isOpen={modalOpen}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+        needed={neededTokens}
+      />
     </div>
   );
 }
