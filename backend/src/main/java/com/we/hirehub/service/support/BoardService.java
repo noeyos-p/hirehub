@@ -54,7 +54,7 @@ public class BoardService {
                 AiBoardControl control = AiBoardControl.builder()
                         .board(board)
                         .reason(mres.reason())
-                        .role(board.getRole() == null ? "USER" : board.getRole())
+                        .role("BOT")
                         .build();
                 controlRepo.save(control);
                 log.info("📝 [AI_CONTROL] 저장완료 - boardId={}, reason={}", board.getId(), mres.reason());
