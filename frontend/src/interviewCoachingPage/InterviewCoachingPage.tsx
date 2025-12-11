@@ -8,6 +8,8 @@ import {
   BriefcaseIcon,
   BuildingOfficeIcon,
   ClockIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 import { useNavigate } from 'react-router-dom';
@@ -55,6 +57,9 @@ const InterviewCoachingPage: React.FC = () => {
   // 모달 상태
   const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
   const [viewingResume, setViewingResume] = useState<ResumeDto | null>(null);
+
+  // 모바일 사이드바 상태
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // 🔥 HIRE TOKEN 훅
   const {
@@ -131,6 +136,11 @@ const InterviewCoachingPage: React.FC = () => {
 
     loadHistory();
   }, []);
+
+  // 모바일 메뉴 닫기 (페이지 이동 시)
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [selectedResume, step]);
 
   // 이력서 요약 파싱 함수
   const getResumeSummary = (resume: ResumeDto) => {
@@ -439,70 +449,120 @@ ${contextFeedback}
     setInterviewSessions([]);
   };
 
+  // 사이드바 콘텐츠 렌더러 (Desktop/Mobile 공용)
+  const renderSidebarContent = () => (
+    <nav className="space-y-4 xl:space-y-6">
+      <button
+        onClick={() => {
+          navigate('/interview-coaching');
+          setIsMobileSidebarOpen(false);
+        }}
+        className="w-full text-left text-sm xl:text-[16px] hover:text-[#006AFF] transition"
+        style={{ color: '#006AFF' }}
+      >
+        면접코칭
+      </button>
+      <div>
+        <div className="text-gray-400 text-sm xl:text-[16px] mb-2">면접연습</div>
+        <div className="space-y-4">
+          {(() => {
+            // 질문이 있는 이력서만 필터링
+            const resumesWithQuestions = resumes.filter(resume => {
+              const questionCount = historyList
+                .filter(h => h.resumeId === resume.id)
+                .reduce((sum, h) => sum + (h.sessions?.length || 0), 0);
+              return questionCount > 0;
+            });
+
+            if (resumesWithQuestions.length === 0) {
+              return (
+                <div className="text-sm text-gray-400">
+                  저장된 이력이 없습니다
+                </div>
+              );
+            }
+
+            return resumesWithQuestions.map((resume) => {
+              const questionCount = historyList
+                .filter(h => h.resumeId === resume.id)
+                .reduce((sum, h) => sum + (h.sessions?.length || 0), 0);
+
+              return (
+                <button
+                  key={resume.id}
+                  onClick={() => {
+                    navigate('/interview-coaching/history', { state: { resumeId: resume.id } });
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  className="w-full text-left text-gray-700 hover:text-[#006AFF] transition"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm truncate flex-1">{resume.title || '새 이력서'}</div>
+                    <div className="text-xs text-gray-400 flex-shrink-0">
+                      총 질문 <span style={{ color: '#006AFF' }}>{questionCount}</span>개
+                    </div>
+                  </div>
+                </button>
+              );
+            });
+          })()}
+        </div>
+      </div>
+    </nav>
+  );
+
   return (
     <div className="max-w-[1440px] mx-auto px-0 md:px-6 lg:px-8 xl:px-[55px]">
-      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg">
-        {/* 왼쪽 사이드바 */}
+      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg relative">
+        {/* 왼쪽 사이드바 (데스크탑) */}
         <aside className="hidden md:block w-[200px] xl:w-[250px] border-r border-gray-200 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pl-6 xl:pl-[44px] pr-6 xl:pr-[44px] bg-white flex-shrink-0">
-          <nav className="space-y-4 xl:space-y-6">
-            <button
-              onClick={() => navigate('/interview-coaching')}
-              className="w-full text-left text-sm xl:text-[16px] hover:text-[#006AFF] transition"
-              style={{ color: '#006AFF' }}
-            >
-              면접코칭
-            </button>
-            <div>
-              <div className="text-gray-400 text-sm xl:text-[16px] mb-2">면접연습</div>
-              <div className="space-y-4">
-                {(() => {
-                  // 질문이 있는 이력서만 필터링
-                  const resumesWithQuestions = resumes.filter(resume => {
-                    const questionCount = historyList
-                      .filter(h => h.resumeId === resume.id)
-                      .reduce((sum, h) => sum + (h.sessions?.length || 0), 0);
-                    return questionCount > 0;
-                  });
+          {renderSidebarContent()}
+        </aside>
 
-                  if (resumesWithQuestions.length === 0) {
-                    return (
-                      <div className="text-sm text-gray-400">
-                        저장된 이력이 없습니다
-                      </div>
-                    );
-                  }
+        {/* 모바일 사이드바 (오버레이) */}
+        {isMobileSidebarOpen && (
+          <div className="fixed inset-0 z-50 flex md:hidden">
+            {/* 배경 (Backdrop) */}
+            <div
+              className="fixed inset-0 bg-black/50 transition-opacity"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
 
-                  return resumesWithQuestions.map((resume) => {
-                    const questionCount = historyList
-                      .filter(h => h.resumeId === resume.id)
-                      .reduce((sum, h) => sum + (h.sessions?.length || 0), 0);
+            {/* 사이드바 패널 */}
+            <div className="relative w-[80%] max-w-[300px] bg-white h-full shadow-xl flex flex-col p-6 animate-slideRight">
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-2">
+                  <BriefcaseIcon className="w-6 h-6 text-[#006AFF]" />
+                  <span className="font-bold text-lg text-gray-900">메뉴</span>
+                </div>
+                <button
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="text-gray-500 hover:text-gray-900"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
 
-                    return (
-                      <button
-                        key={resume.id}
-                        onClick={() => navigate('/interview-coaching/history', { state: { resumeId: resume.id } })}
-                        className="w-full text-left text-gray-700 hover:text-[#006AFF] transition"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="text-sm truncate flex-1">{resume.title || '새 이력서'}</div>
-                          <div className="text-xs text-gray-400 flex-shrink-0">
-                            총 질문 <span style={{ color: '#006AFF' }}>{questionCount}</span>개
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  });
-                })()}
+              <div className="flex-1 overflow-y-auto">
+                {renderSidebarContent()}
               </div>
             </div>
-          </nav>
-        </aside>
+          </div>
+        )}
 
         {/* 메인 콘텐츠 영역 */}
         <main className="flex-1 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pr-4 md:pr-6 xl:pr-[44px] pl-4 md:pl-8 xl:pl-12 bg-gray-50">
           <div>
             {/* 헤더 */}
-            <div className="mb-12">
+            <div className="mb-12 relative flex items-center justify-center md:block">
+              {/* 모바일 햄버거 버튼 */}
+              <button
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="absolute left-0 p-2 -ml-2 text-gray-600 hover:text-[#006AFF] md:hidden"
+              >
+                <Bars3Icon className="w-7 h-7" />
+              </button>
+
               <div className="flex items-center justify-center gap-3">
                 <BriefcaseIcon className="w-8 h-8 md:w-10 md:h-10" style={{ color: '#006AFF' }} />
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 면접 코칭</h1>
