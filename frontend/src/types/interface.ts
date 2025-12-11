@@ -801,7 +801,7 @@ export interface AdminResumeDto {
     email?: string;
   };
   createAt: string;
-  updateAt: string;
+  updateAt?: string;
 }
 
 export interface AiBoardControl {

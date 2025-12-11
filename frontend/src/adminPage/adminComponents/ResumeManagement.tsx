@@ -216,7 +216,7 @@ const ResumeDetailModal: React.FC<ResumeDetailModalProps> = ({ resume, isOpen, o
 
           <div className="text-sm text-gray-500 dark:text-gray-400">
             <p>작성일: {new Date(resume.createAt).toLocaleDateString("ko-KR")}</p>
-            <p>수정일: {new Date(resume.updateAt).toLocaleDateString("ko-KR")}</p>
+            <p>수정일: {resume.updateAt ? new Date(resume.updateAt).toLocaleDateString("ko-KR") : "없음"}</p>
           </div>
 
           {resume.idPhoto && (
@@ -453,7 +453,7 @@ const ResumeManagement: React.FC = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400">작성자: {resume.users.nickname}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                     작성일: {new Date(resume.createAt).toLocaleDateString("ko-KR")} · 수정일:{" "}
-                    {new Date(resume.updateAt).toLocaleDateString("ko-KR")}
+                    {resume.updateAt ? new Date(resume.updateAt).toLocaleDateString("ko-KR") : "없음"}
                   </div>
                 </div>
               </div>

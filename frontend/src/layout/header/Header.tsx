@@ -299,7 +299,7 @@ export default function Header() {
                     <UserCircleIcon className="w-5 h-5 md:w-6 md:h-6 text-white" />
                   </div>
                   <span className="hidden sm:inline-block font-medium text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition truncate max-w-[80px] md:max-w-[120px]">
-                    {user.nickname || user.name || user.email.split('@')[0]}
+                    {user.nickname || user.name || user.email?.split('@')[0] || '사용자'}
                   </span>
                   <ChevronDownIcon className="hidden sm:block w-3 h-3 md:w-4 md:h-4 text-gray-500 flex-shrink-0" />
                 </button>
