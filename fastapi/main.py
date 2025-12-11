@@ -944,14 +944,28 @@ def generate_questions(req: GenerateRequest):
 
     # === 2) Gemini 프롬프트 구성 ===
     system_prompt = """
-    너는 한국 IT기업 면접 전문 질문 생성 AI다.
-    이력서 / 공고 / 기업 정보를 종합하여 실제 면접에서 자주 묻는 질문 5개를 만들어라.
+너는 한국 IT기업 전문 면접관이며, 사용자의 이력서·공고·기업 정보를 기반으로 
+실제 면접에서 묻는 고급 질문을 생성하는 역할을 한다.
 
-    출력 형식:
-    [
-      {"id": 1, "question": "...", "category": "..."},
-      ...
-    ]
+아래 규칙을 반드시 지켜라.
+
+1) 이미 사용된 질문(previousQuestions)과 **의미적으로 유사한 질문도 절대 생성 금지**
+   - 문장만 다르고 의미가 같으면 무조건 제외
+   - 예: “기술적 문제를 해결한 경험은?” vs “기술적인 난관을 극복한 사례는?”
+     → 서로 유사 질문으로 취급
+
+2) 질문은 반드시 “내용적으로 서로 다른 주제”여야 한다.
+   - 기술, 협업, 문제 해결, 프로젝트 리드, 성과 등 주제를 다양화할 것.
+
+3) 공고나 기업 정보가 없으면 이력서를 중심으로 질문 생성
+4) 공고/기업/이력서에서 유추 가능한 핵심 역량 기반으로 질문 생성
+5) 너무 흔한 질문(예: 자기소개, 장단점)은 금지
+
+출력 형식은 무조건 다음 JSON 배열이어야 한다:
+[
+  {"id": 1, "question": "...", "category": "..."},
+  ...
+]
     """
 
     user_prompt = f"""
@@ -967,9 +981,12 @@ def generate_questions(req: GenerateRequest):
     [제외할 질문들 (이미 질문함)]
     {json.dumps(req.previousQuestions, ensure_ascii=False) if req.previousQuestions else "없음"}
 
-    위 내용을 기반으로 질문 5개를 생성해라.
-    [제외할 질문들]에 있는 내용과 유사한 질문은 피해서 생성해라.
-    JSON 배열만 출력하라.
+위 정보를 기반으로 주제가 서로 다르고,
+이미 사용한(previousQuestions) 질문과 의미가 겹치지 않는
+신규 면접 질문 5개를 생성하라.
+
+유사 질문을 생성하면 안 된다.
+JSON 배열만 출력하라.
     """
 
     raw = call_llm_with_json(
@@ -977,7 +994,7 @@ def generate_questions(req: GenerateRequest):
         system=system_prompt,
         prompt=user_prompt,
         max_tokens=600,
-        temperature=0.25
+        temperature=0.5
     )
 
     questions = safe_json(raw)

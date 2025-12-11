@@ -381,35 +381,53 @@ ${contextFeedback}
   };
 
   // 다음 질문으로
-  const handleNextQuestion = () => {
-    setAnswer('');
-    setFeedback('');
-    setStep('interview');
-    setQuestionIndex((prev) => prev + 1);
+  // 다음 질문으로
+const handleNextQuestion = async () => {
+  setAnswer('');
+  setFeedback('');
+  setStep('interview');
+  setQuestionIndex((prev) => prev + 1);
 
-    const summary = getResumeSummary(selectedResume!);
+  // 이전 질문들
+  const previousQuestions = interviewSessions.map(s => s.question);
 
-    // 새로운 질문 생성
-    const newQuestions = [
-      {
-        id: questionIndex + 10,
-        question: `팀 프로젝트 중 의견 충돌이 있었던 경험과 해결 과정을 말씀해 주세요.`,
-        category: '상황대처',
-      },
-      {
-        id: questionIndex + 11,
-        question: `${summary.education} 전공 과정에서 배운 것 중 실무에 가장 도움이 된 것은 무엇인가요?`,
-        category: '교육',
-      },
-      {
-        id: questionIndex + 12,
-        question: `앞으로 5년 후 본인의 커리어 목표는 무엇인가요?`,
-        category: '비전',
-      },
-    ];
+  // 링크에서 아이디 추출
+  let extractedJobPostId: number | undefined = undefined;
+  let extractedCompanyId: number | undefined = undefined;
 
-    setCurrentQuestion(newQuestions[questionIndex % 3]);
-  };
+  const m1 = jobPostLink.match(/\/jobPostings\/(\d+)/) || jobPostLink.match(/\/job-post\/(\d+)/);
+  if (m1) extractedJobPostId = parseInt(m1[1], 10);
+
+  const m2 = companyLink.match(/\/company\/(\d+)/);
+  if (m2) extractedCompanyId = parseInt(m2[1], 10);
+
+  try {
+    const nextResponse = await axios.post('http://localhost:8000/interview/generate-questions', {
+      resumeId: selectedResume!.id,
+      jobPostId: extractedJobPostId,
+      companyId: extractedCompanyId,
+      jobPostLink: jobPostLink || undefined,
+      companyLink: companyLink || undefined,
+      previousQuestions,
+    });
+
+    const nextQuestions = nextResponse.data;
+
+    if (Array.isArray(nextQuestions) && nextQuestions.length > 0) {
+      setCurrentQuestion(nextQuestions[0]);
+    } else {
+      throw new Error("질문 없음");
+    }
+  } catch (err) {
+    console.error("다음 질문 생성 실패:", err);
+    setCurrentQuestion({
+      id: Date.now(),
+      question: "이전 질문과 다른 관점에서, 본인의 기술적 강점을 하나만 설명해주세요.",
+      category: "기술"
+    });
+  }
+};
+
 
   // 저장하기
   const handleSave = async () => {
