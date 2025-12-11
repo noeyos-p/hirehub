@@ -440,7 +440,7 @@ ${contextFeedback}
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-0 md:px-8 lg:px-12 xl:px-[55px]">
+    <div className="max-w-[1440px] mx-auto px-0 md:px-6 lg:px-8 xl:px-[55px]">
       <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg">
         {/* 왼쪽 사이드바 */}
         <aside className="hidden md:block w-[200px] xl:w-[250px] border-r border-gray-200 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pl-6 xl:pl-[44px] pr-6 xl:pr-[44px] bg-white flex-shrink-0">
@@ -499,7 +499,7 @@ ${contextFeedback}
         </aside>
 
         {/* 메인 콘텐츠 영역 */}
-        <main className="flex-1 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pr-6 xl:pr-[44px] pl-6 md:pl-8 xl:pl-12 bg-gray-50">
+        <main className="flex-1 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pr-4 md:pr-6 xl:pr-[44px] pl-4 md:pl-8 xl:pl-12 bg-gray-50">
           <div>
             {/* 헤더 */}
             <div className="mb-12">
@@ -531,7 +531,7 @@ ${contextFeedback}
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                       {resumes.map((resume) => {
                         const summary = getResumeSummary(resume);
                         const isSelected = selectedResume?.id === resume.id;
@@ -541,11 +541,10 @@ ${contextFeedback}
                           <div
                             key={resume.id}
                             onClick={() => handleResumeSelect(resume)}
-                            className={`bg-white rounded-2xl shadow-sm border-1 p-6 transition cursor-pointer ${
-                              isSelected
-                                ? 'border-blue-500 '
-                                : 'border-gray-100 hover:border-[#006AFF]'
-                            }`}
+                            className={`bg-white rounded-2xl shadow-sm border p-5 sm:p-6 transition-all cursor-pointer active:scale-[0.98] ${isSelected
+                              ? 'border-[#006AFF] ring-1 ring-[#006AFF] bg-blue-50/10'
+                              : 'border-gray-200 hover:border-[#006AFF] hover:shadow-md'
+                              }`}
                           >
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
@@ -633,7 +632,7 @@ ${contextFeedback}
                   <button
                     onClick={handleStartInterview}
                     disabled={isLoading || !selectedResume}
-                    className="px-8 py-4 bg-[#006AFF] hover:bg-blue-700 text-white text-[20px] font-semibold rounded-xl transition shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-6 sm:px-12 py-3 sm:py-4 bg-[#006AFF] hover:bg-blue-700 text-white text-lg sm:text-[20px] font-semibold rounded-xl transition shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-95"
                   >
                     {isLoading ? '질문 생성 중...' : '면접 질문 받기'}
                   </button>
