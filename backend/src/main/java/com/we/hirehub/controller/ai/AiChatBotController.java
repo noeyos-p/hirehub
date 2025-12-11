@@ -39,8 +39,15 @@ public class AiChatBotController {
             // ✅ HTTP 요청 구성
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Map<String, String>> entity =
-                    new HttpEntity<>(Map.of("message", message), headers);
+            HttpEntity<Map<String, Object>> entity =
+                    new HttpEntity<>(
+                            Map.of(
+                                    "userId", req.get("userId"),
+                                    "sessionId", req.get("sessionId"),
+                                    "message", message
+                            ),
+                            headers
+                    );
 
             log.debug("📤 FastAPI로 요청 전송 중...");
             ResponseEntity<Map> response =

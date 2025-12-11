@@ -5,13 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.we.hirehub.dto.support.ChatBotDto;
 import com.we.hirehub.dto.support.FaqCategoryDto;
 import com.we.hirehub.dto.support.FaqItemDto;
+import com.we.hirehub.entity.ChatBot;
+import com.we.hirehub.entity.Session;
+import com.we.hirehub.entity.Users;
 import com.we.hirehub.repository.ChatBotRepository;
+import com.we.hirehub.repository.SessionRepository;
+import com.we.hirehub.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,6 +26,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChatBotService {
     private final ChatBotRepository chatBotRepository;
+    private final UsersRepository usersRepository;
+    private final SessionRepository sessionRepository;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
@@ -215,4 +223,36 @@ public class ChatBotService {
                 .items(faqItems)
                 .build();
     }
+
+    @Transactional
+    public void saveChat(Long userId, String sessionId, String userMessage, String botAnswer) {
+
+        // 1) Users FK 로드 (필수)
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2) Session은 user 없이 id만으로 생성/조회
+        Session session = sessionRepository.findById(sessionId)
+                .orElseGet(() -> {
+                    Session s = new Session();
+                    s.setId(sessionId);
+                    // s.setCtx(... 필요하면)
+                    return sessionRepository.save(s);
+                });
+
+        // 3) ChatBot 저장 (users + session 연결)
+        ChatBot chat = ChatBot.builder()
+                .users(user)              // ← Users FK 세팅
+                .session(session)         // ← Session FK 세팅
+                .content(userMessage)
+                .botAnswer(botAnswer)
+                .onoff(true)
+                .meta(Map.of("source", "AI"))
+                .createAt(LocalDate.now())
+                .build();
+
+        chatBotRepository.save(chat);
+    }
+
+
 }

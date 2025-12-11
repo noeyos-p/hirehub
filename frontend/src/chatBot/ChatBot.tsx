@@ -337,7 +337,6 @@ const ChatBot: React.FC = () => {
 
     setIsAiLoading(true);
 
-    // 사용자 메시지 추가
     setMessages(prev => [...prev, { role: 'USER', text: question }]);
 
     try {
@@ -346,7 +345,6 @@ const ChatBot: React.FC = () => {
         'Content-Type': 'application/json',
       };
 
-      // 토큰이 있으면 추가
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -354,7 +352,11 @@ const ChatBot: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ message: question })
+        body: JSON.stringify({
+          userId: userInfo.current.userId ?? 0, // ← 여기 수정
+          sessionId: roomId,                    // ← roomId 유지
+          message: question
+        })
       });
 
       if (!response.ok) {
@@ -366,7 +368,6 @@ const ChatBot: React.FC = () => {
 
       const data = await response.json();
 
-      // AI 응답 추가
       setMessages(prev => [...prev, {
         role: 'AI',
         text: data.answer || '답변을 생성할 수 없습니다.'
@@ -382,6 +383,7 @@ const ChatBot: React.FC = () => {
       setIsAiLoading(false);
     }
   }, [API_BASE_URL]);
+
 
   // 메시지 전송 (AI 또는 상담사)
   const sendMessage = useCallback(() => {

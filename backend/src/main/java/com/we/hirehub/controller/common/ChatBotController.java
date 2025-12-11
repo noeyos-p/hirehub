@@ -1,6 +1,7 @@
 package com.we.hirehub.controller.common;
 
 import com.we.hirehub.dto.support.ChatBotDto;
+import com.we.hirehub.dto.support.ChatSaveRequest;
 import com.we.hirehub.dto.support.FaqCategoryDto;
 import com.we.hirehub.service.support.ChatBotService;
 import lombok.RequiredArgsConstructor;
@@ -68,5 +69,18 @@ public class ChatBotController {
             log.error("카테고리별 FAQ 조회 실패", e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    @PostMapping("/save")
+    public ResponseEntity<?> saveChat(@RequestBody ChatSaveRequest req) {
+
+        chatBotService.saveChat(
+                req.getUserId(),
+                req.getSessionId(),
+                req.getUserMessage(),
+                req.getBotAnswer()
+        );
+
+        return ResponseEntity.ok().build();
     }
 }
