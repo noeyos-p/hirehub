@@ -1,4 +1,5 @@
 import api from './api';
+
 import type {
   JobPostResponse,
   CompanyResponse,

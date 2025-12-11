@@ -1,5 +1,6 @@
 package com.we.hirehub.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,5 +22,6 @@ public class TechStack {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_post_id")
+    @JsonIgnore
     private JobPosts jobPost;
 }

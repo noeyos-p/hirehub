@@ -45,7 +45,7 @@ public class JobPostsDto {
   private String hireType;
 
   // 🔥 AI 추천 점수 (추천 공고 정렬용)
-  private int recommendScore;
+  private Double recommendScore;
 
   /** Mini DTO */
   @Getter

@@ -1,5 +1,6 @@
 package com.we.hirehub.controller.common;
 
+import com.we.hirehub.config.JwtUserPrincipal;
 import com.we.hirehub.dto.user.CalendarDto;
 import com.we.hirehub.dto.common.PagedResponse;
 import com.we.hirehub.dto.user.FavoriteDto;
@@ -29,23 +30,27 @@ public class JobPostController {
   private final JobPostService jobPostService;
 
   private Long userId(Authentication auth) {
-    if (auth == null) {
-      auth = SecurityContextHolder.getContext().getAuthentication();
-      if (auth == null) throw new IllegalStateException("인증 정보가 없습니다.");
+    if (auth == null || auth.getPrincipal() == null) {
+      throw new IllegalStateException("인증 정보가 없습니다.");
     }
+
     Object p = auth.getPrincipal();
-    if (p instanceof Long l) return l;
-    if (p instanceof String s) {
-      try { return Long.parseLong(s); } catch (NumberFormatException ignore) {}
+
+    // ⭐ JwtUserPrincipal 기반 인증
+    if (p instanceof JwtUserPrincipal principal) {
+      return principal.getUserId();
     }
-    try {
-      var m = p.getClass().getMethod("getId");
-      Object v = m.invoke(p);
-      if (v instanceof Long l) return l;
-      if (v instanceof String s) return Long.parseLong(s);
-    } catch (Exception ignore) {}
+
+    // 혹시 이상하게 String 형태로 들어온 경우
+    if (p instanceof String s) {
+      try {
+        return Long.parseLong(s);
+      } catch (NumberFormatException ignore) {}
+    }
+
     throw new IllegalStateException("현재 사용자 ID를 확인할 수 없습니다.");
   }
+
 
   /**
    * 공고 전체 조회
@@ -124,5 +129,14 @@ public class JobPostController {
   public JobPostsDto incrementViews(@PathVariable Long id) {
     log.info("🌐 POST /api/jobposts/{}/views - incrementViews 호출됨", id);
     return jobPostService.incrementViews(id);
+  }
+
+  /**
+   * 🔥 로그인 기반 추천 공고
+   */
+  @GetMapping("/recommended")
+  public List<JobPostsDto> getRecommended(Authentication auth) {
+    Long uid = userId(auth); // 현재 로그인한 사용자 ID 가져오기
+    return jobPostService.getRecommendedJobs(uid); // 서비스 호출
   }
 }

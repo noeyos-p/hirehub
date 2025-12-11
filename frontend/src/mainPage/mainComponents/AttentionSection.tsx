@@ -4,6 +4,7 @@ import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
 import { jobPostApi } from "../../api/jobPostApi";
 import type { JobPostResponse } from "../../types/interface";
+import { myPageApi } from "../../api/myPageApi";
 
 const AttentionSection: React.FC = () => {
   const [popularJobs, setPopularJobs] = useState<JobPostResponse[]>([]);
@@ -18,11 +19,38 @@ const AttentionSection: React.FC = () => {
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+const [isProfileFilled, setIsProfileFilled] = useState(false);
+
   // 로그인 상태 확인
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
-  }, []);
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  setIsLoggedIn(!!token);
+
+  // 로그인 안 되어 있으면 프로필도 false
+  if (!token) {
+    setIsProfileFilled(false);
+    return;
+  }
+
+  const fetchProfile = async () => {
+    try {
+      const profile = await myPageApi.getMyInfo();
+
+      const hasAnyProfile =
+        profile.education ||
+        profile.careerLevel ||
+        profile.position ||
+        profile.location;
+
+      setIsProfileFilled(!!hasAnyProfile);
+    } catch (e) {
+      console.error("프로필 확인 실패", e);
+      setIsProfileFilled(false);
+    }
+  };
+
+  fetchProfile();
+}, []);
 
   // 반응형 페이지당 카드 수 계산
   const getCardsPerPage = () => {
@@ -213,7 +241,7 @@ const AttentionSection: React.FC = () => {
     <section className="relative max-w-[1440px] mx-auto w-full">
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className="text-lg md:text-xl font-bold text-gray-800">
-          {isLoggedIn ? 'AI 추천 공고' : '모두가 주목하는 공고'}
+         {isLoggedIn && isProfileFilled ? 'AI 추천 공고' : '모두가 주목하는 공고'}
         </h2>
         <div ref={buttonsContainerRef} className="hidden md:flex space-x-2">
           <button

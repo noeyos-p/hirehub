@@ -23,6 +23,8 @@ public class JobPostService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final JobPostsRepository jobPostRepository;
     private final CompanyRepository companyRepository;
+    private final JobPostRecommendationService jobPostRecommendationService;
+
 
     /**
      * ⭐ 공고 전체 조회
@@ -123,5 +125,9 @@ public class JobPostService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public List<JobPostsDto> getRecommendedJobs(Long userId) {
+        return jobPostRecommendationService.getRecommendedJobs(userId);
     }
 }

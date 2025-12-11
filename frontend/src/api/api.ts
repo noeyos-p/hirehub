@@ -79,11 +79,13 @@ api.interceptors.response.use(
       // 로그인/회원가입 API가 아닌 경우에만 토큰 삭제
       // (로그인 실패는 401이 정상이므로 토큰을 삭제하면 안됨)
       const isAuthEndpoint = error.config?.url?.includes('/api/auth/');
-      const isPublicEndpoint =
-        error.config?.url?.includes('/api/jobposts') ||
-        error.config?.url?.includes('/api/companies') ||
-        error.config?.url?.includes('/api/boards') ||
-        error.config?.url?.includes('/api/reviews');
+const isPublicEndpoint =
+  error.config?.url === '/api/jobposts' || 
+  (error.config?.url?.startsWith('/api/jobposts/') && !error.config?.url?.includes('/recommended')) ||
+  error.config?.url?.includes('/api/companies') ||
+  error.config?.url?.includes('/api/boards') ||
+  error.config?.url?.includes('/api/reviews');
+
 
       // 인증 엔드포인트나 공개 엔드포인트가 아닌 경우에만 토큰 삭제
       if (!isAuthEndpoint && !isPublicEndpoint) {
