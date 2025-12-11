@@ -30,16 +30,22 @@ const ChatBot: React.FC = () => {
   const getApiBaseUrl = () => {
     const envUrl = import.meta.env.VITE_API_BASE_URL;
 
+    let baseUrl;
     // 환경 변수가 설정되어 있으면 사용
-    if (envUrl) return envUrl;
-
+    if (envUrl) {
+      baseUrl = envUrl;
+    }
     // HTTPS 페이지에서는 localhost를 사용할 수 없으므로 현재 origin 사용
-    if (window.location.protocol === 'https:') {
-      return window.location.origin;
+    else if (window.location.protocol === 'https:') {
+      baseUrl = window.location.origin;
+    }
+    // HTTP 개발 환경에서만 localhost 사용
+    else {
+      baseUrl = 'http://localhost:8080';
     }
 
-    // HTTP 개발 환경에서만 localhost 사용
-    return 'http://localhost:8080';
+    // 끝에 슬래시가 있으면 제거
+    return baseUrl.replace(/\/+$/, '');
   };
 
   const API_BASE_URL = getApiBaseUrl();
