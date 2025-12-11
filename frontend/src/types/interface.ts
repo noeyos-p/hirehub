@@ -570,6 +570,13 @@ export interface ResumeDto {
   skillJson?: string | null;
   langJson?: string | null;
 
+  // 백엔드 List 필드 (MyPageResumeService.toDto에서 반환)
+  educationList?: any[];
+  careerList?: any[];
+  certificateList?: any[];
+  skillList?: any[];
+  languageList?: any[];
+
   // 호환성 필드
   educations?: any[];
   careers?: any[];

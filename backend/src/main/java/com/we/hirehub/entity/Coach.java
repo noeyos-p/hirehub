@@ -46,4 +46,12 @@ public class Coach {
   // ✅ 새로 추가: 메시지 역할 (USER, AGENT, SYS)
   @Column(name = "role", length = 20)
   private String role;
+
+  // 지원 공고 링크
+  @Column(name = "job_post_link", columnDefinition = "TEXT")
+  private String jobPostLink;
+
+  // 지원 기업 링크
+  @Column(name = "company_link", columnDefinition = "TEXT")
+  private String companyLink;
 }

@@ -55,6 +55,8 @@ public class InterviewCoachingService {
           .answer(safeAnswer)
           .feedback(safeFeedback)
           .role("AGENT")
+          .jobPostLink(request.getJobPostLink())
+          .companyLink(request.getCompanyLink())
           .build();
 
       savedCoaches.add(coachRepository.save(coach));
@@ -78,18 +80,27 @@ public class InterviewCoachingService {
     Users user = usersRepository.findByEmail(email)
         .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-    List<Coach> coaches = coachRepository.findByUserOrderByIdDesc(user);
+    List<Coach> coaches = coachRepository.findByUserOrderByIdAsc(user);
 
-    // ID 기준으로 그룹핑 (연속된 ID = 같은 세션)
-    Map<Long, List<Coach>> groupedBySession = new LinkedHashMap<>();
+    // Resume ID와 ID 간격을 기준으로 그룹핑
+    Map<String, List<Coach>> groupedBySession = new LinkedHashMap<>();
 
     Long currentSessionId = null;
+    Long currentResumeId = null;
+
     for (Coach coach : coaches) {
-      if (currentSessionId == null || coach.getId() - currentSessionId > 10) {
+      Long coachResumeId = coach.getResume().getId();
+
+      // Resume ID가 다르거나, ID 간격이 10보다 크면 새로운 세션
+      if (currentSessionId == null ||
+          !coachResumeId.equals(currentResumeId) ||
+          Math.abs(currentSessionId - coach.getId()) > 10) {
         currentSessionId = coach.getId();
+        currentResumeId = coachResumeId;
       }
 
-      groupedBySession.computeIfAbsent(currentSessionId, k -> new ArrayList<>()).add(coach);
+      String sessionKey = currentResumeId + "_" + currentSessionId;
+      groupedBySession.computeIfAbsent(sessionKey, k -> new ArrayList<>()).add(coach);
     }
 
     return groupedBySession.values().stream()
@@ -147,6 +158,12 @@ public class InterviewCoachingService {
 
     Coach firstCoach = coaches.get(0);
 
+    // 링크가 있는 coach 찾기
+    Coach coachWithLinks = coaches.stream()
+        .filter(c -> c.getJobPostLink() != null || c.getCompanyLink() != null)
+        .findFirst()
+        .orElse(firstCoach);
+
     List<InterviewSessionDto> sessions = coaches.stream()
         .map(coach -> InterviewSessionDto.builder()
             .question(coach.getQuestion())
@@ -160,8 +177,8 @@ public class InterviewCoachingService {
         .id(firstCoach.getId())
         .resumeId(firstCoach.getResume().getId())
         .resumeTitle(firstCoach.getResume().getTitle())
-        .jobPostLink(null)
-        .companyLink(null)
+        .jobPostLink(coachWithLinks.getJobPostLink())
+        .companyLink(coachWithLinks.getCompanyLink())
         .sessions(sessions)
         .createdAt(LocalDateTime.now())
         .build();

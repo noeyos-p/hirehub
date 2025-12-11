@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ClockIcon,
   DocumentTextIcon,
@@ -10,17 +10,83 @@ import {
   BuildingOfficeIcon,
   ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
-import { interviewCoachingApi, type InterviewCoachingHistory } from '../api/interviewCoachingApi';
+import { interviewCoachingApi, type InterviewCoachingHistory, type InterviewSession } from '../api/interviewCoachingApi';
+import { myPageApi } from '../api/myPageApi';
+import type { ResumeDto } from '../types/interface';
 
 export default function InterviewCoachingHistoryPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const resumeId = location.state?.resumeId;
+
+  const [resumes, setResumes] = useState<ResumeDto[]>([]);
   const [historyList, setHistoryList] = useState<InterviewCoachingHistory[]>([]);
+  const [filteredHistoryList, setFilteredHistoryList] = useState<InterviewCoachingHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedHistory, setSelectedHistory] = useState<InterviewCoachingHistory | null>(null);
+  const [selectedSession, setSelectedSession] = useState<InterviewSession | null>(null);
+  const [selectedSessionIndex, setSelectedSessionIndex] = useState<number>(0);
+  const [allSessions, setAllSessions] = useState<Array<{ history: InterviewCoachingHistory; session: InterviewSession; sessionIndex: number }>>([]);
 
   useEffect(() => {
     fetchHistory();
+    loadResumes();
   }, []);
+
+  useEffect(() => {
+    // resumeId로 필터링
+    if (resumeId) {
+      const filtered = historyList.filter(h => h.resumeId === resumeId);
+      setFilteredHistoryList(filtered);
+
+      // 모든 sessions를 하나의 배열로 합치기
+      const combined: Array<{ history: InterviewCoachingHistory; session: InterviewSession; sessionIndex: number }> = [];
+      filtered.forEach(history => {
+        history.sessions.forEach((session, index) => {
+          combined.push({ history, session, sessionIndex: index });
+        });
+      });
+      setAllSessions(combined);
+
+      // 첫 번째 세션을 자동 선택
+      if (combined.length > 0) {
+        setSelectedHistory(combined[0].history);
+        setSelectedSession(combined[0].session);
+        setSelectedSessionIndex(0);
+      } else {
+        setSelectedHistory(null);
+        setSelectedSession(null);
+      }
+    } else {
+      setFilteredHistoryList(historyList);
+
+      // 모든 sessions를 하나의 배열로 합치기
+      const combined: Array<{ history: InterviewCoachingHistory; session: InterviewSession; sessionIndex: number }> = [];
+      historyList.forEach(history => {
+        history.sessions.forEach((session, index) => {
+          combined.push({ history, session, sessionIndex: index });
+        });
+      });
+      setAllSessions(combined);
+
+      // 첫 번째 세션을 자동 선택
+      if (combined.length > 0) {
+        setSelectedHistory(combined[0].history);
+        setSelectedSession(combined[0].session);
+        setSelectedSessionIndex(0);
+      }
+    }
+  }, [historyList, resumeId]);
+
+  const loadResumes = async () => {
+    try {
+      const res = await myPageApi.getResumes({ page: 0, size: 50 });
+      const resumeList = res.rows || res.content || [];
+      setResumes(resumeList);
+    } catch (err) {
+      console.error("이력서 로딩 실패:", err);
+    }
+  };
 
   const fetchHistory = async () => {
     setLoading(true);
@@ -43,6 +109,7 @@ export default function InterviewCoachingHistoryPage() {
       setHistoryList(prev => prev.filter(item => item.id !== id));
       if (selectedHistory?.id === id) {
         setSelectedHistory(null);
+        setSelectedSession(null);
       }
       alert('삭제되었습니다.');
     } catch (error) {
@@ -51,210 +118,256 @@ export default function InterviewCoachingHistoryPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/interview-coaching')}
-            className="flex items-center text-gray-600 hover:text-[#006AFF] mb-4 transition"
-          >
-            <ArrowLeftIcon className="w-5 h-5 mr-2" />
-            면접 코칭으로 돌아가기
-          </button>
-          <div className="flex items-center mb-4">
-            <ClockIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">면접 연습 이력</h1>
-          </div>
-          <p className="text-sm md:text-base text-gray-600">
-            저장된 면접 연습 이력을 확인할 수 있습니다.
-          </p>
-        </div>
+  const handleDeleteSession = async (historyId: number, sessionIndex: number) => {
+    if (!confirm('이 질문을 삭제하시겠습니까?')) return;
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006AFF]"></div>
-          </div>
-        ) : historyList.length === 0 ? (
-          <div className="text-center py-20">
-            <ChatBubbleLeftRightIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500 text-lg">저장된 면접 연습 이력이 없습니다.</p>
+    try {
+      // 세션 삭제는 백엔드 API가 있다면 호출, 없다면 로컬에서만 처리
+      const updatedHistory = historyList.find(h => h.id === historyId);
+      if (!updatedHistory) return;
+
+      const newSessions = updatedHistory.sessions.filter((_, idx) => idx !== sessionIndex);
+
+      // 로컬 상태 업데이트
+      setHistoryList(prev => prev.map(h =>
+        h.id === historyId ? { ...h, sessions: newSessions } : h
+      ));
+
+      if (selectedHistory?.id === historyId) {
+        setSelectedHistory({ ...selectedHistory, sessions: newSessions });
+        if (newSessions.length > 0) {
+          setSelectedSession(newSessions[0]);
+          setSelectedSessionIndex(0);
+        } else {
+          setSelectedSession(null);
+        }
+      }
+    } catch (error) {
+      console.error('질문 삭제 실패:', error);
+      alert('질문 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleSelectHistory = (history: InterviewCoachingHistory) => {
+    setSelectedHistory(history);
+    if (history.sessions.length > 0) {
+      setSelectedSession(history.sessions[0]);
+      setSelectedSessionIndex(0);
+    } else {
+      setSelectedSession(null);
+    }
+  };
+
+  const handleSelectSession = (index: number) => {
+    if (allSessions[index]) {
+      setSelectedHistory(allSessions[index].history);
+      setSelectedSession(allSessions[index].session);
+      setSelectedSessionIndex(index);
+    }
+  };
+
+  return (
+    <div className="max-w-[1440px] mx-auto px-0 md:px-8 lg:px-12 xl:px-[55px]">
+      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg">
+        {/* 왼쪽 사이드바 */}
+        <aside className="hidden md:block w-[200px] xl:w-[250px] border-r border-gray-200 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pl-6 xl:pl-[44px] pr-6 xl:pr-[44px] bg-white flex-shrink-0">
+          <nav className="space-y-4 xl:space-y-6">
             <button
               onClick={() => navigate('/interview-coaching')}
-              className="mt-4 px-6 py-3 bg-[#006AFF] text-white rounded-lg hover:bg-[#0055DD] transition"
+              className="w-full text-left text-sm xl:text-[16px] font-normal text-gray-500 hover:text-[#006AFF] transition"
             >
-              면접 연습하러 가기
+              면접코칭
             </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 왼쪽: 이력 목록 */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                전체 이력 ({historyList.length})
-              </h2>
-              <div className="space-y-3">
-                {historyList.map((history) => (
-                  <div
-                    key={history.id}
-                    className={`bg-white rounded-lg shadow-md p-4 cursor-pointer transition border-2 ${
-                      selectedHistory?.id === history.id
-                        ? 'border-[#006AFF]'
-                        : 'border-transparent hover:border-gray-300'
-                    }`}
-                    onClick={() => setSelectedHistory(history)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 truncate mb-1">
-                          {history.resumeTitle}
-                        </h3>
-                        <p className="text-sm text-gray-500 mb-2">
-                          {new Date(history.createdAt).toLocaleString('ko-KR')}
-                        </p>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {history.jobPostLink && (
-                            <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                              <BriefcaseIcon className="w-3 h-3 mr-1" />
-                              공고 연결
-                            </span>
-                          )}
-                          {history.companyLink && (
-                            <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-                              <BuildingOfficeIcon className="w-3 h-3 mr-1" />
-                              기업 연결
-                            </span>
-                          )}
+            <div>
+              <div className="text-gray-400 text-[16px] mb-2">면접연습</div>
+              <div className="space-y-4">
+                {(() => {
+                  // 질문이 있는 이력서만 필터링
+                  const resumesWithQuestions = resumes.filter(resume => {
+                    const questionCount = historyList
+                      .filter(h => h.resumeId === resume.id)
+                      .reduce((sum, h) => sum + (h.sessions?.length || 0), 0);
+                    return questionCount > 0;
+                  });
+
+                  if (resumesWithQuestions.length === 0) {
+                    return (
+                      <div className="text-sm text-gray-400">
+                        저장된 이력이 없습니다
+                      </div>
+                    );
+                  }
+
+                  return resumesWithQuestions.map((resume) => {
+                    const questionCount = historyList
+                      .filter(h => h.resumeId === resume.id)
+                      .reduce((sum, h) => sum + (h.sessions?.length || 0), 0);
+                    const isActive = resumeId === resume.id;
+
+                    return (
+                      <button
+                        key={resume.id}
+                        onClick={() => navigate('/interview-coaching/history', { state: { resumeId: resume.id } })}
+                        className={`w-full text-left transition ${
+                          isActive
+                            ? 'text-[#006AFF] font-semibold'
+                            : 'text-gray-700 hover:text-[#006AFF]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm truncate flex-1">{resume.title || '새 이력서'}</div>
+                          <div className="text-xs text-gray-400 flex-shrink-0">
+                            총 질문 <span style={{ color: '#006AFF' }}>{questionCount}</span>개
+                          </div>
                         </div>
-                        <p className="text-sm text-[#006AFF]">
-                          질문 {history.sessions.length}개
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 ml-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedHistory(history);
-                          }}
-                          className="p-1.5 text-gray-500 hover:text-[#006AFF] transition"
-                        >
-                          <EyeIcon className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(history.id);
-                          }}
-                          className="p-1.5 text-gray-500 hover:text-red-600 transition"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             </div>
+          </nav>
+        </aside>
 
-            {/* 오른쪽: 상세 내용 */}
-            <div className="lg:sticky lg:top-24 lg:self-start">
-              {selectedHistory ? (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-semibold text-gray-900">면접 연습 내용</h2>
-                      <span className="text-sm text-gray-500">
-                        {new Date(selectedHistory.createdAt).toLocaleString('ko-KR')}
-                      </span>
-                    </div>
-                    <div className="space-y-2 mb-4">
-                      <div>
-                        <span className="text-sm text-gray-600">이력서: </span>
-                        <span className="font-medium">{selectedHistory.resumeTitle}</span>
-                      </div>
-                      {selectedHistory.jobPostLink && (
-                        <div>
-                          <span className="text-sm text-gray-600">공고 링크: </span>
-                          <a
-                            href={selectedHistory.jobPostLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-[#006AFF] hover:underline"
-                          >
-                            {selectedHistory.jobPostLink.substring(0, 50)}...
-                          </a>
-                        </div>
-                      )}
-                      {selectedHistory.companyLink && (
-                        <div>
-                          <span className="text-sm text-gray-600">기업 링크: </span>
-                          <a
-                            href={selectedHistory.companyLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-[#006AFF] hover:underline"
-                          >
-                            {selectedHistory.companyLink.substring(0, 50)}...
-                          </a>
-                        </div>
-                      )}
-                      <div>
-                        <span className="text-sm text-gray-600">총 질문 수: </span>
-                        <span className="font-medium text-[#006AFF]">
-                          {selectedHistory.sessions.length}개
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+        {/* 중앙: 질문 목록 */}
+<div className="w-[200px] xl:w-[250px] bg-white border-r border-gray-200 min-h-screen pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pl-6 xl:pl-[44px] pr-6 xl:pr-[44px]">
+  <div>
+    <h2 className="text-sm xl:text-[16px] font-semibold text-black mb-3">면접 질문</h2>
+  </div>
 
-                  {/* 면접 세션 목록 */}
-                  <div className="space-y-6 max-h-[600px] overflow-y-auto">
-                    {selectedHistory.sessions.map((session, index) => (
-                      <div
-                        key={index}
-                        className="border border-gray-200 rounded-lg p-4"
-                      >
-                        <div className="mb-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-gray-500">
-                              질문 #{index + 1}
-                            </span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                              {session.category}
-                            </span>
-                          </div>
-                          <p className="text-gray-800 font-medium">{session.question}</p>
-                        </div>
-
-                        <div className="mb-4 pb-4 border-b border-gray-100">
-                          <h4 className="text-sm font-semibold text-gray-600 mb-2">나의 답변</h4>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded p-3">
-                            {session.answer}
-                          </p>
-                        </div>
-
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-600 mb-2">AI 피드백</h4>
-                          <div className="text-sm text-gray-700 whitespace-pre-wrap bg-blue-50 rounded p-3">
-                            {session.feedback}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg shadow-md p-6 h-96 flex items-center justify-center">
-                  <div className="text-center text-gray-400">
-                    <ChatBubbleLeftRightIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>왼쪽 목록에서 이력을 선택하세요</p>
-                  </div>
-                </div>
-              )}
+  {loading ? (
+    <div className="flex justify-center py-12">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  ) : allSessions.length === 0 ? (
+    <div className="text-center py-12">
+      <ChatBubbleLeftRightIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+      <p className="text-gray-500 text-sm">저장된 면접 연습이 없습니다.</p>
+    </div>
+  ) : (
+    <div>
+      {allSessions.map((item, index) => (
+        <div
+          key={index}
+          className={`flex items-center justify-between py-2 cursor-pointer transition ${
+            selectedSessionIndex === index
+              ? 'text-[#006AFF] font-semibold'
+              : 'text-gray-700 hover:text-[#006AFF]'
+          }`}
+          onClick={() => handleSelectSession(index)}
+        >
+          <div className="flex-1 min-w-0 mr-2">
+            <div className="text-sm">
+              질문 #{index + 1}
             </div>
           </div>
-        )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteSession(item.history.id, item.sessionIndex);
+            }}
+            className="p-1 text-gray-400 hover:text-red-500 transition"
+          >
+            <TrashIcon className="w-5 h-5" />
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+        {/* 오른쪽: 질문 상세 내용 */}
+        <main className="flex-1 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pr-6 xl:pr-[44px] pl-6 md:pl-8 xl:pl-12 bg-gray-50">
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : !selectedSession ? (
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center text-gray-400">
+                <ChatBubbleLeftRightIcon className="w-16 h-16 mx-auto mb-3 opacity-50" />
+                <p>질문을 선택하세요</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* 공고/기업 링크 표시 */}
+              {(selectedHistory?.jobPostLink || selectedHistory?.companyLink) && (
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 지원 공고 링크 */}
+                  {selectedHistory.jobPostLink && (
+                    <div>
+                      <div className="flex items-center mb-3">
+                        <BriefcaseIcon className="w-5 h-5 text-gray-700 mr-2" />
+                        <h3 className="text-base font-semibold text-gray-900">지원 공고</h3>
+                      </div>
+                      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <a
+                          href={selectedHistory.jobPostLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 break-all underline"
+                        >
+                          {selectedHistory.jobPostLink}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 지원 기업 링크 */}
+                  {selectedHistory.companyLink && (
+                    <div>
+                      <div className="flex items-center mb-3">
+                        <BuildingOfficeIcon className="w-5 h-5 text-gray-700 mr-2" />
+                        <h3 className="text-base font-semibold text-gray-900">지원 기업</h3>
+                      </div>
+                      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <a
+                          href={selectedHistory.companyLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 break-all underline"
+                        >
+                          {selectedHistory.companyLink}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* 질문 섹션 */}
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">질문</h2>
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <p className="text-gray-900 text-lg leading-relaxed">
+                    {selectedSession.question}
+                  </p>
+                </div>
+              </div>
+
+              {/* 답변 섹션 */}
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">답변</h2>
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {selectedSession.answer}
+                  </p>
+                </div>
+              </div>
+
+              {/* 피드백 섹션 */}
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">피드백</h2>
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-7">
+                    {selectedSession.feedback}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );

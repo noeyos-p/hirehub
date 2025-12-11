@@ -12,7 +12,7 @@ import {
 
 import { useNavigate } from 'react-router-dom';
 import { myPageApi } from '../api/myPageApi';
-import { interviewCoachingApi, type InterviewSession } from '../api/interviewCoachingApi';
+import { interviewCoachingApi, type InterviewSession, type InterviewCoachingHistory } from '../api/interviewCoachingApi';
 import type { ResumeDto } from '../types/interface';
 import api from '../api/api';
 import axios from "axios";
@@ -36,6 +36,8 @@ const InterviewCoachingPage: React.FC = () => {
   // 데이터 관련
   const [resumes, setResumes] = useState<ResumeDto[]>([]);
   const [selectedResume, setSelectedResume] = useState<ResumeDto | null>(null);
+  const [historyList, setHistoryList] = useState<InterviewCoachingHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   const [jobPostLink, setJobPostLink] = useState('');
   const [companyLink, setCompanyLink] = useState('');
@@ -49,6 +51,10 @@ const InterviewCoachingPage: React.FC = () => {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [interviewSessions, setInterviewSessions] = useState<InterviewSession[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // 모달 상태
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+  const [viewingResume, setViewingResume] = useState<ResumeDto | null>(null);
 
   // 🔥 HIRE TOKEN 훅
   const {
@@ -95,7 +101,38 @@ const InterviewCoachingPage: React.FC = () => {
     loadResumes();
   }, []);
 
-  // 이력서 요약 파싱 함수 (그대로 유지)
+  // 면접 연습 이력 가져오기
+  useEffect(() => {
+    const loadHistory = async () => {
+      setHistoryLoading(true);
+      try {
+        const data = await interviewCoachingApi.getHistoryList();
+
+        // 배열이 아닌 경우 처리
+        if (Array.isArray(data)) {
+          setHistoryList(data);
+        } else if (data && typeof data === 'object') {
+          // 객체인 경우 (예: { content: [...], totalElements: ... })
+          const list = (data as any).content || (data as any).data || [];
+          console.log("📝 추출된 리스트:", list);
+          setHistoryList(list);
+        } else {
+          console.warn("예상치 못한 데이터 형식:", data);
+          setHistoryList([]);
+        }
+      } catch (err) {
+        console.error("❌ 면접 연습 이력 로딩 실패:", err);
+        console.error("에러 상세:", err);
+        setHistoryList([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, []);
+
+  // 이력서 요약 파싱 함수
   const getResumeSummary = (resume: ResumeDto) => {
     try {
       let educations: any[] = [];
@@ -131,23 +168,38 @@ const InterviewCoachingPage: React.FC = () => {
     }
   };
 
-
-
   // 이력서 선택
   const handleResumeSelect = (resume: ResumeDto) => {
     try {
       console.log('선택된 이력서:', resume);
       setSelectedResume(resume);
-      setStep('context');
     } catch (error) {
       console.error('이력서 선택 중 오류:', error);
       alert('이력서 선택 중 오류가 발생했습니다.');
     }
   };
 
+  // 이력서 상세 조회 (모달용)
+  const handleViewResume = async (resume: ResumeDto) => {
+    try {
+      handleResumeSelect(resume);
+      // 전체 상세 정보 다시 가져오기
+      const fullDetail = await myPageApi.getResumeDetail(resume.id);
+      console.log('전체 이력서 데이터:', fullDetail);
+      setViewingResume(fullDetail);
+      setIsResumeModalOpen(true);
+    } catch (error) {
+      console.error('이력서 조회 실패:', error);
+      alert('이력서를 불러올 수 없습니다.');
+    }
+  };
+
   // ⭐ 면접 시작 (질문 생성) + 토큰 5 차감
   const handleStartInterview = async () => {
-    if (!selectedResume) return;
+    if (!selectedResume) {
+      alert('이력서를 먼저 선택해주세요.');
+      return;
+    }
 
     setIsLoading(true);
 
@@ -238,7 +290,6 @@ const InterviewCoachingPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // TODO: 백엔드 API 연동 - AI 피드백 받기
       const response = await axios.post('http://localhost:8000/interview/feedback', {
         resumeId: selectedResume?.id,
         jobPostLink: jobPostLink || undefined,
@@ -389,344 +440,698 @@ ${contextFeedback}
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px]">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <BriefcaseIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF] mr-2" />
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 면접 코칭</h1>
-            </div>
+    <div className="max-w-[1440px] mx-auto px-0 md:px-8 lg:px-12 xl:px-[55px]">
+      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg">
+        {/* 왼쪽 사이드바 */}
+        <aside className="hidden md:block w-[200px] xl:w-[250px] border-r border-gray-200 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pl-6 xl:pl-[44px] pr-6 xl:pr-[44px] bg-white flex-shrink-0">
+          <nav className="space-y-4 xl:space-y-6">
             <button
-              onClick={() => navigate('/interview-coaching/history')}
-              className="flex items-center px-4 py-2 text-sm md:text-base bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm"
+              onClick={() => navigate('/interview-coaching')}
+              className="w-full text-left text-sm xl:text-[16px] hover:text-[#006AFF] transition"
+              style={{ color: '#006AFF' }}
             >
-              <ClockIcon className="w-5 h-5 mr-2" />
-              연습 이력
+              면접코칭
             </button>
-          </div>
-          <p className="text-sm md:text-base text-gray-600 text-center max-w-2xl mx-auto">
-            이력서를 기반으로 AI가 맞춤형 면접 질문을 생성하고 피드백을 제공합니다.
-          </p>
-        </div>
+            <div>
+              <div className="text-gray-400 text-sm xl:text-[16px] mb-2">면접연습</div>
+              <div className="space-y-4">
+                {(() => {
+                  // 질문이 있는 이력서만 필터링
+                  const resumesWithQuestions = resumes.filter(resume => {
+                    const questionCount = historyList
+                      .filter(h => h.resumeId === resume.id)
+                      .reduce((sum, h) => sum + (h.sessions?.length || 0), 0);
+                    return questionCount > 0;
+                  });
 
-        {/* Step 1: 이력서 선택 */}
-        {step === 'select' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-[#006AFF]">
-              <div className="flex items-start">
-                <DocumentTextIcon className="w-6 h-6 text-[#006AFF] mr-3 mt-1 flex-shrink-0" />
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800 mb-2">이력서 선택</h2>
-                  <p className="text-gray-600">
-                    면접 연습에 사용할 이력서를 선택해주세요. AI가 이력서 내용을 분석하여 맞춤형 질문을 생성합니다.
-                  </p>
-                </div>
-              </div>
-            </div>
+                  if (resumesWithQuestions.length === 0) {
+                    return (
+                      <div className="text-sm text-gray-400">
+                        저장된 이력이 없습니다
+                      </div>
+                    );
+                  }
 
-            {resumes.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-md p-12 text-center border border-gray-100">
-                <DocumentTextIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4 font-medium">등록된 이력서가 없습니다.</p>
-                <button
-                  onClick={() => navigate('/myPage/resume')}
-                  className="bg-[#006AFF] hover:bg-blue-600 text-white font-medium px-6 py-2 rounded-lg transition"
-                >
-                  이력서 작성하러 가기
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {resumes.map((resume) => {
-                  try {
-                    const summary = getResumeSummary(resume);
+                  return resumesWithQuestions.map((resume) => {
+                    const questionCount = historyList
+                      .filter(h => h.resumeId === resume.id)
+                      .reduce((sum, h) => sum + (h.sessions?.length || 0), 0);
+
                     return (
                       <button
                         key={resume.id}
-                        onClick={() => handleResumeSelect(resume)}
-                        className="group bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-6 text-left border border-gray-100 hover:border-blue-200 hover:-translate-y-1"
+                        onClick={() => navigate('/interview-coaching/history', { state: { resumeId: resume.id } })}
+                        className="w-full text-left text-gray-700 hover:text-[#006AFF] transition"
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-[#006AFF] transition-colors">{resume.title || '제목 없음'}</h3>
-                          <DocumentTextIcon className="w-6 h-6 text-gray-400 group-hover:text-[#006AFF] transition-colors flex-shrink-0" />
-                        </div>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <p className="line-clamp-1">
-                            <span className="font-semibold text-gray-700 mr-1">학력:</span>
-                            {summary.education}
-                          </p>
-                          <p className="line-clamp-1">
-                            <span className="font-semibold text-gray-700 mr-1">경력:</span>
-                            {summary.career}
-                          </p>
-                          <p className="line-clamp-1">
-                            <span className="font-semibold text-gray-700 mr-1">기술:</span>
-                            {summary.skillList}
-                          </p>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm truncate flex-1">{resume.title || '새 이력서'}</div>
+                          <div className="text-xs text-gray-400 flex-shrink-0">
+                            총 질문 <span style={{ color: '#006AFF' }}>{questionCount}</span>개
+                          </div>
                         </div>
                       </button>
                     );
-                  } catch (error) {
-                    console.error('이력서 렌더링 오류:', resume.id, error);
-                    return null;
-                  }
-                })}
+                  });
+                })()}
+              </div>
+            </div>
+          </nav>
+        </aside>
+
+        {/* 메인 콘텐츠 영역 */}
+        <main className="flex-1 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pr-6 xl:pr-[44px] pl-6 md:pl-8 xl:pl-12 bg-gray-50">
+          <div>
+            {/* 헤더 */}
+            <div className="mb-12">
+              <div className="flex items-center justify-center gap-3">
+                <BriefcaseIcon className="w-8 h-8 md:w-10 md:h-10" style={{ color: '#006AFF' }} />
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 면접 코칭</h1>
+              </div>
+            </div>
+
+            {/* Step 1, 2: 이력서 선택 & 컨텍스트 입력 */}
+            {(step === 'select' || step === 'context') && (
+              <div className="space-y-10">
+                {/* 이력서 선택 섹션 */}
+                <section>
+                  <div className="flex items-center mb-4">
+                    <DocumentTextIcon className="w-6 h-6 text-gray-700 mr-2" />
+                    <h2 className="text-xl font-semibold text-gray-900">이력서 선택</h2>
+                  </div>
+
+                  {resumes.length === 0 ? (
+                    <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+                      <DocumentTextIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500 mb-4 font-medium">등록된 이력서가 없습니다.</p>
+                      <button
+                        onClick={() => navigate('/myPage/resume')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg transition"
+                      >
+                        이력서 작성하러 가기
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {resumes.map((resume) => {
+                        const summary = getResumeSummary(resume);
+                        const isSelected = selectedResume?.id === resume.id;
+                        const isSubmitted = resume.locked || resume.appliedAt || resume.companyName;
+                        console.log('Resume:', resume.title, '| locked:', resume.locked, '| appliedAt:', resume.appliedAt, '| companyName:', resume.companyName, '| isSubmitted:', isSubmitted);
+                        return (
+                          <div
+                            key={resume.id}
+                            onClick={() => handleResumeSelect(resume)}
+                            className={`bg-white rounded-2xl shadow-sm border-1 p-6 transition cursor-pointer ${
+                              isSelected
+                                ? 'border-blue-500 '
+                                : 'border-gray-100 hover:border-[#006AFF]'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="text-[18px] font-semibold text-gray-900 truncate flex-1">
+                                    {resume.title || '새 이력서'}
+                                  </h3>
+                                  {isSubmitted && (
+                                    <span className="text-[10px] text-gray-500 bg-gray-100 px-3 py-1 rounded-md flex-shrink-0">
+                                      제출됨
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[16px] font-light text-gray-500">
+                                  {new Date(resume.createAt).toLocaleDateString('ko-KR')}
+                                </p>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewResume(resume);
+                                }}
+                                className="px-3 py-1 rounded-lg text-[12px] font-[10px] transition text-black flex-shrink-0"
+                                style={{ backgroundColor: '#C2DBFF' }}
+                              >
+                                조회하기
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+
+                {/* 지원 공고/기업 링크 입력 */}
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  {/* 지원할 공고 링크 */}
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <BriefcaseIcon className="w-6 h-6 text-gray-700 mr-2" />
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        지원할 공고 링크 <span className="text-gray-400 font-normal">(선택사항)</span>
+                      </h3>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                      <p className="text-sm text-gray-600 mb-6">
+                        지원할 공고 URL을 입력하면 채용 공고사항에 맞춤 질문을 받을 수 있습니다.
+                      </p>
+                      <input
+                        type="text"
+                        value={jobPostLink}
+                        onChange={(e) => setJobPostLink(e.target.value)}
+                        placeholder="예 : https://noeyos.store/jobPostings/1"
+                        className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 지원할 기업 링크 */}
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <BuildingOfficeIcon className="w-6 h-6 text-gray-700 mr-2" />
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        지원할 기업 링크 <span className="text-gray-400 font-normal">(선택사항)</span>
+                      </h3>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                      <p className="text-sm text-gray-600 mb-6">
+                        지원할 공고 URL을 입력하면 해당 직무와 요구사항에 맞춤 질문을 받을 수 있습니다.
+                      </p>
+                      <input
+                        type="text"
+                        value={companyLink}
+                        onChange={(e) => setCompanyLink(e.target.value)}
+                        placeholder="예 : https://noeyos.store/jobPostings/1"
+                        className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* 면접 질문 받기 버튼 */}
+                <div className="flex justify-center pt-6">
+                  <button
+                    onClick={handleStartInterview}
+                    disabled={isLoading || !selectedResume}
+                    className="px-8 py-4 bg-[#006AFF] hover:bg-blue-700 text-white text-[20px] font-semibold rounded-xl transition shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? '질문 생성 중...' : '면접 질문 받기'}
+                  </button>
+                </div>
+
+                {/* 사용 가이드 */}
+                <section className="bg-blue-50 rounded-2xl p-8 mt-12 border" style={{ borderColor: '#C8E6FF' }}>
+                  <h3 className="text-xl font-bold text-gray-900 mb-6">사용 가이드</h3>
+                  <ul className="space-y-3 text-gray-700">
+                    <li className="flex items-start">
+                      <span className="mr-3">-</span>
+                      <span>AI가 이력서를 분석하여 개인 맞춤형 면접 질문을 생성합니다.</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-3">-</span>
+                      <span>지원할 공고나 기업을 추가하면 더 구체적인 질문을 받을 수 있습니다.</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-3">-</span>
+                      <span>STAR 기법(상황-과제-행동-결과)을 활용하여 답변해보세요.</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-3">-</span>
+                      <span>AI 피드백을 참고하여 답변을 개선하고 반복 연습할 수 있습니다.</span>
+                    </li>
+                  </ul>
+                </section>
               </div>
             )}
 
-            {/* 안내 사항 */}
-            <div className="mt-10 bg-gradient-to-br from-[#EFF4F8] to-white border border-[#D6E4F0] rounded-xl p-6 md:p-8">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                <SparklesIcon className="w-6 h-6 text-[#006AFF] mr-2" />
-                AI 면접 코칭 이용 안내
-              </h3>
-              <ul className="space-y-3 text-gray-700 text-sm md:text-base">
-                <li className="flex items-start">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#006AFF] mt-2 mr-2 flex-shrink-0"></span>
-                  <span>AI가 이력서를 분석하여 개인 맞춤형 면접 질문을 생성합니다.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#006AFF] mt-2 mr-2 flex-shrink-0"></span>
-                  <span>지원할 공고나 기업을 추가하면 더 구체적인 질문을 받을 수 있습니다.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#006AFF] mt-2 mr-2 flex-shrink-0"></span>
-                  <span>STAR 기법(상황-과제-행동-결과)을 활용하여 답변해보세요.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        )}
+            {/* Step 3: 면접 질문 & 답변 */}
+            {step === 'interview' && currentQuestion && (
+              <div className="space-y-8">
+                {/* 공고/기업 링크 표시 */}
+                {(jobPostLink || companyLink) && (
+                  <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* 지원 공고 링크 */}
+                    {jobPostLink && (
+                      <div>
+                        <div className="flex items-center mb-3">
+                          <BriefcaseIcon className="w-5 h-5 text-gray-700 mr-2" />
+                          <h3 className="text-base font-semibold text-gray-900">지원 공고</h3>
+                        </div>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                          <a
+                            href={jobPostLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 break-all underline"
+                          >
+                            {jobPostLink}
+                          </a>
+                        </div>
+                      </div>
+                    )}
 
-        {/* Step 2: 공고/기업 선택 (선택사항) */}
-        {step === 'context' && selectedResume && (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 flex items-center justify-between">
-              <div className="flex items-center">
-                <DocumentTextIcon className="w-6 h-6 text-[#006AFF] mr-2" />
-                <h2 className="text-xl font-bold text-gray-800">선택된 이력서: {selectedResume.title}</h2>
-              </div>
-              <button
-                onClick={() => setStep('select')}
-                className="text-sm font-medium text-gray-500 hover:text-[#006AFF] transition underline decoration-gray-300 underline-offset-4"
-              >
-                변경하기
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 공고 링크 입력 */}
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 h-full">
-                <div className="flex items-center mb-4">
-                  <BriefcaseIcon className="w-6 h-6 text-[#006AFF] mr-2" />
-                  <h3 className="text-lg font-bold text-gray-900">지원 공고 연결</h3>
-                </div>
-                <p className="text-sm text-gray-600 mb-4 h-10">
-                  채용 공고 URL을 입력하면 직무 요구사항에 딱 맞는 질문을 받을 수 있습니다.
-                </p>
-                <input
-                  type="text"
-                  value={jobPostLink}
-                  onChange={(e) => setJobPostLink(e.target.value)}
-                  placeholder="공고 URL 입력 (선택)"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#006AFF]/20 focus:border-[#006AFF] transition bg-gray-50/30 focus:bg-white"
-                />
-              </div>
-
-              {/* 기업 링크 입력 */}
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 h-full">
-                <div className="flex items-center mb-4">
-                  <BuildingOfficeIcon className="w-6 h-6 text-[#006AFF] mr-2" />
-                  <h3 className="text-lg font-bold text-gray-900">관심 기업 연결</h3>
-                </div>
-                <p className="text-sm text-gray-600 mb-4 h-10">
-                  기업 홈페이지나 채용 페이지 URL을 입력하여 기업 맞춤형 질문을 받아보세요.
-                </p>
-                <input
-                  type="text"
-                  value={companyLink}
-                  onChange={(e) => setCompanyLink(e.target.value)}
-                  placeholder="기업 URL 입력 (선택)"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#006AFF]/20 focus:border-[#006AFF] transition bg-gray-50/30 focus:bg-white"
-                />
-              </div>
-            </div>
-
-            {/* 시작 버튼 */}
-            <div className="flex justify-center pt-8">
-              <button
-                onClick={handleStartInterview}
-                disabled={isLoading}
-                className="group relative inline-flex items-center justify-center px-8 py-4 bg-[#006AFF] hover:bg-blue-600 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {isLoading ? (
-                  <>
-                    <ArrowPathIcon className="w-6 h-6 mr-3 animate-spin" />
-                    맞춤형 질문 생성 중...
-                  </>
-                ) : (
-                  <>
-                    <SparklesIcon className="w-6 h-6 mr-3 group-hover:animate-pulse" />
-                    AI 면접 시작하기
-                  </>
+                    {/* 지원 기업 링크 */}
+                    {companyLink && (
+                      <div>
+                        <div className="flex items-center mb-3">
+                          <BuildingOfficeIcon className="w-5 h-5 text-gray-700 mr-2" />
+                          <h3 className="text-base font-semibold text-gray-900">지원 기업</h3>
+                        </div>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                          <a
+                            href={companyLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 break-all underline"
+                          >
+                            {companyLink}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </section>
                 )}
-              </button>
-            </div>
-          </div>
-        )}
 
-        {/* Step 3: 면접 질문 & 답변 */}
-        {step === 'interview' && currentQuestion && (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            {/* 컨텍스트 정보바 */}
-            <div className="bg-white rounded-full shadow-sm py-2 px-6 border border-gray-200 flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-                <span className="flex items-center">
-                  <DocumentTextIcon className="w-4 h-4 mr-1.5 text-gray-400" />
-                  {selectedResume?.title}
-                </span>
-                {(jobPostLink || companyLink) && <span className="text-gray-300">|</span>}
-                {jobPostLink && <span className="text-[#006AFF]">공고 연결됨</span>}
-                {companyLink && <span className="text-[#006AFF]">기업 연결됨</span>}
-              </div>
-              <button
-                onClick={handleReset}
-                className="text-xs text-gray-400 hover:text-red-500 transition"
-              >
-                그만하기
-              </button>
-            </div>
-
-            {/* AI 질문 카드 */}
-            <div className="bg-white rounded-3xl shadow-md p-6 md:p-10 border border-gray-100 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-2 h-full bg-[#006AFF]"></div>
-              <div className="flex flex-col md:flex-row md:items-start gap-6">
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0">
-                  <SparklesIcon className="w-7 h-7 text-[#006AFF]" />
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <span className="inline-block px-3 py-1 bg-blue-100 text-[#006AFF] text-xs font-bold rounded-full mb-3">
-                    {currentQuestion.category} 질문
-                  </span>
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 leading-normal mb-2">
-                    "{currentQuestion.question}"
-                  </h3>
-                  <p className="text-gray-500 text-sm md:text-base">
-                    AI 면접관이 답변을 기다리고 있습니다. 충분히 고민 후 답변해주세요.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 답변 입력 */}
-            <div className="bg-white rounded-3xl shadow-sm p-6 md:p-8 border border-gray-100">
-              <label className="block text-gray-700 font-bold mb-3 flex items-center">
-                <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2 text-gray-400" />
-                나의 답변
-              </label>
-              <textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="답변을 입력해주세요.&#10;&#10;💡 STAR 기법 활용 팁:&#10;Situation(상황) - Task(과제) - Action(행동) - Result(결과) 순서로 구체적으로 작성해보세요."
-                className="w-full h-64 md:h-80 border border-gray-200 rounded-2xl p-5 text-gray-700 text-lg leading-relaxed focus:outline-none focus:border-[#006AFF] focus:ring-4 focus:ring-blue-50 resize-none transition-all placeholder:text-gray-300 bg-gray-50/30 focus:bg-white"
-              />
-              <div className="mt-6 flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
-                  현재 {answer.length}자
-                </span>
-                <button
-                  onClick={handleSubmitAnswer}
-                  disabled={isLoading || !answer.trim()}
-                  className="bg-[#006AFF] hover:bg-blue-600 text-white font-bold px-8 py-3 rounded-xl transition shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed flex items-center"
-                >
-                  {isLoading ? (
-                    <>
-                      <ArrowPathIcon className="w-5 h-5 mr-2 animate-spin" />
-                      피드백 분석 중...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircleIcon className="w-5 h-5 mr-2" />
-                      답변 제출하기
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: AI 피드백 */}
-        {step === 'feedback' && (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-              {/* 질문 리마인드 */}
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-start gap-3">
-                <div className="bg-white p-1.5 rounded-full shadow-sm mt-0.5">
-                  <SparklesIcon className="w-4 h-4 text-[#006AFF]" />
-                </div>
+                {/* 질문 섹션 */}
                 <div>
-                  <p className="text-sm font-bold text-gray-500 mb-1">질문</p>
-                  <p className="text-gray-800 font-medium">{currentQuestion?.question}</p>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">질문</h2>
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <p className="text-gray-900 text-lg leading-relaxed">
+                      {currentQuestion.question}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 답변 섹션 */}
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">답변</h2>
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <textarea
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                      placeholder="힌 센 사항의 말을 듣겁 했습니다."
+                      className="w-full h-64 border-none focus:outline-none resize-none text-gray-700 text-base leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                {/* 피드백 받기 버튼 */}
+                <div className="flex justify-center pt-4">
+                  <button
+                    onClick={handleSubmitAnswer}
+                    disabled={isLoading || !answer.trim()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 py-3 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? '피드백 분석 중...' : '피드백 받기'}
+                  </button>
                 </div>
               </div>
+            )}
 
-              {/* 내 답변 */}
-              <div className="px-6 py-6 border-b border-gray-100">
-                <p className="text-sm font-bold text-gray-500 mb-2">나의 답변</p>
-                <div className="bg-gray-50 rounded-xl p-4 text-gray-700 whitespace-pre-wrap leading-relaxed border border-gray-100">
-                  {answer}
+            {/* Step 4: AI 피드백 */}
+            {step === 'feedback' && (
+              <div className="space-y-8">
+                {/* 공고/기업 링크 표시 */}
+                {(jobPostLink || companyLink) && (
+                  <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* 지원 공고 링크 */}
+                    {jobPostLink && (
+                      <div>
+                        <div className="flex items-center mb-3">
+                          <BriefcaseIcon className="w-5 h-5 text-gray-700 mr-2" />
+                          <h3 className="text-base font-semibold text-gray-900">지원 공고</h3>
+                        </div>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                          <a
+                            href={jobPostLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 break-all underline"
+                          >
+                            {jobPostLink}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 지원 기업 링크 */}
+                    {companyLink && (
+                      <div>
+                        <div className="flex items-center mb-3">
+                          <BuildingOfficeIcon className="w-5 h-5 text-gray-700 mr-2" />
+                          <h3 className="text-base font-semibold text-gray-900">지원 기업</h3>
+                        </div>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                          <a
+                            href={companyLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 break-all underline"
+                          >
+                            {companyLink}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {/* 질문 섹션 */}
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">질문</h2>
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <p className="text-gray-900 text-lg leading-relaxed">
+                      {currentQuestion?.question}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 답변 섹션 */}
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">답변</h2>
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {answer}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 피드백 섹션 */}
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">피드백</h2>
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-7">
+                      {feedback}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* 액션 버튼 */}
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                  >
+                    {isSaving ? '저장 중...' : '결과 저장'}
+                  </button>
+                  <button
+                    onClick={handleNextQuestion}
+                    className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                  >
+                    다음 질문 받기
+                  </button>
                 </div>
               </div>
+            )}
+          </div>
+        </main>
+      </div>
 
-              {/* AI 피드백 */}
-              <div className="px-6 py-6 bg-blue-50/30">
-                <div className="flex items-center mb-4">
-                  <BriefcaseIcon className="w-6 h-6 text-[#006AFF] mr-2" />
-                  <h3 className="text-xl font-bold text-gray-900">AI 면접관의 피드백</h3>
-                </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-blue-100 prose prose-blue max-w-none">
-                  <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-7">
-                    {feedback}
-                  </pre>
-                </div>
-              </div>
+      {/* 이력서 조회 모달 */}
+      {isResumeModalOpen && viewingResume && (() => {
+        const prettyGender = (g?: string | null) => {
+          if (!g) return "";
+          const s = String(g).toLowerCase();
+          if (["m", "male", "남", "남성"].includes(s)) return "남";
+          if (["f", "female", "여", "여성"].includes(s)) return "여";
+          return g || "";
+        };
 
-              {/* 액션 버튼 */}
-              <div className="px-6 py-6 bg-gray-50 flex justify-end gap-3 border-t border-gray-200">
+        const prettyBirthAge = (birth?: string | null) => {
+          if (!birth) return { birthText: "", ageText: "" };
+          try {
+            const date = new Date(birth);
+            if (isNaN(date.getTime())) return { birthText: birth, ageText: "" };
+            const today = new Date();
+            let age = today.getFullYear() - date.getFullYear();
+            const md = (today.getMonth() + 1) * 100 + today.getDate();
+            const bd = (date.getMonth() + 1) * 100 + date.getDate();
+            if (md < bd) age--;
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, "0");
+            const dd = String(date.getDate()).padStart(2, "0");
+            return { birthText: `${yyyy}.${mm}.${dd}`, ageText: `만 ${Math.max(age, 0)}세` };
+          } catch {
+            return { birthText: birth, ageText: "" };
+          }
+        };
+
+        const gender = prettyGender(viewingResume.profile?.gender);
+        const { birthText, ageText } = prettyBirthAge(viewingResume.profile?.birth);
+
+        const headerRightRows = [
+          { label: "휴대폰", value: viewingResume.profile?.phone },
+          { label: "이메일", value: viewingResume.profile?.email },
+          { label: "주소", value: viewingResume.profile?.address },
+        ].filter((r) => !!r.value);
+
+        // 데이터 파싱 - 다양한 소스에서 데이터 추출
+        const parseJsonField = (json?: string | null, fallback?: any[]) => {
+          if (Array.isArray(fallback) && fallback.length > 0) return fallback;
+          try {
+            if (json && typeof json === 'string') {
+              const parsed = JSON.parse(json);
+              return Array.isArray(parsed) ? parsed : [];
+            }
+            return fallback || [];
+          } catch {
+            return fallback || [];
+          }
+        };
+
+        // 백엔드가 educationList 등으로 반환하므로 먼저 확인
+        const educations = (viewingResume as any).educationList
+          || parseJsonField(viewingResume.educationJson, viewingResume.educations)
+          || [];
+        const careers = (viewingResume as any).careerList
+          || parseJsonField(viewingResume.careerJson, viewingResume.careers)
+          || [];
+        const certs = (viewingResume as any).certificateList
+          || parseJsonField(viewingResume.certJson, viewingResume.certs)
+          || [];
+        const skills = (viewingResume as any).skillList
+          || parseJsonField(viewingResume.skillJson, viewingResume.skills)
+          || [];
+        const langs = (viewingResume as any).languageList
+          || parseJsonField(viewingResume.langJson, viewingResume.langs)
+          || [];
+
+        console.log('Modal Data:', { educations, careers, certs, skills, langs });
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+              {/* 닫기 버튼 */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex justify-end rounded-t-2xl z-10">
                 <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition shadow-sm"
+                  onClick={() => {
+                    setIsResumeModalOpen(false);
+                    setViewingResume(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition"
                 >
-                  {isSaving ? '저장 중...' : '결과 저장'}
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
-                <button
-                  onClick={handleNextQuestion}
-                  className="px-8 py-3 bg-[#006AFF] text-white font-bold rounded-xl hover:bg-blue-600 transition shadow-md hover:shadow-lg flex items-center"
-                >
-                  다음 질문 받기
-                  <ArrowPathIcon className="w-5 h-5 ml-2" />
-                </button>
+              </div>
+
+              {/* 모달 내용 - ResumeViewer 스타일 */}
+              <div className="px-4 sm:px-6 py-6 sm:py-10">
+                {/* 상단: 프로필 */}
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
+                  <div className="w-[96px] h-[120px] bg-gray-100 rounded overflow-hidden flex items-center justify-center flex-shrink-0">
+                    {viewingResume.idPhoto ? (
+                      <img src={viewingResume.idPhoto} alt="증명사진" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs text-gray-400">사진</span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+                      <h1 className="text-base sm:text-lg font-bold text-gray-900">
+                        {viewingResume.profile?.name ?? "이름 없음"}
+                      </h1>
+                      <div className="text-xs sm:text-sm text-gray-500">
+                        {birthText ? `${birthText}` : ""}
+                        {ageText ? ` (${ageText})` : ""}
+                      </div>
+                    </div>
+
+                    <div className="mt-1 text-xs sm:text-sm text-gray-600">
+                      {[gender].filter(Boolean).join(" · ")}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 gap-1 text-xs sm:text-sm text-gray-700">
+                      {headerRightRows.map((r, i) => (
+                        <div key={i} className="flex gap-2 sm:gap-3">
+                          <span className="w-12 sm:w-14 text-gray-500 flex-shrink-0">{r.label}</span>
+                          <span className="break-all">{r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 오른쪽 상단 타이틀 */}
+                  <div className="w-full sm:w-auto text-left sm:text-right">
+                    <div className="text-xs sm:text-sm text-gray-500 mb-1">이력서 제목</div>
+                    <div className="text-sm sm:text-base font-semibold text-gray-800 break-words">{viewingResume.title}</div>
+                    <div className="mt-2 text-[10px] sm:text-xs text-gray-500">
+                      {viewingResume.companyName ? <>제출 기업: {viewingResume.companyName} · </> : null}
+                      {viewingResume.appliedAt ? <>제출일: {new Date(viewingResume.appliedAt).toLocaleDateString("ko-KR")}</> : null}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 학력 */}
+                <div className="mt-4 sm:mt-6">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">학력</h3>
+                  <div className="border-t border-gray-200 pt-3">
+                    {educations && educations.length > 0 ? (
+                      <div className="space-y-4">
+                        {educations.map((ed: any, i: number) => (
+                          <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
+                            <div>
+                              <div className="text-gray-400 text-[10px] sm:text-xs">학교명</div>
+                              <div className="text-gray-800 break-words">{ed.name || ed.school || ""}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400 text-[10px] sm:text-xs">재학기간</div>
+                              <div className="text-gray-800 break-words">
+                                {[ed.startAt, ed.endAt].filter(Boolean).join(" ~ ") || "-"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400 text-[10px] sm:text-xs">졸업상태</div>
+                              <div className="text-gray-800">{ed.status || "-"}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400 text-[10px] sm:text-xs">전공</div>
+                              <div className="text-gray-800 break-words">{ed.major || "-"}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400">학력 정보가 없습니다.</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 경력 */}
+                <div className="mt-4 sm:mt-6">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">경력</h3>
+                  <div className="border-t border-gray-200 pt-3">
+                    {careers && careers.length > 0 ? (
+                      <div className="space-y-4">
+                        {careers.map((c: any, i: number) => (
+                          <div key={i} className="space-y-2">
+                            {/* 회사명, 근무기간, 직책, 직무 */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
+                              <div>
+                                <div className="text-gray-400 text-[10px] sm:text-xs">회사명</div>
+                                <div className="text-gray-800 break-words">{c.companyName || c.company || ""}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-[10px] sm:text-xs">근무기간</div>
+                                <div className="text-gray-800 break-words">
+                                  {[c.startAt, c.endAt].filter(Boolean).join(" ~ ") || "-"}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-[10px] sm:text-xs">직책</div>
+                                <div className="text-gray-800 break-words">{c.position || c.role || "-"}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-[10px] sm:text-xs">직무</div>
+                                <div className="text-gray-800 break-words">{c.job || "-"}</div>
+                              </div>
+                            </div>
+                            {/* 업무내용 - 아래로 분리 */}
+                            <div className="text-xs sm:text-sm">
+                              <div className="text-gray-400 text-[10px] sm:text-xs mb-1">업무내용</div>
+                              <div className="text-gray-800 whitespace-pre-wrap break-words">
+                                {c.content || c.desc || "-"}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400">경력 정보가 없습니다.</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 자격증 / 언어 / 스킬 */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 mt-6">
+                  <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">자격증</h3>
+                    {certs && certs.length > 0 ? (
+                      <ul className="list-disc pl-5 text-xs sm:text-sm text-gray-800 space-y-1">
+                        {certs.map((v: any, i: number) => (
+                          <li key={i} className="break-words">{v.name || v.certName || v}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-gray-400">정보 없음</div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">언어</h3>
+                    {langs && langs.length > 0 ? (
+                      <ul className="list-disc pl-5 text-xs sm:text-sm text-gray-800 space-y-1">
+                        {langs.map((v: any, i: number) => (
+                          <li key={i} className="break-words">{v.language || v.name || v}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-gray-400">정보 없음</div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">스킬</h3>
+                    {skills && skills.length > 0 ? (
+                      <ul className="list-disc pl-5 text-xs sm:text-sm text-gray-800 space-y-1">
+                        {skills.map((v: any, i: number) => (
+                          <li key={i} className="break-words">{v.name || v.skill || v.skillName || v}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-gray-400">정보 없음</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 자기소개서 */}
+                {(viewingResume.essayTitle || viewingResume.essayContent) && (
+                  <div className="mt-6 sm:mt-8">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">자기소개서</h3>
+                    {viewingResume.essayTitle && (
+                      <div className="text-xs sm:text-sm text-gray-700 mb-2 break-words">{viewingResume.essayTitle}</div>
+                    )}
+                    <div className="border border-gray-200 rounded p-3 sm:p-4 text-xs sm:text-sm text-gray-800 whitespace-pre-wrap leading-5 sm:leading-6 break-words">
+                      {viewingResume.essayContent || ""}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        )}
+        );
+      })()}
 
-        {/* ⭐ TOKEN MODAL */}
-        <TokenModal
-          isOpen={modalOpen}
-          onClose={handleClose}
-          onConfirm={handleConfirm}
-          needed={neededTokens}
-        />
-
-      </div>
+      {/* ⭐ TOKEN MODAL */}
+      <TokenModal
+        isOpen={modalOpen}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+        needed={neededTokens}
+      />
     </div>
   );
 };
-
 
 export default InterviewCoachingPage;

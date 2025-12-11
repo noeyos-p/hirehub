@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface CoachRepository extends JpaRepository<Coach, Long> {
     List<Coach> findByUserOrderByIdDesc(Users user);
+    List<Coach> findByUserOrderByIdAsc(Users user);
 }
