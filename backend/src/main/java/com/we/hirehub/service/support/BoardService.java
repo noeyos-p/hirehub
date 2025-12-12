@@ -249,7 +249,7 @@ public class BoardService {
   // ========== AI 자동 게시글 ==========
   @Transactional
   public Board createAiPost(String title, String content, List<String> tags, Long writerIdOrNull) {
-    Long writerId = (writerIdOrNull != null ? writerIdOrNull : 2L);
+    Long writerId = (writerIdOrNull != null ? writerIdOrNull : 102L); // 🔥 BOT 계정 ID
     Users writer = usersRepository.findById(writerId)
         .orElseThrow(() -> new RuntimeException("AI 작성자 계정이 존재하지 않습니다. id=" + writerId));
 

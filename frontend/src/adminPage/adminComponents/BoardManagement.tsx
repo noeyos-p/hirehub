@@ -388,7 +388,7 @@ const BoardManagement: React.FC = () => {
         days: 3,
         limit: 20,
         style: 'bullet',
-        botUserId: 2,
+        botUserId: 102, // 🔥 BOT 계정 ID
       };
 
       const res = await fetch('/api/board/ai/news/publish', {

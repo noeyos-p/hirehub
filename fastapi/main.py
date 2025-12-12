@@ -366,18 +366,26 @@ def news_digest(req: DigestRequest):
     titles = "\n".join(f"- {n.title}" for n in items)
 
     out = generate_text(
-        "너는 뉴스 전문 편집자다.",
-        f"""다음 제목을 {req.style} 스타일로 요약하라:
+        "너는 뉴스 전문 편집자다. 요약 내용만 간결하게 작성하고, '알겠습니다', '다음과 같이' 같은 인사말이나 서론 없이 바로 본문을 시작해라.",
+        f"""다음 뉴스 제목들을 {req.style} 스타일로 요약해라. 인사말 없이 바로 요약 내용만 작성:
 {titles}
 """,
         max_tokens=500,
         temperature=0.25
     )
 
+    # 🔥 불필요한 인사말 제거
+    content = out.strip()
+
+    # "알겠습니다", "다음과 같이" 등으로 시작하는 첫 줄 제거
+    lines = content.split('\n')
+    if lines and any(phrase in lines[0] for phrase in ['알겠습니다', '다음과 같이', '요약했습니다', '정리했습니다', '안내드립니다']):
+        content = '\n'.join(lines[1:]).strip()
+
     uid = datetime.now().strftime("%Y%m%d%H%M%S")
     return {
         "title": f"AI 뉴스 요약 ({uid})",
-        "content": out.strip(),
+        "content": content,
         "tags": ["뉴스", "요약"],
         "sources": items,
     }
