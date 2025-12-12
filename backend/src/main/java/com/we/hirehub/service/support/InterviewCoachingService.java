@@ -80,7 +80,8 @@ public class InterviewCoachingService {
     Users user = usersRepository.findByEmail(email)
         .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-    List<Coach> coaches = coachRepository.findByUserOrderByIdAsc(user);
+    // 🔥 최신순으로 정렬 (내림차순)
+    List<Coach> coaches = coachRepository.findByUserOrderByIdDesc(user);
 
     // Resume ID와 ID 간격을 기준으로 그룹핑
     Map<String, List<Coach>> groupedBySession = new LinkedHashMap<>();
@@ -88,7 +89,9 @@ public class InterviewCoachingService {
     Long currentSessionId = null;
     Long currentResumeId = null;
 
-    for (Coach coach : coaches) {
+    // 🔥 내림차순으로 정렬된 데이터를 역순으로 처리
+    for (int i = coaches.size() - 1; i >= 0; i--) {
+      Coach coach = coaches.get(i);
       Long coachResumeId = coach.getResume().getId();
 
       // Resume ID가 다르거나, ID 간격이 10보다 크면 새로운 세션
@@ -103,9 +106,19 @@ public class InterviewCoachingService {
       groupedBySession.computeIfAbsent(sessionKey, k -> new ArrayList<>()).add(coach);
     }
 
-    return groupedBySession.values().stream()
-        .map(this::convertToHistoryDto)
-        .collect(Collectors.toList());
+    // 🔥 각 세션 내의 coaches를 ID 오름차순으로 정렬 (시간순)
+    groupedBySession.values().forEach(sessionCoaches ->
+        sessionCoaches.sort((a, b) -> Long.compare(a.getId(), b.getId()))
+    );
+
+    // 🔥 최신 세션이 먼저 오도록 역순으로 변환
+    List<InterviewCoachingHistoryDto> result = new ArrayList<>();
+    List<List<Coach>> sessionList = new ArrayList<>(groupedBySession.values());
+    for (int i = sessionList.size() - 1; i >= 0; i--) {
+      result.add(convertToHistoryDto(sessionList.get(i)));
+    }
+
+    return result;
   }
 
   @Transactional(readOnly = true)

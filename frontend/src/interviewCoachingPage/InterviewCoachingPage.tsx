@@ -453,6 +453,12 @@ const handleNextQuestion = async () => {
       return;
     }
 
+    // 🔥 중복 클릭 방지
+    if (isSaving) {
+      console.log('⚠️ 이미 저장 중입니다.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await interviewCoachingApi.saveHistory({
@@ -925,13 +931,22 @@ const handleNextQuestion = async () => {
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                    className={`px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg transition ${
+                      isSaving
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:bg-gray-50'
+                    }`}
                   >
                     {isSaving ? '저장 중...' : '결과 저장'}
                   </button>
                   <button
                     onClick={handleNextQuestion}
-                    className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                    disabled={isSaving}
+                    className={`px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg transition ${
+                      isSaving
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:bg-blue-700'
+                    }`}
                   >
                     다음 질문 받기
                   </button>
