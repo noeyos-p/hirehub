@@ -374,8 +374,9 @@ export default function JobMatchingPage() {
     setSelectedHistory(null);
   };
 
-  // 매칭 이력 클릭
+  // 매칭 이력 클릭 - 목록 데이터 직접 사용 (정확한 개수 보장)
   const handleHistoryClick = (history: any) => {
+    console.log('📂 매칭 이력 클릭:', history.id, '공고 개수:', history.matchResults?.length);
     setSelectedHistory(history);
     setMatchResults([]);
     setSelectedResumeId(null);
@@ -477,9 +478,9 @@ export default function JobMatchingPage() {
                     );
                   }
 
-                  // 각 매칭 이력을 개별적으로 표시 (최신순)
+                  // 각 매칭 이력을 개별적으로 표시 (최신순 = ID 내림차순)
                   return historyList
-                    .sort((a, b) => new Date(b.createdAt || b.matchedAt || 0).getTime() - new Date(a.createdAt || a.matchedAt || 0).getTime())
+                    .sort((a, b) => (b.id || 0) - (a.id || 0))
                     .map((history) => {
                       const matchCount = history.matchResults?.length || 0;
                       const date = history.createdAt || history.matchedAt;
@@ -627,9 +628,19 @@ export default function JobMatchingPage() {
 
             {/* 매칭 결과 */}
             {(() => {
-              const displayResults = matchResults.length > 0
+              let displayResults = matchResults.length > 0
                 ? matchResults
                 : selectedHistory?.matchResults || [];
+
+              // 정렬: 점수 높은 순 → 같으면 회사명 가나다순
+              displayResults = [...displayResults].sort((a, b) => {
+                // 점수 내림차순
+                if (b.score !== a.score) {
+                  return b.score - a.score;
+                }
+                // 점수 같으면 회사명 가나다순
+                return (a.companyName || '').localeCompare(b.companyName || '', 'ko-KR');
+              });
 
               if (displayResults.length === 0) return null;
 
