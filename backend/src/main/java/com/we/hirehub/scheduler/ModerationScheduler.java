@@ -13,7 +13,7 @@ public class ModerationScheduler {
     private final BoardService boardService;
 
     // ✅ 1시간마다 최근 1일 게시글 재검열 (선택사항)
-     @Scheduled(fixedRate = 3600000 / 60 )  // 주석 해제하면 활성화
+    // @Scheduled(fixedRate = 3600000)  // 주석 해제하면 활성화 (1시간마다)
     public void recheckRecentPosts() {
         long ts = System.currentTimeMillis();
         log.info("⏱️ [SCHED] 주기 재검열 시작 ts={}", ts);

@@ -3,7 +3,7 @@
 # + 임베딩 기반 Spring 매칭 지원
 # + 10만 job_posts 확장을 위한 속도 최적화 (임베딩 캐시-friendly)
 
-import os, sys, re, json
+import os, sys, re, json, hashlib
 import requests
 import google.generativeai as genai
 from datetime import datetime, timedelta
