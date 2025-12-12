@@ -213,6 +213,9 @@ const BoardManagement: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const allSelected = posts.length > 0 && selectedIds.length === posts.length;
 
+  // 🔥 AI 정보글 생성 로딩 상태
+  const [isGeneratingAiPost, setIsGeneratingAiPost] = useState(false);
+
   // ✅ 개별 선택 토글
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) =>
@@ -372,6 +375,50 @@ const BoardManagement: React.FC = () => {
     }
   };
 
+  // 🔥 AI 정보글 자동 생성 함수
+  const handleGenerateAiPost = async () => {
+    if (!confirm('AI가 새로운 취업 정보글을 생성합니다. 계속하시겠습니까?')) {
+      return;
+    }
+
+    setIsGeneratingAiPost(true);
+    try {
+      const body = {
+        query: '채용 OR 공채 OR 채용공고',
+        days: 3,
+        limit: 20,
+        style: 'bullet',
+        botUserId: 2,
+      };
+
+      const res = await fetch('/api/board/ai/news/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (res.status === 409) {
+        alert('이미 최신 뉴스가 등록되어 있습니다 ✅');
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('AI 게시글 생성 실패');
+      }
+
+      const saved = await res.json();
+      alert(`AI 정보글이 생성되었습니다! 게시글 ID: ${saved.id}`);
+
+      // 목록 새로고침
+      fetchPosts(currentPage, searchQuery);
+    } catch (err: any) {
+      console.error('❌ AI 정보글 생성 실패:', err);
+      alert('AI 정보글 생성 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+      setIsGeneratingAiPost(false);
+    }
+  };
+
   // ✅ 신규 등록 모달 내부 컴포넌트
   const CreatePostModal = ({
     isOpen,
@@ -463,7 +510,18 @@ const BoardManagement: React.FC = () => {
       {/* 상단 타이틀 + 새로고침 버튼 */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">게시판 관리</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={handleGenerateAiPost}
+            disabled={isGeneratingAiPost}
+            className={`text-sm font-medium px-4 py-2 rounded-lg transition ${
+              isGeneratingAiPost
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-green-100 text-green-600 hover:bg-green-200'
+            }`}
+          >
+            {isGeneratingAiPost ? '생성 중...' : '🤖 AI 정보글 생성'}
+          </button>
           <button
             onClick={() => setIsAiModalOpen(true)}
             className="bg-purple-100 text-purple-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-purple-200"

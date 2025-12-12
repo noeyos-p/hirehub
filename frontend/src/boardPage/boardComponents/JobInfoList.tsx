@@ -86,15 +86,6 @@ const JobInfoList: React.FC = () => {
             AI 자동 생성
           </span>
         </h2>
-
-        {/* 🔥 AI 자동 생성 버튼 */}
-        <button
-          onClick={generateAiPost}
-          disabled={loading}
-          className="px-3 py-2 text-sm bg-blue-600 text-white rounded shadow hover:bg-blue-700 disabled:bg-gray-400"
-        >
-          {loading ? "생성중..." : "AI 자동 생성"}
-        </button>
       </div>
 
       {/* 리스트 렌더링 */}

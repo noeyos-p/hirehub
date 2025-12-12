@@ -16,7 +16,7 @@ public class SchedulerConfig {
     private final BoardAiController boardAiController;
 
     /** ⏰ 1시간마다 자동 뉴스 게시글 발행 */
-    @Scheduled(fixedRate = 60 * 60 * 1000)  // 1시간
+    // @Scheduled(fixedRate = 60 * 60 * 1000)  // 🔥 자동 생성 비활성화
     public void autoPublishNews() {
         try {
             log.info("⏳ [AI 자동 게시글 생성 시작]");
