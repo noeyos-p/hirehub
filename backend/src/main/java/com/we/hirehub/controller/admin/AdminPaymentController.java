@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -21,12 +22,17 @@ public class AdminPaymentController {
         return ResponseEntity.ok(paymentService.getAllPayments());
     }
 
-    /** ✔ 검색 */
+    /** ✔ 이메일 / 닉네임 / 상태 검색 */
     @GetMapping("/search")
     public ResponseEntity<List<PaymentDto>> search(
             @RequestParam(required = false) String email,
-            @RequestParam(required = false) String status
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo
     ) {
-        return ResponseEntity.ok(paymentService.searchPayments(email, status));
+        LocalDate from = (dateFrom != null && !dateFrom.isBlank()) ? LocalDate.parse(dateFrom) : null;
+        LocalDate to = (dateTo != null && !dateTo.isBlank()) ? LocalDate.parse(dateTo) : null;
+
+        return ResponseEntity.ok(paymentService.searchPayments(email, status, from, to));
     }
 }

@@ -9,6 +9,15 @@ export const payApi = {
   getAdminPayments: () =>
     api.get("/api/admin/payments"),
 
+  /** ⭐ 관리자 결제 검색 (email, status, dateFrom, dateTo 지원) */
+  searchAdminPayments: (params: {
+    email?: string;
+    status?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) =>
+    api.get("/api/admin/payments/search", { params }),
+
   /** 🔥 마이페이지: 내 결제내역 */
   myPayments: () =>
     api.get("/api/payment/my"),

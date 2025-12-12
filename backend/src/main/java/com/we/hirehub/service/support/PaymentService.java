@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -104,7 +105,6 @@ public class PaymentService {
     }
 
 
-
     // =============================
     // ✔ 유저 결제 내역 조회
     // =============================
@@ -132,22 +132,59 @@ public class PaymentService {
 
 
     // =============================
-    // ✔ 관리자 검색
-    // =============================
-    public List<PaymentDto> searchPayments(String email, String status) {
+// ✔ 관리자 검색
+// =============================
+    public List<PaymentDto> searchPayments(String email, String status, LocalDate from, LocalDate to) {
+
+        LocalDateTime dtFrom = (from != null) ? from.atStartOfDay() : null;
+        LocalDateTime dtTo = (to != null) ? to.plusDays(1).atStartOfDay() : null;
+
+        boolean hasEmail = email != null && !email.isBlank();
+        boolean hasStatus = status != null && !status.isBlank();
+        boolean hasDate = dtFrom != null && dtTo != null;
 
         List<Payment> list;
 
-        if (email != null && status != null) {
-            list = paymentRepository.findAllByUserEmailContainingAndRole(email, status);
-        } else if (email != null) {
+        // ------------------------------------
+        // 🔍 3조건 검색
+        // ------------------------------------
+        if (hasEmail && hasStatus && hasDate) {
+            list = paymentRepository
+                    .findAllByUserEmailContainingAndRoleAndCreateAtBetween(
+                            email, status, dtFrom, dtTo);
+        }
+        // ------------------------------------
+        // 🔍 2조건 검색
+        // ------------------------------------
+        else if (hasEmail && hasStatus) {
+            list = paymentRepository
+                    .findAllByUserEmailContainingAndRole(email, status);
+        } else if (hasEmail && hasDate) {
+            list = paymentRepository
+                    .findAllByUserEmailContainingAndCreateAtBetween(email, dtFrom, dtTo);
+        } else if (hasStatus && hasDate) {
+            list = paymentRepository
+                    .findAllByRoleAndCreateAtBetween(status, dtFrom, dtTo);
+        }
+        // ------------------------------------
+        // 🔍 단일 조건 검색
+        // ------------------------------------
+        else if (hasEmail) {
             list = paymentRepository.findAllByUserEmailContaining(email);
-        } else if (status != null) {
+        } else if (hasStatus) {
             list = paymentRepository.findAllByRole(status);
-        } else {
+        } else if (hasDate) {
+            list = paymentRepository.findAllByCreateAtBetween(dtFrom, dtTo);
+        }
+        // ------------------------------------
+        // 🔍 전체 조회
+        // ------------------------------------
+        else {
             list = paymentRepository.findAllByOrderByCreateAtDesc();
         }
 
-        return list.stream().map(PaymentDto::from).toList();
+        return list.stream()
+                .map(PaymentDto::from)
+                .toList();
     }
 }
