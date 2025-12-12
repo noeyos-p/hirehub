@@ -53,9 +53,15 @@ public class UsersRequestDto {
      */
     public void setPhone(String phone) {
         if (phone != null && phone.startsWith("+82")) {
-            // +82를 제거하고 0으로 시작하도록 변환
-            // 예: +8201047029314 -> 01047029314
-            this.phone = "0" + phone.substring(3);
+            // +82 제거
+            String withoutCountryCode = phone.substring(3);
+
+            // 이미 0으로 시작하면 그대로, 아니면 0 추가
+            // 예1: +8201047029314 -> 01047029314
+            // 예2: +821047029314 -> 01047029314
+            this.phone = withoutCountryCode.startsWith("0")
+                ? withoutCountryCode
+                : "0" + withoutCountryCode;
         } else {
             this.phone = phone;
         }
