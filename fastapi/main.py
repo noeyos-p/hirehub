@@ -157,7 +157,7 @@ def call_llm_with_json(model, system, prompt, max_tokens=512, temperature=0.3):
 def generate_text(system, prompt, max_tokens=512, temperature=0.3):
     """2단계 모델 폴백 포함"""
     primary = "models/gemini-2.0-flash-exp"
-    fallback = "models/gemini-1.5-flash"
+    fallback = "models/gemini-2.0-flash-exp"  # ✅ 1.5-flash 지원 종료, 2.0으로 통일
 
     out = call_llm(primary, system, prompt, max_tokens, temperature)
     if out:
@@ -512,11 +512,11 @@ def review_resume(req: ReviewRequest):
         except Exception as e:
             print(f"⚠️ Primary model 실패: {str(e)[:100]}")
 
-        # Fallback model: gemini-1.5-flash
+        # Fallback model: gemini-2.0-flash-exp
         print("🔄 Fallback model 시도 중...")
 
         model = genai.GenerativeModel(
-            model_name="models/gemini-1.5-flash",
+            model_name="models/gemini-2.0-flash-exp",  # ✅ 1.5-flash 지원 종료, 2.0으로 통일
             system_instruction=system_prompt,
             generation_config=genai.types.GenerationConfig(
                 max_output_tokens=2048,
