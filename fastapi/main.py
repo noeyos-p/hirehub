@@ -156,8 +156,8 @@ def call_llm_with_json(model, system, prompt, max_tokens=512, temperature=0.3):
 
 def generate_text(system, prompt, max_tokens=512, temperature=0.3):
     """2단계 모델 폴백 포함"""
-    primary = "models/gemini-2.0-flash-exp"
-    fallback = "models/gemini-2.0-flash-exp"  # ✅ 1.5-flash 지원 종료, 2.0으로 통일
+    primary = "models/gemini-1.5-flash"
+    fallback = "models/gemini-1.5-flash"
 
     out = call_llm(primary, system, prompt, max_tokens, temperature)
     if out:
@@ -482,10 +482,10 @@ def review_resume(req: ReviewRequest):
     try:
         print("🤖 Gemini API 호출 시작...")
 
-        # Primary model: gemini-2.0-flash-exp (무료)
+        # Primary model: gemini-1.5-flash (무료)
         try:
             model = genai.GenerativeModel(
-                model_name="models/gemini-2.0-flash-exp",
+                model_name="models/gemini-1.5-flash",
                 system_instruction=system_prompt,
                 generation_config=genai.types.GenerationConfig(
                     max_output_tokens=1500,
@@ -512,11 +512,11 @@ def review_resume(req: ReviewRequest):
         except Exception as e:
             print(f"⚠️ Primary model 실패: {str(e)[:100]}")
 
-        # Fallback model: gemini-2.0-flash-exp
+        # Fallback model: gemini-1.5-flash
         print("🔄 Fallback model 시도 중...")
 
         model = genai.GenerativeModel(
-            model_name="models/gemini-2.0-flash-exp",  # ✅ 1.5-flash 지원 종료, 2.0으로 통일
+            model_name="models/gemini-1.5-flash",
             system_instruction=system_prompt,
             generation_config=genai.types.GenerationConfig(
                 max_output_tokens=2048,
@@ -620,7 +620,7 @@ def review_health_check():
     """첨삭 기능 상태 확인"""
     try:
         # 간단한 테스트 요청
-        model = genai.GenerativeModel("models/gemini-2.0-flash-exp")
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
         response = model.generate_content(
             "간단히 '정상'이라고만 답변해주세요.",
             generation_config=genai.types.GenerationConfig(
@@ -633,7 +633,7 @@ def review_health_check():
             return {
                 "status": "healthy",
                 "message": "AI 첨삭 서비스 정상 작동 중",
-                "model": "gemini-2.0-flash-exp"
+                "model": "gemini-1.5-flash"
             }
     except Exception as e:
         return {
@@ -648,7 +648,7 @@ def review_health_check():
     """첨삭 기능 상태 확인"""
     try:
         # 간단한 테스트 요청
-        model = genai.GenerativeModel("models/gemini-2.0-flash-exp")
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
         response = model.generate_content(
             "간단히 '정상'이라고만 답변해주세요.",
             generation_config=genai.types.GenerationConfig(
@@ -661,7 +661,7 @@ def review_health_check():
             return {
                 "status": "healthy",
                 "message": "AI 첨삭 서비스 정상 작동 중",
-                "model": "gemini-2.0-flash-exp"
+                "model": "gemini-1.5-flash"
             }
     except Exception as e:
         return {
@@ -788,7 +788,7 @@ def embed(req: EmbedRequest):
 def match_one(req: MatchOneRequest):
     """
     무료 티어 최적화 버전
-    - gemini-2.0-flash-exp 사용 (완전 무료)
+    - gemini-1.5-flash 사용 (무료)
     - rate limit: 분당 15회, 일일 1,500회
     """
     resume = req.resume or ""
@@ -802,9 +802,9 @@ def match_one(req: MatchOneRequest):
     job = job[:1000]
 
     try:
-        # ✅ 완전 무료 모델 사용
+        # ✅ 무료 모델 사용
         model = genai.GenerativeModel(
-            model_name="models/gemini-2.0-flash-exp",  # 무료!
+            model_name="models/gemini-1.5-flash",
             system_instruction="""You are a Korean job matching AI.
 Evaluate resume-job match and respond with score (0-100) and Korean reason.
 
@@ -998,7 +998,7 @@ JSON 배열만 출력하라.
     """
 
     raw = call_llm_with_json(
-        model="models/gemini-2.0-flash-exp",
+        model="models/gemini-1.5-flash",
         system=system_prompt,
         prompt=user_prompt,
         max_tokens=600,
