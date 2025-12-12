@@ -43,6 +43,8 @@ print("✅ FastAPI Loaded — ALL FEATURES READY")
 
 def safe_json(s: str):
     """JSON 파싱 안전 버전"""
+    if not s:
+        return {}
     try:
         return json.loads(s)
     except:
@@ -156,8 +158,8 @@ def call_llm_with_json(model, system, prompt, max_tokens=512, temperature=0.3):
 
 def generate_text(system, prompt, max_tokens=512, temperature=0.3):
     """2단계 모델 폴백 포함"""
-    primary = "models/gemini-1.5-flash"
-    fallback = "models/gemini-1.5-flash"
+    primary = "gemini-1.5-flash"
+    fallback = "gemini-1.5-flash"
 
     out = call_llm(primary, system, prompt, max_tokens, temperature)
     if out:
@@ -485,7 +487,7 @@ def review_resume(req: ReviewRequest):
         # Primary model: gemini-1.5-flash (무료)
         try:
             model = genai.GenerativeModel(
-                model_name="models/gemini-1.5-flash",
+                model_name="gemini-1.5-flash",
                 system_instruction=system_prompt,
                 generation_config=genai.types.GenerationConfig(
                     max_output_tokens=1500,
@@ -516,7 +518,7 @@ def review_resume(req: ReviewRequest):
         print("🔄 Fallback model 시도 중...")
 
         model = genai.GenerativeModel(
-            model_name="models/gemini-1.5-flash",
+            model_name="gemini-1.5-flash",
             system_instruction=system_prompt,
             generation_config=genai.types.GenerationConfig(
                 max_output_tokens=2048,
@@ -620,7 +622,7 @@ def review_health_check():
     """첨삭 기능 상태 확인"""
     try:
         # 간단한 테스트 요청
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(
             "간단히 '정상'이라고만 답변해주세요.",
             generation_config=genai.types.GenerationConfig(
@@ -648,7 +650,7 @@ def review_health_check():
     """첨삭 기능 상태 확인"""
     try:
         # 간단한 테스트 요청
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(
             "간단히 '정상'이라고만 답변해주세요.",
             generation_config=genai.types.GenerationConfig(
@@ -771,7 +773,7 @@ def embed(req: EmbedRequest):
 
     try:
         emb = genai.embed_content(
-            model="models/text-embedding-004",
+            model="text-embedding-004",
             content=text
         )
         return {"vector": emb["embedding"]}
@@ -804,7 +806,7 @@ def match_one(req: MatchOneRequest):
     try:
         # ✅ 무료 모델 사용
         model = genai.GenerativeModel(
-            model_name="models/gemini-1.5-flash",
+            model_name="gemini-1.5-flash",
             system_instruction="""You are a Korean job matching AI.
 Evaluate resume-job match and respond with score (0-100) and Korean reason.
 
@@ -998,7 +1000,7 @@ JSON 배열만 출력하라.
     """
 
     raw = call_llm_with_json(
-        model="models/gemini-1.5-flash",
+        model="gemini-1.5-flash",
         system=system_prompt,
         prompt=user_prompt,
         max_tokens=600,
