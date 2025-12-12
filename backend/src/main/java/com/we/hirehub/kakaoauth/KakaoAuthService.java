@@ -36,16 +36,21 @@ public class KakaoAuthService {
             throw new IllegalStateException("카카오 계정 이메일을 확인할 수 없습니다.");
         }
 
-        // 3) 신규 여부 판단
-        boolean isNewUser = !usersRepository.existsByEmail(email);
-
-        // 4) 사용자 생성/조회 (엔티티 구조 안건드림: email/role만 안전 세팅)
+        // 3) 사용자 생성/조회 (엔티티 구조 안건드림: email/role만 안전 세팅)
         Users user = usersRepository.findByEmail(email).orElseGet(() -> {
             Users u = new Users();
             u.setEmail(email);
             u.setRole(Role.USER);      // 기본 USER
             return usersRepository.save(u);
         });
+
+        // 4) 온보딩 완료 여부 판단: 이메일, 이름, 전화번호, 닉네임이 모두 있으면 온보딩 완료
+        boolean isOnboardingComplete = user.getEmail() != null
+                && user.getName() != null && !user.getName().isBlank()
+                && user.getPhone() != null && !user.getPhone().isBlank()
+                && user.getNickname() != null && !user.getNickname().isBlank();
+
+        boolean isNewUser = !isOnboardingComplete;
 
         // 5) JWT 발급 (프로젝트의 JwtTokenProvider 시그니처에 맞춰)
         //    - 네 프로젝트는 이미 createToken(email, userId)로 맞춰서 동작 중

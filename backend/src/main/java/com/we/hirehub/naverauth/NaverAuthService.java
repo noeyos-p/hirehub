@@ -36,23 +36,31 @@ public class NaverAuthService {
         String nameOrEmail = userResp.getNameOrEmail();
 
         // 3) 가입/조회
-        Users user = usersRepository.findByEmail(email).orElse(null);
-        boolean isNewUser = false;
-        if (user == null) {
-            user = new Users();
-            user.setEmail(email);
-            user.setPassword("naver_user"); // dummy
-            user.setRole(Role.USER);
+        Users user = usersRepository.findByEmail(email).orElseGet(() -> {
+            Users u = new Users();
+            u.setEmail(email);
+            u.setPassword("naver_user"); // dummy
+            u.setRole(Role.USER);
             // Users 엔티티에 nickname이 있으면 저장 (없으면 무시)
-            try { user.getClass().getMethod("setNickname", String.class); user.setNickname(nameOrEmail); } catch (NoSuchMethodException ignored) {}
-            user = usersRepository.save(user);
-            isNewUser = true;
-        }
+            try {
+                u.getClass().getMethod("setNickname", String.class);
+                u.setNickname(nameOrEmail);
+            } catch (NoSuchMethodException ignored) {}
+            return usersRepository.save(u);
+        });
 
-        // 4) JWT 발급
+        // 4) 온보딩 완료 여부 판단: 이메일, 이름, 전화번호, 닉네임이 모두 있으면 온보딩 완료
+        boolean isOnboardingComplete = user.getEmail() != null
+                && user.getName() != null && !user.getName().isBlank()
+                && user.getPhone() != null && !user.getPhone().isBlank()
+                && user.getNickname() != null && !user.getNickname().isBlank();
+
+        boolean isNewUser = !isOnboardingComplete;
+
+        // 5) JWT 발급
         String jwt = jwtTokenProvider.createToken(user.getEmail(), user.getId());
 
-        // 5) 프론트로 토큰 전달
+        // 6) 프론트로 토큰 전달
         return new AuthResult(jwt, email, isNewUser);
     }
 }

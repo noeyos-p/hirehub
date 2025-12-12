@@ -120,17 +120,15 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
         return null;
     }
 
+    /**
+     * 온보딩 필요 여부 판단: 이메일, 이름, 전화번호, 닉네임이 모두 있으면 온보딩 완료
+     */
     private boolean isRequiresOnboarding(Users user) {
-        return isBlank(user.getName())
-                || isBlank(user.getNickname())
+        // 하나라도 없으면 온보딩 필요
+        return user.getEmail() == null
+                || isBlank(user.getName())
                 || isBlank(user.getPhone())
-                || user.getDob() == null
-                || user.getGender() == null
-                || isBlank(user.getAddress())
-                || isBlank(user.getLocation())
-                || isBlank(user.getPosition())
-                || isBlank(user.getCareerLevel())
-                || isBlank(user.getEducation());
+                || isBlank(user.getNickname());
     }
 
     private static boolean isBlank(String s) {
