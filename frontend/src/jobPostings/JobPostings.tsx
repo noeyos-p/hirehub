@@ -444,7 +444,10 @@ const JobPostings: React.FC = () => {
       jobPosition.includes(query) ||
       jobLoc.includes(query);
     const matchesPosition = !filters.position || jobPosition.includes(filters.position.toLowerCase());
-    const matchesExperience = !filters.experience || jobCareer.includes(filters.experience.toLowerCase());
+    const matchesExperience = !filters.experience ||
+      (filters.experience === "경력"
+        ? jobCareer.includes("년") // "경력" 선택 시 "N년" 포함된 것 매칭
+        : jobCareer.includes(filters.experience.toLowerCase()));
     const matchesEducation = !filters.education || jobEdu.includes(filters.education.toLowerCase());
     const matchesLocation = !filters.location || jobLoc.includes(filters.location.toLowerCase());
 
@@ -508,8 +511,9 @@ const JobPostings: React.FC = () => {
     education: [
       { value: "", label: "전체" },
       { value: "고졸", label: "고졸" },
+      { value: "초대졸", label: "초대졸" }, // 데이터에 존재하므로 추가
       { value: "대졸", label: "대졸" },
-      { value: "학력무관", label: "학력무관" },
+      { value: "무관", label: "학력무관" }, // 데이터는 "무관"
     ],
     location: [{ value: "", label: "전체" }, ...seoulDistricts.map((district) => ({ value: district, label: district }))],
     techStack: techStackOptions, // ✅ 동적으로 생성된 옵션 사용
