@@ -381,15 +381,32 @@ ${contextFeedback}
   };
 
   // 다음 질문으로
-  // 다음 질문으로
 const handleNextQuestion = async () => {
   setAnswer('');
   setFeedback('');
   setStep('interview');
   setQuestionIndex((prev) => prev + 1);
 
-  // 이전 질문들
-  const previousQuestions = interviewSessions.map(s => s.question);
+  // 🔥 이전 질문들: 현재 세션 + 모든 히스토리에서 가져오기
+  let previousQuestions: string[] = [];
+
+  // 1) 현재 세션의 질문들 추가
+  previousQuestions = interviewSessions.map(s => s.question);
+
+  // 2) 저장된 모든 히스토리에서 질문 추가
+  try {
+    const historyList = await interviewCoachingApi.getHistoryList();
+    historyList.forEach(h =>
+      h.sessions.forEach(s => {
+        if (s.question && !previousQuestions.includes(s.question)) {
+          previousQuestions.push(s.question);
+        }
+      })
+    );
+    console.log(`📋 총 ${previousQuestions.length}개의 이전 질문 제외`);
+  } catch (err) {
+    console.error("히스토리 로드 실패:", err);
+  }
 
   // 링크에서 아이디 추출
   let extractedJobPostId: number | undefined = undefined;
@@ -806,7 +823,7 @@ const handleNextQuestion = async () => {
                     <textarea
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
-                      placeholder="힌 센 사항의 말을 듣겁 했습니다."
+                      placeholder="답변을 입력해주세요."
                       className="w-full h-64 border-none focus:outline-none resize-none text-gray-700 text-base leading-relaxed"
                     />
                   </div>
