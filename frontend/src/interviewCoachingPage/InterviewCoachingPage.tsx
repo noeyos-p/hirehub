@@ -756,23 +756,26 @@ const handleNextQuestion = async () => {
                 </div>
 
                 {/* 사용 가이드 */}
-                <section className="bg-blue-50 rounded-2xl p-8 mt-12 border" style={{ borderColor: '#C8E6FF' }}>
-                  <h3 className="text-xl font-bold text-gray-900 mb-6">사용 가이드</h3>
-                  <ul className="space-y-3 text-gray-700">
+                <section className="bg-gradient-to-br from-[#EFF4F8] to-white border border-[#D6E4F0] rounded-2xl p-6 md:p-8 mt-12">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                    <CheckCircleIcon className="w-6 h-6 text-[#006AFF] mr-2" />
+                    이용 가이드
+                  </h3>
+                  <ul className="space-y-3 text-gray-700 text-sm md:text-base">
                     <li className="flex items-start">
-                      <span className="mr-3">-</span>
+                      <span className="text-[#006AFF] mr-2 flex-shrink-0">-</span>
                       <span>AI가 이력서를 분석하여 개인 맞춤형 면접 질문을 생성합니다.</span>
                     </li>
                     <li className="flex items-start">
-                      <span className="mr-3">-</span>
+                      <span className="text-[#006AFF] mr-2 flex-shrink-0">-</span>
                       <span>지원할 공고나 기업을 추가하면 더 구체적인 질문을 받을 수 있습니다.</span>
                     </li>
                     <li className="flex items-start">
-                      <span className="mr-3">-</span>
+                      <span className="text-[#006AFF] mr-2 flex-shrink-0">-</span>
                       <span>STAR 기법(상황-과제-행동-결과)을 활용하여 답변해보세요.</span>
                     </li>
                     <li className="flex items-start">
-                      <span className="mr-3">-</span>
+                      <span className="text-[#006AFF] mr-2 flex-shrink-0">-</span>
                       <span>AI 피드백을 참고하여 답변을 개선하고 반복 연습할 수 있습니다.</span>
                     </li>
                   </ul>
