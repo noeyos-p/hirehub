@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api, { setAuthToken } from '../../api/api';
 import { useAuth } from '../../hooks/useAuth';
 
 const Signup: React.FC = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const oauthEmail = queryParams.get('email') || '';
+  const isOAuthSignup = queryParams.get('oauth') === 'true';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -42,6 +47,16 @@ const Signup: React.FC = () => {
 
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  // OAuth 로그인 시 이메일 자동 입력
+  useEffect(() => {
+    if (isOAuthSignup && oauthEmail) {
+      setEmail(oauthEmail);
+      setIsEmailChecked(true); // OAuth 이메일은 중복 확인 불필요
+      setEmailCheckMessage('소셜 로그인 이메일이 자동으로 입력되었습니다.');
+      console.log('🔐 OAuth 이메일 자동 입력:', oauthEmail);
+    }
+  }, [isOAuthSignup, oauthEmail]);
 
   // 이메일 중복 확인
   const handleCheckEmail = async () => {
@@ -143,8 +158,8 @@ const Signup: React.FC = () => {
     setError('');
     setPasswordError('');
 
-    // 이메일 중복 확인 검증
-    if (!isEmailChecked) {
+    // 이메일 중복 확인 검증 (OAuth 사용자는 제외)
+    if (!isOAuthSignup && !isEmailChecked) {
       setError('이메일 중복 확인이 필요합니다.');
       return;
     }
@@ -244,18 +259,20 @@ const Signup: React.FC = () => {
                 placeholder="이메일을 입력하세요"
                 className="form-input w-full rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 pr-24 text-base transition-all"
                 required
-                disabled={isLoading}
+                disabled={isLoading || isOAuthSignup}
               />
-              <button
-                type="button"
-                onClick={handleCheckEmail}
-                disabled={isLoading || !email}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium ${
-                  email ? 'text-[#006AFF] cursor-pointer' : 'text-gray-400 dark:text-gray-500'
-                }`}
-              >
-                중복 확인
-              </button>
+              {!isOAuthSignup && (
+                <button
+                  type="button"
+                  onClick={handleCheckEmail}
+                  disabled={isLoading || !email}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium ${
+                    email ? 'text-[#006AFF] cursor-pointer' : 'text-gray-400 dark:text-gray-500'
+                  }`}
+                >
+                  중복 확인
+                </button>
+              )}
             </div>
             {emailCheckMessage && (
               <p className="text-green-600 dark:text-green-400 text-xs ml-2">{emailCheckMessage}</p>
