@@ -251,7 +251,7 @@ const InterviewCoachingPage: React.FC = () => {
       }
 
       // 질문 생성 API 호출
-      const response = await axios.post('http://localhost:8000/interview/generate-questions', {
+      const response = await axios.post('/api/interview/generate-questions', {
         resumeId: selectedResume.id,
         jobPostId: extractedJobPostId,
         companyId: extractedCompanyId,
@@ -300,7 +300,7 @@ const InterviewCoachingPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/interview/feedback', {
+      const response = await axios.post('/api/interview/feedback', {
         resumeId: selectedResume?.id,
         jobPostLink: jobPostLink || undefined,
         companyLink: companyLink || undefined,
@@ -419,7 +419,7 @@ const handleNextQuestion = async () => {
   if (m2) extractedCompanyId = parseInt(m2[1], 10);
 
   try {
-    const nextResponse = await axios.post('http://localhost:8000/interview/generate-questions', {
+    const nextResponse = await axios.post('/api/interview/generate-questions', {
       resumeId: selectedResume!.id,
       jobPostId: extractedJobPostId,
       companyId: extractedCompanyId,
