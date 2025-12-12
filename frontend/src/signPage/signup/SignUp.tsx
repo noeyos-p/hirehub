@@ -164,15 +164,17 @@ const Signup: React.FC = () => {
       return;
     }
 
-    // 비밀번호 검증
-    if (!password) {
-      setPasswordError('비밀번호를 입력해주세요.');
-      return;
-    }
+    // 비밀번호 검증 (OAuth 사용자는 제외)
+    if (!isOAuthSignup) {
+      if (!password) {
+        setPasswordError('비밀번호를 입력해주세요.');
+        return;
+      }
 
-    if (password !== passwordConfirm) {
-      setPasswordError('비밀번호가 일치하지 않습니다.');
-      return;
+      if (password !== passwordConfirm) {
+        setPasswordError('비밀번호가 일치하지 않습니다.');
+        return;
+      }
     }
 
     // 닉네임 중복 확인 검증
@@ -196,26 +198,41 @@ const Signup: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/signup', {
-        email,
-        password,
-        name,
-        nickname,
-        phone: countryCode + phone
-      });
+      // 🔥 OAuth 사용자는 프로필 업데이트 API 호출
+      if (isOAuthSignup) {
+        const response = await api.put('/api/mypage/me', {
+          name,
+          nickname,
+          phone: countryCode + phone
+        });
 
-      console.log('📦 회원가입 응답:', response.data);
+        console.log('📦 OAuth 프로필 업데이트 응답:', response.data);
+        console.log('📝 온보딩 페이지로 이동');
+        navigate('/signInfo');
 
-      const { accessToken } = response.data || {};
+      } else {
+        // 일반 회원가입
+        const response = await api.post('/api/auth/signup', {
+          email,
+          password,
+          name,
+          nickname,
+          phone: countryCode + phone
+        });
 
-      if (accessToken) {
-        setAuthToken(accessToken);
-        await login(accessToken);
-        console.log('🔐 회원가입 성공, 토큰 저장 및 인증 상태 업데이트 완료');
+        console.log('📦 회원가입 응답:', response.data);
+
+        const { accessToken } = response.data || {};
+
+        if (accessToken) {
+          setAuthToken(accessToken);
+          await login(accessToken);
+          console.log('🔐 회원가입 성공, 토큰 저장 및 인증 상태 업데이트 완료');
+        }
+
+        console.log('📝 온보딩 페이지로 이동');
+        navigate('/signInfo');
       }
-
-      console.log('📝 온보딩 페이지로 이동');
-      navigate('/signInfo');
 
     } catch (err: any) {
       console.error('❌ 회원가입 에러:', err.response?.data);
@@ -404,7 +421,8 @@ const Signup: React.FC = () => {
             </div>
           </div>
 
-          {/* 비밀번호 */}
+          {/* 비밀번호 (OAuth 사용자는 숨김) */}
+          {!isOAuthSignup && (
           <div className="flex flex-col space-y-2">
             <label className="text-text-primary dark:text-white text-sm font-medium">비밀번호</label>
             <div className="relative">
@@ -463,6 +481,7 @@ const Signup: React.FC = () => {
               <p className="text-red-600 dark:text-red-400 text-xs ml-2">비밀번호가 일치하지 않습니다.</p>
             )}
           </div>
+          )}
 
           {/* 약관 동의 */}
           <div className="flex flex-col space-y-3 pt-4">
