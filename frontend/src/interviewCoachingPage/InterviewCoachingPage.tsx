@@ -54,6 +54,9 @@ const InterviewCoachingPage: React.FC = () => {
   const [interviewSessions, setInterviewSessions] = useState<InterviewSession[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // 🔥 현재 세션만 저장 (이미 저장된 세션은 제외)
+  const [currentSessionOnly, setCurrentSessionOnly] = useState<InterviewSession | null>(null);
+
   // 모달 상태
   const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
   const [viewingResume, setViewingResume] = useState<ResumeDto | null>(null);
@@ -313,13 +316,16 @@ const InterviewCoachingPage: React.FC = () => {
       if (feedbackText) {
         setFeedback(feedbackText);
 
-        // 세션 저장
-        setInterviewSessions(prev => [...prev, {
+        // 🔥 현재 세션 저장
+        const newSession = {
           question: currentQuestion!.question,
           category: currentQuestion!.category,
           answer: answer,
           feedback: feedbackText
-        }]);
+        };
+
+        setCurrentSessionOnly(newSession);
+        setInterviewSessions(prev => [...prev, newSession]);
 
         setStep('feedback');
         setIsLoading(false);
@@ -366,13 +372,16 @@ ${contextFeedback}
 
         setFeedback(feedbackText);
 
-        // 세션 저장
-        setInterviewSessions(prev => [...prev, {
+        // 🔥 현재 세션 저장
+        const newSession = {
           question: currentQuestion!.question,
           category: currentQuestion!.category,
           answer: answer,
           feedback: feedbackText
-        }]);
+        };
+
+        setCurrentSessionOnly(newSession);
+        setInterviewSessions(prev => [...prev, newSession]);
 
         setStep('feedback');
         setIsLoading(false);
@@ -386,6 +395,7 @@ const handleNextQuestion = async () => {
   setFeedback('');
   setStep('interview');
   setQuestionIndex((prev) => prev + 1);
+  setCurrentSessionOnly(null); // 🔥 다음 질문으로 넘어가면 현재 세션 초기화
 
   // 🔥 이전 질문들: 현재 세션 + 모든 히스토리에서 가져오기
   let previousQuestions: string[] = [];
@@ -448,7 +458,7 @@ const handleNextQuestion = async () => {
 
   // 저장하기
   const handleSave = async () => {
-    if (interviewSessions.length === 0) {
+    if (!currentSessionOnly) {
       alert('저장할 면접 연습 내용이 없습니다.');
       return;
     }
@@ -461,14 +471,19 @@ const handleNextQuestion = async () => {
 
     setIsSaving(true);
     try {
+      // 🔥 현재 세션만 저장 (배열로 감싸서 전송)
       await interviewCoachingApi.saveHistory({
         resumeId: selectedResume!.id,
         resumeTitle: selectedResume!.title || '',
         jobPostLink: jobPostLink || undefined,
         companyLink: companyLink || undefined,
-        sessions: interviewSessions,
+        sessions: [currentSessionOnly], // 🔥 현재 세션만!
       });
+
       alert('면접 연습 내용이 저장되었습니다!');
+
+      // 🔥 저장 완료 후 현재 세션 초기화
+      setCurrentSessionOnly(null);
     } catch (error: any) {
       console.error('저장 실패:', error);
       alert('저장 중 오류가 발생했습니다: ' + (error.response?.data?.message || error.message));
@@ -488,6 +503,7 @@ const handleNextQuestion = async () => {
     setFeedback('');
     setQuestionIndex(0);
     setInterviewSessions([]);
+    setCurrentSessionOnly(null); // 🔥 현재 세션도 초기화
   };
 
   // 사이드바 콘텐츠 렌더러 (Desktop/Mobile 공용)
@@ -930,14 +946,14 @@ const handleNextQuestion = async () => {
                 <div className="flex justify-end gap-3 pt-4">
                   <button
                     onClick={handleSave}
-                    disabled={isSaving}
+                    disabled={isSaving || !currentSessionOnly}
                     className={`px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg transition ${
-                      isSaving
+                      isSaving || !currentSessionOnly
                         ? 'opacity-50 cursor-not-allowed'
                         : 'hover:bg-gray-50'
                     }`}
                   >
-                    {isSaving ? '저장 중...' : '결과 저장'}
+                    {isSaving ? '저장 중...' : currentSessionOnly ? '결과 저장' : '이미 저장됨'}
                   </button>
                   <button
                     onClick={handleNextQuestion}
