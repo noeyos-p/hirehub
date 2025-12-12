@@ -21,4 +21,6 @@ public interface ApplyRepository extends JpaRepository<Apply, Long> {
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Apply a WHERE a.id IN :applyIds AND a.resume.users.id = :userId")
     void deleteAllByUserIdAndApplyIds(@Param("userId") Long userId, @Param("applyIds") List<Long> applyIds);
+
+    void deleteByJobPosts_Id(Long jobPostId);
 }

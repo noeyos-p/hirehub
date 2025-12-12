@@ -411,8 +411,8 @@ const ResumeManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">이력서 관리</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">전체 {totalElements}개</p>

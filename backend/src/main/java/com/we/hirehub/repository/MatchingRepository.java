@@ -10,4 +10,6 @@ public interface MatchingRepository extends JpaRepository<Matching, Long> {
   List<Matching> findByResume(Resume resume);
 
   List<Matching> findByResumeOrderByIdDesc(Resume resume);
+
+  void deleteByJobPosts_Id(Long jobPostId);
 }

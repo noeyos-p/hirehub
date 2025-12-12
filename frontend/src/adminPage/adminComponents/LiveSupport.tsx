@@ -543,9 +543,9 @@ const LiveSupport: React.FC = () => {
         </div>
 
         {/* 메인 컨텐츠 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* 대기 큐 */}
-          <div className="md:col-span-1">
+          <div className="lg:col-span-1">
             <div className="bg-white border border-gray-200 rounded-xl p-4 h-full">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-800">대기 요청</h3>
@@ -590,7 +590,7 @@ const LiveSupport: React.FC = () => {
           </div>
 
           {/* 대화창 */}
-          <div className="md:col-span-2">
+          <div className="lg:col-span-2">
             <div className="bg-gray-100 border border-gray-200 rounded-xl overflow-hidden flex flex-col h-[calc(100vh-300px)] md:h-[600px]">
               {/* 대화창 헤더 */}
               <div className="bg-white p-4 border-b border-gray-200">

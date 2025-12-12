@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 public class BoardAdminService {
 
     private final BoardRepository boardRepository;
+    private final com.we.hirehub.repository.CommentRepository commentRepository;
+    private final com.we.hirehub.repository.AiBoardControlRepository aiBoardControlRepository;
 
     // ============ DTO 변환 메서드 ============
     private BoardDto convertToDto(Board board) {
@@ -74,6 +76,11 @@ public class BoardAdminService {
         if (!boardRepository.existsById(boardId)) {
             throw new IllegalArgumentException("존재하지 않는 게시글입니다: " + boardId);
         }
+        // 1. 댓글 삭제
+        commentRepository.deleteByBoardId(boardId);
+        // 2. AI 차단 내역 삭제
+        aiBoardControlRepository.deleteByBoardId(boardId);
+        // 3. 게시글 삭제
         boardRepository.deleteById(boardId);
     }
 }

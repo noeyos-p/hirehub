@@ -159,7 +159,7 @@ const AdsManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-8 h-full">
+    <div className="p-4 md:p-8 h-full">
       <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">광고 관리</h2>
       {/* ✅ 전체선택 + 선택삭제 */}
       <div className="flex items-center gap-3 mb-4 min-h-[36px]">
@@ -170,11 +170,10 @@ const AdsManagement: React.FC = () => {
             onChange={toggleSelectAll}
             className="sr-only peer"
           />
-          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-            allSelected
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${allSelected
               ? 'bg-blue-600 border-blue-600'
               : 'bg-white border-gray-300 group-hover:border-blue-400'
-          }`}>
+            }`}>
             {allSelected && (
               <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -197,7 +196,7 @@ const AdsManagement: React.FC = () => {
         )}
       </div>
 
-      <div className="flex gap-6 h-[calc(100vh-200px)]">
+      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-200px)]">
         {/* 좌측: 업로드/미리보기 */}
         <div className="flex-1 flex flex-col">
           <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
@@ -254,12 +253,11 @@ const AdsManagement: React.FC = () => {
                   <div
                     key={ad.id}
                     onClick={() => handleAdClick(ad)}
-                    className={`relative bg-gray-50 rounded-lg border-2 transition cursor-pointer overflow-hidden ${
-                      selectedAd?.id === ad.id
+                    className={`relative bg-gray-50 rounded-lg border-2 transition cursor-pointer overflow-hidden ${selectedAd?.id === ad.id
                         ? "border-blue-500 shadow-lg"
                         : selectedIds.includes(ad.id)
-                        ? "ring-2 ring-blue-500 ring-offset-2"
-                        : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                          ? "ring-2 ring-blue-500 ring-offset-2"
+                          : "border-gray-200 hover:border-gray-300 hover:shadow-md"
                       }`}
                   >
                     {/* ✅ 개별 선택 체크박스 */}
@@ -274,11 +272,10 @@ const AdsManagement: React.FC = () => {
                           onChange={() => toggleSelect(ad.id)}
                           className="sr-only peer"
                         />
-                        <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all bg-white ${
-                          selectedIds.includes(ad.id)
+                        <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all bg-white ${selectedIds.includes(ad.id)
                             ? 'bg-blue-600 border-blue-600'
                             : 'border-gray-300 hover:border-blue-400'
-                        }`}>
+                          }`}>
                           {selectedIds.includes(ad.id) && (
                             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />

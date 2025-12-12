@@ -690,10 +690,10 @@ const CompanyManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-8 h-full bg-gray-50">
+    <div className="p-4 md:p-8 h-full bg-gray-50">
       {/* 타이틀 및 검색 */}
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">기업 관리</h2>
           <button
             onClick={openCreateModal}
@@ -710,31 +710,33 @@ const CompanyManagement: React.FC = () => {
             e.preventDefault();
             fetchCompanies(0, searchKeyword);
           }}
-          className="flex items-center gap-2"
+          className="flex flex-col md:flex-row w-full md:w-auto gap-2"
         >
           <input
             type="text"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             placeholder="기업명 검색"
-            className="border rounded px-3 py-2 text-sm w-64"
+            className="border rounded px-3 py-2 text-sm w-full md:w-64"
           />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
-          >
-            검색
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchKeyword("");
-              fetchCompanies(0, "");
-            }}
-            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200"
-          >
-            초기화
-          </button>
+          <div className="flex w-full md:w-auto gap-2">
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex-1 md:flex-none whitespace-nowrap"
+            >
+              검색
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchKeyword("");
+                fetchCompanies(0, "");
+              }}
+              className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200 flex-1 md:flex-none whitespace-nowrap"
+            >
+              초기화
+            </button>
+          </div>
         </form>
       </div>
       {/* ✅ 전체선택 + 선택삭제 영역 */}

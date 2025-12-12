@@ -23,13 +23,21 @@ const RealTimeChat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stompClientRef = useRef<Client | null>(null);
   const isInitializing = useRef(false);
+  const isInitialLoad = useRef(true); // ✅ 초기 로딩 여부 추적
   const sessionId = 'main-chat-room';
 
   const API_BASE_URL = api.defaults.baseURL;
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+    // ✅ 초기 로딩 시에는 즉시 이동 (auto), 이후에는 부드럽게 (smooth)
+    const behavior = isInitialLoad.current ? 'auto' : 'smooth';
+    messagesEndRef.current?.scrollIntoView({ behavior });
+
+    // 첫 스크롤 후에는 false로 변경 (메시지가 있을 때만)
+    if (messages.length > 0) {
+      isInitialLoad.current = false;
+    }
+  }, [messages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -367,8 +375,8 @@ const RealTimeChat: React.FC = () => {
                 onClick={handleJoin}
                 disabled={!isAuthenticated}
                 className={`px-6 py-2.5 rounded-lg transition-colors text-md font-medium ${isAuthenticated
-                    ? 'bg-[#006AFF] text-white hover:bg-blue-600'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-[#006AFF] text-white hover:bg-blue-600'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 title={!isAuthenticated ? '로그인이 필요합니다' : ''}
               >
@@ -426,8 +434,8 @@ const RealTimeChat: React.FC = () => {
                         >
                           <div
                             className={`px-4 py-2.5 text-[15px] rounded-2xl break-words ${isMyMessage
-                                ? "bg-blue-500 text-white rounded-tr-sm"
-                                : "bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm"
+                              ? "bg-blue-500 text-white rounded-tr-sm"
+                              : "bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm"
                               }`}
                           >
                             {msg.content}

@@ -26,13 +26,21 @@ const MobileChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stompClientRef = useRef<Client | null>(null);
   const isInitializing = useRef(false);
+  const isInitialLoad = useRef(true); // ✅ 초기 로딩 여부 추적
   const sessionId = 'main-chat-room';
 
   const API_BASE_URL = api.defaults.baseURL;
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+    // ✅ 초기 로딩 시에는 즉시 이동 (auto), 이후에는 부드럽게 (smooth)
+    const behavior = isInitialLoad.current ? 'auto' : 'smooth';
+    messagesEndRef.current?.scrollIntoView({ behavior });
+
+    // 첫 스크롤 후에는 false로 변경 (메시지가 있을 때만)
+    if (messages.length > 0) {
+      isInitialLoad.current = false;
+    }
+  }, [messages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -371,11 +379,10 @@ const MobileChatPage: React.FC = () => {
               <button
                 onClick={handleJoin}
                 disabled={!isAuthenticated}
-                className={`px-6 py-3 rounded-lg transition-colors text-base font-medium ${
-                  isAuthenticated
+                className={`px-6 py-3 rounded-lg transition-colors text-base font-medium ${isAuthenticated
                     ? 'bg-[#006AFF] text-white hover:bg-blue-600'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                  }`}
                 title={!isAuthenticated ? '로그인이 필요합니다' : ''}
               >
                 참여하기
@@ -397,9 +404,8 @@ const MobileChatPage: React.FC = () => {
                   return (
                     <div
                       key={msg.id || i}
-                      className={`flex items-start gap-2 ${
-                        isMyMessage ? 'justify-end' : 'justify-start'
-                      }`}
+                      className={`flex items-start gap-2 ${isMyMessage ? 'justify-end' : 'justify-start'
+                        }`}
                     >
                       {!isMyMessage && (
                         <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
@@ -419,9 +425,8 @@ const MobileChatPage: React.FC = () => {
                       )}
 
                       <div
-                        className={`flex flex-col max-w-[75%] ${
-                          isMyMessage ? 'items-end' : 'items-start'
-                        }`}
+                        className={`flex flex-col max-w-[75%] ${isMyMessage ? 'items-end' : 'items-start'
+                          }`}
                       >
                         {!isMyMessage && (
                           <span className="text-xs font-semibold text-gray-700 mb-1 ml-1">
@@ -430,16 +435,14 @@ const MobileChatPage: React.FC = () => {
                         )}
 
                         <div
-                          className={`flex items-end ${
-                            isMyMessage ? 'flex-row-reverse gap-1' : 'flex-row gap-1'
-                          }`}
+                          className={`flex items-end ${isMyMessage ? 'flex-row-reverse gap-1' : 'flex-row gap-1'
+                            }`}
                         >
                           <div
-                            className={`px-4 py-2.5 text-sm rounded-2xl break-words ${
-                              isMyMessage
+                            className={`px-4 py-2.5 text-sm rounded-2xl break-words ${isMyMessage
                                 ? 'bg-blue-500 text-white rounded-tr-sm'
                                 : 'bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm'
-                            }`}
+                              }`}
                           >
                             {msg.content}
                           </div>

@@ -269,47 +269,47 @@ const JobManagement: React.FC = () => {
   const handleJobClick = (job: AdminJob) => setSelectedJob(job);
 
   // ✅ 공고 수정 모달 열기
-const handleEditClick = (e: React.MouseEvent, job: AdminJob) => {
-  e.stopPropagation();
+  const handleEditClick = (e: React.MouseEvent, job: AdminJob) => {
+    e.stopPropagation();
 
-  const loc = job.location || "";
+    const loc = job.location || "";
 
-  // 1) 우편번호 추출: (06232) 이런 형태
-  const postalRegex = /^\((\d{5})\)\s*(.*)$/;
-  const postalMatch = loc.match(postalRegex);
+    // 1) 우편번호 추출: (06232) 이런 형태
+    const postalRegex = /^\((\d{5})\)\s*(.*)$/;
+    const postalMatch = loc.match(postalRegex);
 
-  let base = "";
-  let detail = "";
+    let base = "";
+    let detail = "";
 
-  if (postalMatch) {
-    const addrWithoutPostal = postalMatch[2];
+    if (postalMatch) {
+      const addrWithoutPostal = postalMatch[2];
 
-    // 2) 상세주소 분리 (마지막 공백 기준)
-    const splitIndex = addrWithoutPostal.lastIndexOf(" ");
-    if (splitIndex > -1) {
-      base = addrWithoutPostal.substring(0, splitIndex);
-      detail = addrWithoutPostal.substring(splitIndex + 1);
-    } else {
-      base = addrWithoutPostal;
+      // 2) 상세주소 분리 (마지막 공백 기준)
+      const splitIndex = addrWithoutPostal.lastIndexOf(" ");
+      if (splitIndex > -1) {
+        base = addrWithoutPostal.substring(0, splitIndex);
+        detail = addrWithoutPostal.substring(splitIndex + 1);
+      } else {
+        base = addrWithoutPostal;
+      }
+
+      // input에 값 넣기
+      setTimeout(() => {
+        const baseInput = document.getElementById("editBaseAddress") as HTMLInputElement;
+        const detailInput = document.getElementById("editDetailAddress") as HTMLInputElement;
+
+        if (baseInput) baseInput.value = `(${postalMatch[1]}) ${base}`;
+        if (detailInput) detailInput.value = detail;
+      }, 0);
     }
 
-    // input에 값 넣기
-    setTimeout(() => {
-      const baseInput = document.getElementById("editBaseAddress") as HTMLInputElement;
-      const detailInput = document.getElementById("editDetailAddress") as HTMLInputElement;
+    setEditFormData({
+      ...job,
+      location: loc,
+    });
 
-      if (baseInput) baseInput.value = `(${postalMatch[1]}) ${base}`;
-      if (detailInput) detailInput.value = detail;
-    }, 0);
-  }
-
-  setEditFormData({
-    ...job,
-    location: loc,
-  });
-
-  setIsEditModalOpen(true);
-};
+    setIsEditModalOpen(true);
+  };
 
 
   // ✅ 공고 수정 제출
@@ -512,10 +512,10 @@ const handleEditClick = (e: React.MouseEvent, job: AdminJob) => {
   // UI: 원본 구조/디자인 유지
   // -------------------
   return (
-    <div className="p-8 h-full bg-gray-50">
+    <div className="p-4 md:p-8 h-full bg-gray-50">
       {/* 타이틀 */}
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">공고 관리</h2>
           {/* ✅ 신규 공고 등록 버튼 */}
           <button
@@ -532,31 +532,33 @@ const handleEditClick = (e: React.MouseEvent, job: AdminJob) => {
             e.preventDefault();
             fetchJobs(0, searchKeyword);
           }}
-          className="flex items-center gap-2"
+          className="flex flex-col md:flex-row w-full md:w-auto gap-2"
         >
           <input
             type="text"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             placeholder="검색 (제목 / 회사 / 직무)"
-            className="border rounded px-3 py-2 text-sm w-64"
+            className="border rounded px-3 py-2 text-sm w-full md:w-64"
           />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
-          >
-            검색
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchKeyword("");
-              fetchJobs(0);
-            }}
-            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200"
-          >
-            초기화
-          </button>
+          <div className="flex w-full md:w-auto gap-2">
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex-1 md:flex-none whitespace-nowrap"
+            >
+              검색
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchKeyword("");
+                fetchJobs(0);
+              }}
+              className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200 flex-1 md:flex-none whitespace-nowrap"
+            >
+              초기화
+            </button>
+          </div>
         </form>
       </div>
 

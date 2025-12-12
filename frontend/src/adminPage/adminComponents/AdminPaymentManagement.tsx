@@ -11,8 +11,8 @@ const AdminPaymentManagement: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">결제 관리</h2>
+    <div className="p-4 md:p-8">
+      <h2 className="text-xl sm:text-2xl font-semibold mb-6">결제 관리</h2>
 
       {items.length === 0 ? (
         <p className="text-gray-500">결제 기록이 없습니다.</p>
