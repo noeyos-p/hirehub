@@ -22,6 +22,7 @@ public class SaveJobMatchingRequest {
   @AllArgsConstructor
   public static class MatchResultDto {
     private Long jobId;
+    private Long companyId;
     private String jobTitle;
     private String companyName;
     private Integer score;

@@ -77,11 +77,41 @@ public class JobMatchingHistoryService {
     // 첫 번째 매칭의 ID를 대표 ID로 사용
     Long representativeId = savedMatches.get(0).getId();
 
+    // 실제로 저장된 결과만 반환
+    List<SaveJobMatchingRequest.MatchResultDto> savedResults = savedMatches.stream()
+        .map(m -> {
+          String ranking = m.getRanking(); // "S (95)"
+          String grade = "B";
+          int score = 0;
+          try {
+            grade = ranking.split(" \\(")[0];
+            score = Integer.parseInt(ranking.split(" \\(")[1].replace(")", ""));
+          } catch (Exception e) {
+            grade = ranking;
+          }
+
+          List<String> reasons = new ArrayList<>();
+          if (m.getReason() != null && !m.getReason().isEmpty()) {
+            reasons = List.of(m.getReason().split("\n"));
+          }
+
+          return SaveJobMatchingRequest.MatchResultDto.builder()
+              .jobId(m.getJobPosts().getId())
+              .companyId(m.getCompany().getId())
+              .jobTitle(m.getJobPosts().getTitle())
+              .companyName(m.getCompany().getName())
+              .grade(grade)
+              .score(score)
+              .reasons(reasons)
+              .build();
+        })
+        .collect(Collectors.toList());
+
     return JobMatchingHistoryDto.builder()
         .id(representativeId)
         .resumeId(resume.getId())
         .resumeTitle(resume.getTitle())
-        .matchResults(request.getMatchResults()) // 저장된 것만 필터링해서 넣어야 하지만, 편의상 요청 데이터 반환
+        .matchResults(savedResults) // 실제로 저장된 결과만 반환
         .createdAt(LocalDateTime.now())
         .build();
   }
@@ -186,6 +216,7 @@ public class JobMatchingHistoryService {
 
           return SaveJobMatchingRequest.MatchResultDto.builder()
               .jobId(m.getJobPosts().getId())
+              .companyId(m.getCompany().getId())
               .jobTitle(m.getJobPosts().getTitle())
               .companyName(m.getCompany().getName())
               .grade(grade)
