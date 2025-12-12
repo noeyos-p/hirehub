@@ -77,15 +77,11 @@ export default function JobMatchingPage() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
 
-  // jobId → companyId 매핑
-  const [jobToCompanyMap, setJobToCompanyMap] = useState<Map<number, number>>(new Map());
-
   useEffect(() => {
     fetchResumes();
     fetchFavorites();
     fetchScrappedJobs();
     fetchHistory();
-    fetchJobPostsForMapping();
   }, []);
 
   const fetchResumes = async () => {
@@ -126,28 +122,6 @@ export default function JobMatchingPage() {
     }
   };
 
-  // 공고 목록 가져와서 jobId → companyId 매핑 생성
-  const fetchJobPostsForMapping = async () => {
-    try {
-      const jobs = await jobPostApi.getJobPosts();
-      const map = new Map<number, number>();
-
-      jobs.forEach((job: any) => {
-        if (job.id && job.companyId) {
-          map.set(job.id, job.companyId);
-        } else if (job.id && job.company_id) {
-          map.set(job.id, job.company_id);
-        } else if (job.id && job.companies_id) {
-          map.set(job.id, job.companies_id);
-        }
-      });
-
-      console.log('🗺️ jobId → companyId 매핑 생성 완료:', map.size, '개');
-      setJobToCompanyMap(map);
-    } catch (err) {
-      console.error('❌ 공고 목록 조회 실패:', err);
-    }
-  };
 
   // 즐겨찾기 목록 가져오기
   const fetchFavorites = async () => {
@@ -269,53 +243,39 @@ export default function JobMatchingPage() {
     try {
       /** AI 매칭 API 호출 */
       console.log('🔍 매칭 API 호출 시작:', { resumeId: selectedResumeId });
+      console.log('🔍 API URL:', '/api/match');
+
       const res = await api.post("/api/match", { resumeId: selectedResumeId });
       console.log('✅ 매칭 API 응답:', res.data);
+      console.log('✅ 응답 상태:', res.status);
 
-      const rawResults = res.data.results || [];
+      const results = res.data.results || [];
 
       // 빈 배열이 왔을 때도 fallback 데이터 사용
-      if (rawResults.length === 0) {
+      if (results.length === 0) {
         console.log('⚠️ 매칭 결과가 비어있음 → fallback 더미 데이터 사용');
         throw new Error('빈 결과');
       }
 
-      // companyId, jobId 필드명 정규화 - 다양한 필드명 시도
-      const results = rawResults.map((result: any) => {
-        // companyId 찾기: 다양한 필드명 시도
-        const companyId = result.companyId
-          || result.company_id
-          || result.companyNo
-          || result.company_no
-          || result.company
-          || result.companies_id;
-
-        // jobId 찾기: 다양한 필드명 시도
-        const jobId = result.jobId
-          || result.job_id
-          || result.jobPostId
-          || result.job_post_id
-          || result.jobPostsId
-          || result.job_posts_id;
-
-        console.log(`매칭 결과 #${rawResults.indexOf(result) + 1}:`, {
-          원본: result,
-          추출된companyId: companyId,
-          추출된jobId: jobId
-        });
-
-        return {
-          ...result,
-          companyId,
-          jobId
-        };
+      console.log('✅ 매칭 결과:', results);
+      setMatchResults(results);
+    } catch (error: any) {
+      console.error('❌ 매칭 API 실패:', error);
+      console.error('❌ 에러 상세:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
       });
 
-      console.log('📊 정규화된 매칭 결과:', results);
-      setMatchResults(results);
-      console.log('📊 설정된 매칭 결과:', results);
-    } catch (error: any) {
-      console.error('❌ 매칭 API 실패 또는 빈 결과 → fallback 더미 데이터 사용');
+      // 사용자에게 에러 알림
+      const errorMsg = error.response?.data?.message
+        || error.response?.data?.detail
+        || error.message
+        || '매칭 API 호출에 실패했습니다.';
+
+      alert(`API 연결 실패: ${errorMsg}\n\n테스트용 더미 데이터를 표시합니다.`);
+      console.log('⚠️ fallback 더미 데이터 사용');
 
       // Fallback: 더미 매칭 결과 생성
       const fallbackResults: MatchResult[] = [
@@ -414,15 +374,38 @@ export default function JobMatchingPage() {
 
     setIsSaving(true);
     try {
-      await jobMatchingApi.saveHistory({
+      console.log('💾 매칭 결과 저장 시작:', {
+        resumeId: selectedResumeId,
+        resumeTitle: selectedResumeTitle,
+        matchResultsCount: matchResults.length
+      });
+
+      const savedData = await jobMatchingApi.saveHistory({
         resumeId: selectedResumeId!,
         resumeTitle: selectedResumeTitle,
         matchResults,
       });
 
+      console.log('✅ 매칭 결과 저장 성공:', savedData);
       alert('매칭 결과가 저장되었습니다!');
+
+      // 저장 후 이력 목록 새로고침
+      await fetchHistory();
     } catch (error: any) {
-      alert('저장 실패: ' + (error.response?.data?.message || error.message));
+      console.error('❌ 매칭 결과 저장 실패:', error);
+      console.error('❌ 에러 상세:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
+      });
+
+      const errorMsg = error.response?.data?.message
+        || error.response?.data?.detail
+        || error.message
+        || '저장에 실패했습니다.';
+
+      alert(`저장 실패: ${errorMsg}\n\nAPI: /api/job-matching/history`);
     } finally {
       setIsSaving(false);
     }
@@ -651,15 +634,7 @@ export default function JobMatchingPage() {
 
                   <div className="space-y-6">
                     {displayResults.map((result: any, index: number) => {
-                      // companyId 추출: 원본에 있으면 사용, 없으면 매핑에서 찾기
-                      const companyId = result.companyId || (result.jobId ? jobToCompanyMap.get(result.jobId) : undefined);
-
-                      // 디버깅: 각 결과의 전체 구조 출력
-                      if (index === 0) {
-                        console.log('🔍 매칭 결과 데이터 구조 확인:', result);
-                        console.log('🔍 전체 키 목록:', Object.keys(result));
-                        console.log('🔍 추출된 companyId:', companyId);
-                      }
+                      const companyId = result.companyId;
 
                       return (
                     <div

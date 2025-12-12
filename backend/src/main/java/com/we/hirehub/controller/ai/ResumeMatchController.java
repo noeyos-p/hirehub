@@ -50,6 +50,7 @@ public class ResumeMatchController {
 
         List<Map<String, Object>> results = list.stream().map(r -> Map.of(
                 "jobId", r.jobId,
+                "companyId", r.companyId,
                 "jobTitle", r.jobTitle != null ? r.jobTitle : "",
                 "companyName", r.companyName != null ? r.companyName : "",
                 "score", r.aiScore,

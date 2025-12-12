@@ -32,6 +32,7 @@ public class ResumeMatchService {
 
     public static class MatchResult {
         public Long jobId;
+        public Long companyId;
         public String jobTitle;
         public String companyName;
         public double retrievalScore;
@@ -107,6 +108,7 @@ public class ResumeMatchService {
 
             MatchResult r = new MatchResult();
             r.jobId = p.getId();
+            r.companyId = p.getCompany().getId();
             r.jobTitle = p.getTitle();
             r.companyName = p.getCompany().getName();
             r.retrievalScore = score;
