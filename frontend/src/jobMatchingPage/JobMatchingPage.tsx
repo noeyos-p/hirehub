@@ -259,6 +259,21 @@ export default function JobMatchingPage() {
 
       console.log('✅ 매칭 결과:', results);
       setMatchResults(results);
+
+      // ✅ 자동 저장
+      try {
+        console.log('💾 매칭 결과 자동 저장 시작');
+        await jobMatchingApi.saveHistory({
+          resumeId: selectedResumeId,
+          resumeTitle: selectedResumeTitle,
+          matchResults: results,
+        });
+        console.log('✅ 매칭 결과 자동 저장 완료');
+        await fetchHistory(); // 이력 목록 새로고침
+      } catch (saveError: any) {
+        console.error('⚠️ 자동 저장 실패 (매칭 결과는 표시됨):', saveError);
+        // 저장 실패해도 매칭 결과는 보여줌 (에러 무시)
+      }
     } catch (error: any) {
       console.error('❌ 매칭 API 실패:', error);
       console.error('❌ 에러 상세:', {
