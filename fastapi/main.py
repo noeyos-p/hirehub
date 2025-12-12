@@ -400,16 +400,33 @@ def news_digest(req: DigestRequest):
 KOREAN_BAD_RE = re.compile(r"(씨발|시발|ㅅ\s*ㅂ|개\s*새끼|병신|좆|지랄|씹)", re.I)
 SPAM_RE = [r"(http|https)://", r"오픈채팅", r"수익\s?보장", r"상담\s?문의"]
 
+# 검열 결과 캐시 (메모리 기반, 최대 1000개)
+moderation_cache = {}
+MAX_CACHE_SIZE = 1000
+
 @app.post("/ai/moderate")
 def moderate(req: dict):
     text = (req or {}).get("content", "") or ""
 
-    if KOREAN_BAD_RE.search(text) or any(re.search(p, text, re.I) for p in SPAM_RE):
-        return {"approve": False, "reason": "룰 기반 차단", "categories": {"rule": 1.0}}
+    # 빈 텍스트는 즉시 승인
+    if not text or len(text.strip()) < 2:
+        return {"approve": True, "reason": "빈 내용", "categories": {}}
 
+    # 캐시 확인 (같은 내용은 재검사 안 함)
+    text_hash = hashlib.md5(text.encode()).hexdigest()
+    if text_hash in moderation_cache:
+        return moderation_cache[text_hash]
+
+    # 1차: 명백한 욕설/스팸은 즉시 차단 (AI 호출 없음)
+    if KOREAN_BAD_RE.search(text) or any(re.search(p, text, re.I) for p in SPAM_RE):
+        result = {"approve": False, "reason": "룰 기반 차단", "categories": {"rule": 1.0}}
+        moderation_cache[text_hash] = result
+        return result
+
+    # 2차: 모든 텍스트 AI 검사
     data = generate_json(
         "너는 콘텐츠 안전 심사관이다.",
-        f"아래 글 위험도 분석:\n{text}",
+        f"아래 글 위험도 분석:\n{text[:500]}",  # 500자로 제한
         schema_hint='{"approve": bool, "categories": {}, "reason": ""}'
     )
 
@@ -421,7 +438,13 @@ def moderate(req: dict):
     if max_risk >= 0.5:
         approve = False
 
-    return {"approve": approve, "reason": data.get("reason", ""), "categories": cats}
+    result = {"approve": approve, "reason": data.get("reason", ""), "categories": cats}
+
+    # 캐시 저장 (크기 제한)
+    if len(moderation_cache) < MAX_CACHE_SIZE:
+        moderation_cache[text_hash] = result
+
+    return result
 
 
 # ------------------------------------------------------
