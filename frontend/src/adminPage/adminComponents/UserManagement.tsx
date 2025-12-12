@@ -234,11 +234,10 @@ const UserManagement: React.FC = () => {
               <button
                 key={i}
                 onClick={() => handlePageChange(i)}
-                className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${
-                  currentPage === i
+                className={`w-10 h-10 flex items-center justify-center rounded-md text-base transition border font-medium ${currentPage === i
                     ? 'bg-white text-[#006AFF] border-[#006AFF]'
                     : 'bg-white text-gray-700 border-gray-300 hover:text-[#006AFF]'
-                }`}
+                  }`}
               >
                 {i + 1}
               </button>
@@ -265,14 +264,14 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* 상단 타이틀 + 검색 + 신규 버튼 */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">유저 관리</h2>
 
         <div className="flex items-center gap-4">
           {/* 검색창 */}
-          <div className="flex items-center border border-gray-300 rounded-full px-3 py-1 w-64">
+          <div className="flex items-center border border-gray-300 rounded-full px-3 py-1 w-full md:w-64">
             <input
               type="text"
               placeholder="이름 또는 이메일 검색"
@@ -314,11 +313,10 @@ const UserManagement: React.FC = () => {
             onChange={toggleSelectAll}
             className="sr-only peer"
           />
-          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-            allSelected
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${allSelected
               ? 'bg-blue-600 border-blue-600'
               : 'bg-white border-gray-300 group-hover:border-blue-400'
-          }`}>
+            }`}>
             {allSelected && (
               <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -358,13 +356,12 @@ const UserManagement: React.FC = () => {
       {/* 유저 목록 */}
       {!loading && !error && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredUsers.map((user) => (
               <div
                 key={user.id}
-                className={`relative flex justify-between items-center border border-gray-100 bg-white rounded-md px-4 py-3 hover:bg-gray-50 transition ${
-                  selectedIds.includes(user.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-                }`}
+                className={`relative flex justify-between items-center border border-gray-100 bg-white rounded-md px-4 py-3 hover:bg-gray-50 transition ${selectedIds.includes(user.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                  }`}
               >
                 {/* ✅ 개별 선택 체크박스 */}
                 <div
@@ -378,11 +375,10 @@ const UserManagement: React.FC = () => {
                       onChange={() => toggleSelect(user.id)}
                       className="sr-only peer"
                     />
-                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                      selectedIds.includes(user.id)
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selectedIds.includes(user.id)
                         ? 'bg-blue-600 border-blue-600'
                         : 'bg-white border-gray-300 hover:border-blue-400'
-                    }`}>
+                      }`}>
                       {selectedIds.includes(user.id) && (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />

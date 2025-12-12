@@ -11,5 +11,5 @@ public interface ScrapPostsRepository extends JpaRepository<ScrapPosts, Long> {
     boolean existsByUsersIdAndJobPostsId(Long userId, Long jobPostId);
     Optional<ScrapPosts> findByUsersIdAndJobPostsId(Long userId, Long jobPostId);
     Page<ScrapPosts> findByUsersId(Long userId, Pageable pageable);
-
+    void deleteByJobPosts_Id(Long jobPostId);
 }

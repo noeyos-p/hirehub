@@ -4,6 +4,7 @@ import com.we.hirehub.dto.support.JobPostsDto;
 import com.we.hirehub.entity.JobPosts;
 import com.we.hirehub.entity.TechStack;
 import com.we.hirehub.repository.JobPostsRepository;
+import com.we.hirehub.repository.MatchingRepository;
 import com.we.hirehub.repository.TechStackRepository;
 import com.we.hirehub.service.support.JobPostAiService;
 import com.we.hirehub.service.support.KakaoMapService;
@@ -26,6 +27,9 @@ public class JobPostsAdminService {
     private final TechStackRepository techStackRepository;
     private final JobPostAiService jobPostAiService;
     private final KakaoMapService kakaoMapService;
+    private final com.we.hirehub.repository.ApplyRepository applyRepository;
+    private final com.we.hirehub.repository.ScrapPostsRepository scrapPostsRepository;
+    private final MatchingRepository matchingRepository;
 
     /** 조회 */
     public Page<JobPostsDto> getAllJobPosts(Pageable pageable, String keyword) {
@@ -111,6 +115,10 @@ public class JobPostsAdminService {
     /** 삭제 */
     @Transactional
     public void deleteJobPost(Long id) {
+        // FK 제약조건으로 인한 순서: 지원내역/스크랩 -> 기술스택 -> 공고
+        applyRepository.deleteByJobPosts_Id(id);
+        scrapPostsRepository.deleteByJobPosts_Id(id);
+        matchingRepository.deleteByJobPosts_Id(id);
         techStackRepository.deleteByJobPostId(id);
         jobPostsRepository.deleteById(id);
     }

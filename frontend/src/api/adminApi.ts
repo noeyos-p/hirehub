@@ -193,5 +193,10 @@ export const adminApi = {
   restoreAiBoardControl: async (id: number): Promise<any> => {
     const { data } = await api.post(`/api/admin/ai-board-controls/${id}/restore`);
     return data;
+  },
+
+  deleteAiBoardControl: async (id: number): Promise<any> => {
+    const { data } = await api.delete(`/api/admin/ai-board-controls/${id}`);
+    return data;
   }
 };

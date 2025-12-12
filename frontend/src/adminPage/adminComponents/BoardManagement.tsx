@@ -459,9 +459,9 @@ const BoardManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* 상단 타이틀 + 새로고침 버튼 */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">게시판 관리</h2>
         <div className="flex gap-2">
           <button
@@ -471,11 +471,11 @@ const BoardManagement: React.FC = () => {
             봇 상태 확인
           </button>
           <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-100 text-blue-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-200"
-        >
-          신규
-        </button>
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-blue-100 text-blue-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-200"
+          >
+            신규
+          </button>
         </div>
       </div>
 
@@ -489,8 +489,8 @@ const BoardManagement: React.FC = () => {
             className="sr-only peer"
           />
           <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${allSelected
-              ? 'bg-blue-600 border-blue-600'
-              : 'bg-white border-gray-300 group-hover:border-blue-400'
+            ? 'bg-blue-600 border-blue-600'
+            : 'bg-white border-gray-300 group-hover:border-blue-400'
             }`}>
             {allSelected && (
               <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -516,7 +516,7 @@ const BoardManagement: React.FC = () => {
 
       {/* 검색창 */}
       <div className="flex justify-end mb-4">
-        <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-full px-3 py-1 w-64 bg-white dark:bg-gray-800">
+        <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-full px-3 py-1 w-full md:w-64 bg-white dark:bg-gray-800">
           <input
             type="text"
             placeholder="제목 또는 작성자 검색"
@@ -581,8 +581,8 @@ const BoardManagement: React.FC = () => {
                       className="sr-only peer"
                     />
                     <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selectedIds.includes(post.id)
-                        ? 'bg-blue-600 border-blue-600'
-                        : 'bg-white border-gray-300 hover:border-blue-400'
+                      ? 'bg-blue-600 border-blue-600'
+                      : 'bg-white border-gray-300 hover:border-blue-400'
                       }`}>
                       {selectedIds.includes(post.id) && (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -743,6 +743,22 @@ const AiControlModal = ({
     }
   };
 
+  const handleDeleteLog = async (id: number) => {
+    if (!window.confirm("정말로 이 차단 내역을 삭제하시겠습니까?")) return;
+    try {
+      const res = await adminApi.deleteAiBoardControl(id);
+      if (res.success) {
+        alert("차단 내역이 삭제되었습니다.");
+        fetchLogs(); // 목록 갱신
+      } else {
+        alert(res.message || "삭제에 실패했습니다.");
+      }
+    } catch (err: any) {
+      console.error("❌ 삭제 실패:", err);
+      alert("삭제 중 오류가 발생했습니다.");
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -796,11 +812,10 @@ const AiControlModal = ({
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            log.role === "BOT"
-                              ? "bg-red-100 text-red-600"
-                              : "bg-green-100 text-green-600"
-                          }`}
+                          className={`px-2 py-1 rounded text-xs font-semibold ${log.role === "BOT"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-green-100 text-green-600"
+                            }`}
                         >
                           {log.role === "BOT" ? "차단됨" : "복구됨"}
                         </span>
@@ -810,11 +825,17 @@ const AiControlModal = ({
                         {(log.role === "BOT" || (log.role === "ADMIN" && log.board?.hidden)) && (
                           <button
                             onClick={() => handleRestore(log.id)}
-                            className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                            className="font-medium text-blue-600 dark:text-blue-500 hover:underline mr-3"
                           >
                             복구
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDeleteLog(log.id)}
+                          className="font-medium text-red-600 dark:text-red-500 hover:underline"
+                        >
+                          삭제
+                        </button>
                       </td>
                     </tr>
                   ))}

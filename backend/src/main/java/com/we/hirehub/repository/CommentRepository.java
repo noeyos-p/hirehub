@@ -27,4 +27,5 @@ public interface CommentRepository extends JpaRepository<Comments, Long> {
     void deleteByParentComments(Comments parentComments);
     List<Comments> findByParentComments_Id(Long parentId);
     List<Comments> findByBoardIdOrderByCreateAtAsc(Long boardId);
+    void deleteByBoardId(Long boardId);
 }

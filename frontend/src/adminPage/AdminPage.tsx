@@ -11,6 +11,7 @@ import ResumeManagement from "./adminComponents/ResumeManagement";
 import LiveSupport from "./adminComponents/LiveSupport"; // ✅ 추가
 // ⭐⭐⭐ 신규 결제 관리 컴포넌트 임포트
 import AdminPaymentManagement from "./adminComponents/AdminPaymentManagement";
+import AdminMobileBottomNav from "./adminComponents/AdminMobileBottomNav"; // ✅ 추가
 
 const menuItems = [
   { name: "공고 관리", path: "job-management" },
@@ -35,18 +36,20 @@ const AdminLayout: React.FC = () => {
     <div className="max-w-[1440px] mx-auto px-0 md:px-8 lg:px-12 xl:px-[55px]">
       <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg">
 
-        {/* 모바일 상단 탭 (가로 스크롤) */}
-        <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
+        {/* ✅ 모바일 하단 네비게이션 추가 */}
+        <AdminMobileBottomNav />
+
+        {/* 모바일 상단 탭 (가로 스크롤) - 유지하되 필요 시 삭제 가능 */}
+        <div className="hidden md:hidden bg-white border-b border-gray-200 sticky top-0 z-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
           <div className="flex px-4 py-3 space-x-4">
             {menuItems.map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(`/admin/${item.path}`)}
-                className={`text-sm font-medium transition-colors pb-1 border-b-2 ${
-                  activeTab === item.path
+                className={`text-sm font-medium transition-colors pb-1 border-b-2 ${activeTab === item.path
                     ? "text-[#006AFF] border-[#006AFF]"
                     : "text-gray-500 border-transparent hover:text-gray-700"
-                }`}
+                  }`}
               >
                 {item.name}
               </button>

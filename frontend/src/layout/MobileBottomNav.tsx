@@ -4,20 +4,29 @@ import {
   BriefcaseIcon,
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
-  UserIcon
+  UserIcon,
+  CommandLineIcon
 } from '@heroicons/react/24/outline';
 import {
   BriefcaseIcon as BriefcaseSolidIcon,
   ClipboardDocumentListIcon as ClipboardSolidIcon,
   ChatBubbleLeftRightIcon as ChatSolidIcon,
-  UserIcon as UserSolidIcon
+  UserIcon as UserSolidIcon,
+  CommandLineIcon as CommandLineSolidIcon
 } from '@heroicons/react/24/solid';
 import { useAuth } from '../hooks/useAuth';
 
 const MobileBottomNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  const isAdmin = user?.email === 'admin@admin';
+
+  // 관리자 페이지에서는 이 네비게이션을 숨김
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
 
   const navItems = [
     {
@@ -39,10 +48,10 @@ const MobileBottomNav: React.FC = () => {
       iconSolid: ChatSolidIcon
     },
     {
-      label: '마이페이지',
-      path: '/mypage',
-      icon: UserIcon,
-      iconSolid: UserSolidIcon
+      label: isAdmin ? '관리자' : '마이페이지',
+      path: isAdmin ? '/admin' : '/mypage',
+      icon: isAdmin ? CommandLineIcon : UserIcon,
+      iconSolid: isAdmin ? CommandLineSolidIcon : UserSolidIcon
     }
   ];
 
