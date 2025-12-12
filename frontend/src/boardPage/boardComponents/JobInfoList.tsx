@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -10,6 +11,7 @@ import {
 import type { BoardListResponse } from "../../types/interface";
 
 const JobInfoList: React.FC = () => {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<BoardListResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,11 +103,7 @@ const JobInfoList: React.FC = () => {
           <div
             key={board.id}
             className="border-b border-gray-200 pb-4 last:border-b-0 cursor-pointer hover:bg-gray-100 transition p-2 rounded"
-            onClick={() =>
-              alert(
-                `[${board.nickname}]\n\n${board.title}\n\n${board.content}\n\n※ AI 자동 생성된 글입니다.`
-              )
-            }
+            onClick={() => navigate(`/board/${board.id}`)}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
