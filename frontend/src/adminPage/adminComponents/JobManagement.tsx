@@ -915,6 +915,7 @@ const JobManagement: React.FC = () => {
                   >
                     <option value="">선택하세요</option>
                     <option value="신입">신입</option>
+                    <option value="경력무관">경력무관</option>
                     <option value="1년 미만">1년 미만</option>
                     <option value="1-3년">1-3년</option>
                     <option value="3-5년">3-5년</option>
@@ -1295,6 +1296,7 @@ const JobManagement: React.FC = () => {
                   >
                     <option value="">선택하세요</option>
                     <option value="신입">신입</option>
+                    <option value="경력무관">경력무관</option>
                     <option value="1년 미만">1년 미만</option>
                     <option value="1-3년">1-3년</option>
                     <option value="3-5년">3-5년</option>
