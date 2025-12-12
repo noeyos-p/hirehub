@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { myPageApi } from "../../api/myPageApi";
+import api from "../../api/api";
 import type { UsersRequest, UsersResponse } from "../../types/interface";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
@@ -150,6 +151,11 @@ const MyInfo: React.FC = () => {
   const careerRef = useRef<HTMLDivElement | null>(null);
   const educationRef = useRef<HTMLDivElement | null>(null);
 
+  /* 전화번호 인증 상태 */
+  const [phoneCode, setPhoneCode] = useState("");
+  const [isPhoneCodeSent, setIsPhoneCodeSent] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+
   const emailFallback = useMemo(() => readJwtEmail(), []);
 
   useEffect(() => {
@@ -189,9 +195,49 @@ const MyInfo: React.FC = () => {
   const cancel = () => {
     setEditing(null);
     setDraft({});
+    // 전화번호 인증 상태 초기화
+    setPhoneCode("");
+    setIsPhoneCodeSent(false);
+    setIsPhoneVerified(false);
+  };
+
+  // 전화번호 인증번호 전송
+  const handleSendPhoneCode = async () => {
+    const newPhone = draft.phone;
+    if (!newPhone) {
+      alert("전화번호를 입력해주세요.");
+      return;
+    }
+    try {
+      await api.post("/api/sms/send", { phone: newPhone });
+      setIsPhoneCodeSent(true);
+      alert("인증번호가 전송되었습니다.");
+    } catch (e) {
+      console.error(e);
+      alert("인증번호 전송에 실패했습니다.");
+    }
+  };
+
+  // 전화번호 인증번호 확인
+  const handleVerifyPhoneCode = async () => {
+    const newPhone = draft.phone;
+    try {
+      await api.post("/api/sms/verify", { phone: newPhone, code: phoneCode });
+      setIsPhoneVerified(true);
+      alert("인증이 완료되었습니다.");
+    } catch (e) {
+      console.error(e);
+      alert("인증번호가 틀렸습니다.");
+    }
   };
 
   const commit = async (key: keyof UsersResponse) => {
+    // 전화번호 수정 시 인증 확인
+    if (key === "phone" && !isPhoneVerified) {
+      alert("전화번호 인증이 필요합니다.");
+      return;
+    }
+
     try {
       const payload = { [key]: draft[key] };
       const updated = await updateMe(payload);
@@ -308,20 +354,72 @@ const MyInfo: React.FC = () => {
             onEdit={() => startEdit("phone")}
             editing={editing === "phone"}
           >
-            <div className="flex items-center gap-2 w-full">
-              <input
-                className="w-full rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
-                value={draft.phone ?? ""}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, phone: e.target.value }))
-                }
-              />
-              <button className="p-2" onClick={() => commit("phone")}>
-                <Check />
-              </button>
-              <button className="p-2" onClick={cancel}>
-                <X />
-              </button>
+            <div className="flex flex-col gap-3 w-full">
+              {/* 전화번호 입력 */}
+              <div className="flex items-center gap-2">
+                <input
+                  className="flex-1 rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
+                  value={draft.phone ?? ""}
+                  onChange={(e) => {
+                    setDraft((d) => ({ ...d, phone: e.target.value }));
+                    setIsPhoneCodeSent(false);
+                    setIsPhoneVerified(false);
+                  }}
+                  placeholder="전화번호를 입력하세요"
+                />
+                {!isPhoneVerified && (
+                  <button
+                    type="button"
+                    onClick={handleSendPhoneCode}
+                    className="px-4 py-3 text-sm font-medium text-white bg-[#006AFF] rounded-lg hover:bg-[#0056CC] whitespace-nowrap"
+                  >
+                    인증번호 받기
+                  </button>
+                )}
+              </div>
+
+              {/* 인증번호 입력 */}
+              {isPhoneCodeSent && !isPhoneVerified && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={phoneCode}
+                    onChange={(e) => setPhoneCode(e.target.value)}
+                    placeholder="인증번호를 입력하세요"
+                    className="flex-1 rounded-lg text-[#0d141b] dark:text-white border border-[#cfdbe7] dark:border-gray-600 bg-background-light dark:bg-background-dark focus:border-[#006AFF] focus:outline-none h-14 px-4 text-base transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyPhoneCode}
+                    disabled={!phoneCode}
+                    className="px-4 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    인증하기
+                  </button>
+                </div>
+              )}
+
+              {/* 인증 완료 메시지 */}
+              {isPhoneVerified && (
+                <p className="text-green-600 dark:text-green-400 text-sm">
+                  ✓ 인증이 완료되었습니다
+                </p>
+              )}
+
+              {/* 확인/취소 버튼 */}
+              <div className="flex items-center gap-2">
+                <button
+                  className="p-2"
+                  onClick={() => commit("phone")}
+                  disabled={!isPhoneVerified}
+                  title={!isPhoneVerified ? "인증이 필요합니다" : ""}
+                >
+                  <Check className={isPhoneVerified ? "text-green-600" : "text-gray-400"} />
+                </button>
+                <button className="p-2" onClick={cancel}>
+                  <X className="text-red-600" />
+                </button>
+              </div>
             </div>
           </FieldRow>
             </div>
