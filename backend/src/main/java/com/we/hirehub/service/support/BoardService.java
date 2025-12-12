@@ -36,11 +36,11 @@ public class BoardService {
   private final UsersRepository usersRepository;
   private final CommentRepository commentRepository;
   private final AiBoardControlRepository controlRepo;
-  private final ModerationService moderationService;
+  private final QueuedModerationService queuedModerationService;  // ✅ 큐 기반으로 변경
   private final AsyncModerationService asyncModerationService;
 
   // ========== 검열 반영 & 기록 ==========
-  private void applyModeration(Board board, ModerationService.ModerationResult mres) {
+  private void applyModeration(Board board, QueuedModerationService.ModerationResult mres) {  // ✅ 타입 변경
     boolean before = Boolean.TRUE.equals(board.getHidden());
     boolean approved = mres.approved();
 
@@ -114,8 +114,8 @@ public class BoardService {
 
     log.info("🔄 [RECHECK] boardId={} 재검열 시작", boardId);
 
-    // ✅ 동기 버전 사용 (관리자가 즉시 결과 확인 필요)
-    var mres = moderationService.moderate(board.getTitle(), board.getContent());
+    // ✅ 큐를 통해 처리 (속도 제한 적용)
+    var mres = queuedModerationService.moderate(board.getTitle(), board.getContent());
     applyModeration(board, mres);
     boardRepository.save(board);
 
@@ -215,7 +215,7 @@ public class BoardService {
     var list = boardRepository.findByHiddenFalseAndCreateAtAfter(after, PageRequest.of(page, size));
     int cnt = 0;
     for (Board b : list) {
-      var mres = moderationService.moderate(b.getTitle(), b.getContent());
+      var mres = queuedModerationService.moderate(b.getTitle(), b.getContent());  // ✅ 큐 사용
       applyModeration(b, mres);
       boardRepository.save(b);
       cnt++;
@@ -229,7 +229,7 @@ public class BoardService {
     var list = boardRepository.findByHiddenFalse(PageRequest.of(page, size));
     int cnt = 0;
     for (Board b : list) {
-      var mres = moderationService.moderate(b.getTitle(), b.getContent());
+      var mres = queuedModerationService.moderate(b.getTitle(), b.getContent());  // ✅ 큐 사용
       applyModeration(b, mres);
       boardRepository.save(b);
       cnt++;

@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AsyncModerationService {
 
   private final BoardRepository boardRepository;
-  private final ModerationService moderationService;
+  private final QueuedModerationService queuedModerationService;  // ✅ 큐 기반으로 변경
   private final AiBoardControlRepository controlRepo;
 
   @Async
@@ -37,7 +37,8 @@ public class AsyncModerationService {
 
       log.info("🔄 [ASYNC_MOD] 비동기 검열 시작 boardId={}", boardId);
 
-      var mres = moderationService.moderate(board.getTitle(), board.getContent());
+      // ✅ 큐를 통해 처리 (속도 제한 적용)
+      var mres = queuedModerationService.moderate(board.getTitle(), board.getContent());
       applyModeration(board, mres);
       boardRepository.save(board);
 
@@ -51,7 +52,7 @@ public class AsyncModerationService {
     }
   }
 
-  private void applyModeration(Board board, ModerationService.ModerationResult mres) {
+  private void applyModeration(Board board, QueuedModerationService.ModerationResult mres) {  // ✅ 타입 변경
     boolean before = Boolean.TRUE.equals(board.getHidden());
     boolean approved = mres.approved();
 
