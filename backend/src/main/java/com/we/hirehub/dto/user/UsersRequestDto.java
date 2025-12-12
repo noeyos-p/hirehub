@@ -4,11 +4,14 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.we.hirehub.entity.Users;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
 /** 입력/수정용 **/
 public class UsersRequestDto {
 
@@ -16,6 +19,7 @@ public class UsersRequestDto {
     private String name;
 
     @Pattern(regexp = "^(01[0-9]-?[0-9]{3,4}-?[0-9]{4})$", message = "휴대폰 번호 형식이 아닙니다.")
+    @Setter(AccessLevel.NONE)  // 커스텀 setter 사용
     private String phone;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -43,6 +47,19 @@ public class UsersRequestDto {
 
     @Size(max = 50)
     private String nickname;
+
+    /**
+     * 전화번호 커스텀 setter - 국제 형식(+82)을 국내 형식(0)으로 자동 변환
+     */
+    public void setPhone(String phone) {
+        if (phone != null && phone.startsWith("+82")) {
+            // +82를 제거하고 0으로 시작하도록 변환
+            // 예: +8201047029314 -> 01047029314
+            this.phone = "0" + phone.substring(3);
+        } else {
+            this.phone = phone;
+        }
+    }
 
     public void toEntity(Users user) {
 
