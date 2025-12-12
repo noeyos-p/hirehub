@@ -103,12 +103,32 @@ public class BoardAiController {
 
     @PostMapping("/news/auto-publish")
     public ResponseEntity<?> autoPublish() {
+        // 🔥 매번 다른 기사를 가져오기 위한 다양한 검색 쿼리
+        String[] queries = {
+            "채용 OR 구인 OR 일자리",
+            "취업 OR 신입 OR 경력직",
+            "산업 OR 기업 OR 스타트업",
+            "노동시장 OR 고용동향 OR 인력",
+            "IT채용 OR 개발자 OR 프로그래머",
+            "공채 OR 채용공고 OR 입사",
+            "직무 OR 직업 OR 커리어"
+        };
+
+        // 🔥 시간 범위도 다양하게 (1-5일)
+        int[] daysOptions = {1, 2, 3, 4, 5};
+
+        // 🔥 현재 시간 기반으로 쿼리와 날짜 선택 (랜덤처럼 보이지만 재현 가능)
+        int queryIndex = (int) (System.currentTimeMillis() / 1000 / 3600) % queries.length;
+        int daysIndex = (int) (System.currentTimeMillis() / 1000 / 3600 / 24) % daysOptions.length;
+
         AiNewsDigestRequest req = new AiNewsDigestRequest();
-        req.setQuery("채용 OR 산업 OR 노동시장");
-        req.setDays(2);
+        req.setQuery(queries[queryIndex]);
+        req.setDays(daysOptions[daysIndex]);
         req.setLimit(10);
         req.setStyle("bullet");
         req.setBotUserId(102L);  // 시스템봇 ID
+
+        log.info("🔍 AI 뉴스 자동 발행 - Query: {}, Days: {}", queries[queryIndex], daysOptions[daysIndex]);
 
         return publish(req);
     }

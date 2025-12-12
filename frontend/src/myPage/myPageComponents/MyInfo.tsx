@@ -315,7 +315,7 @@ const MyInfo: React.FC = () => {
 
         {/* 기본 정보 섹션 */}
         <section className="mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible">
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {/* 이메일 */}
           <FieldRow
@@ -429,7 +429,7 @@ const MyInfo: React.FC = () => {
         {/* 이력서 자동기입정보 섹션 */}
         <section className="mb-8">
           <h3 className="text-base font-medium text-text-primary dark:text-white mb-4 px-2">이력서 자동기입정보</h3>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible">
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {/* 생년월일 */}
           <FieldRow
@@ -550,7 +550,7 @@ const MyInfo: React.FC = () => {
         {/* AI 추천공고 기입정보 섹션 */}
         <section className="mb-8">
           <h3 className="text-base font-medium text-text-primary dark:text-white mb-4 px-2">AI 추천공고 기입정보</h3>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible">
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
 
           {/* 선호지역 */}
