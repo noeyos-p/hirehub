@@ -505,9 +505,12 @@ const JobPostings: React.FC = () => {
     experience: [
       { value: "", label: "전체" },
       { value: "신입", label: "신입" },
-      { value: "경력", label: "경력" },
       { value: "경력무관", label: "경력무관" },
+      { value: "1-3", label: "1~3년" },
+      { value: "3-5", label: "3~5년" },
+      { value: "5-10", label: "5~10년" },
     ],
+
     education: [
       { value: "", label: "전체" },
       { value: "고졸", label: "고졸" },
