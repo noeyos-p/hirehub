@@ -16,7 +16,7 @@ const getBaseURL = () => {
   }
 
    // 🔥 슬래시 반드시 포함
-  return "http://localhost:8080/";
+  return "http://localhost:8000/";
 };
 
 const api = axios.create({
