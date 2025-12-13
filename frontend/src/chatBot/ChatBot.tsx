@@ -30,22 +30,16 @@ const ChatBot: React.FC = () => {
   const getApiBaseUrl = () => {
     const envUrl = import.meta.env.VITE_API_BASE_URL;
 
-    let baseUrl;
     // 환경 변수가 설정되어 있으면 사용
-    if (envUrl) {
-      baseUrl = envUrl;
-    }
+    if (envUrl) return envUrl;
+
     // HTTPS 페이지에서는 localhost를 사용할 수 없으므로 현재 origin 사용
-    else if (window.location.protocol === 'https:') {
-      baseUrl = window.location.origin;
-    }
-    // HTTP 개발 환경에서만 localhost 사용
-    else {
-      baseUrl = 'http://localhost:8080';
+    if (window.location.protocol === 'https:') {
+      return window.location.origin;
     }
 
-    // 끝에 슬래시가 있으면 제거
-    return baseUrl.replace(/\/+$/, '');
+    // HTTP 개발 환경에서만 localhost 사용
+    return 'http://localhost:8080';
   };
 
   const API_BASE_URL = getApiBaseUrl();
@@ -337,6 +331,7 @@ const ChatBot: React.FC = () => {
 
     setIsAiLoading(true);
 
+    // 사용자 메시지 추가
     setMessages(prev => [...prev, { role: 'USER', text: question }]);
 
     try {
@@ -345,6 +340,7 @@ const ChatBot: React.FC = () => {
         'Content-Type': 'application/json',
       };
 
+      // 토큰이 있으면 추가
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -352,11 +348,7 @@ const ChatBot: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          userId: userInfo.current.userId ?? 0, // ← 여기 수정
-          sessionId: roomId,                    // ← roomId 유지
-          message: question
-        })
+        body: JSON.stringify({ message: question })
       });
 
       if (!response.ok) {
@@ -368,6 +360,7 @@ const ChatBot: React.FC = () => {
 
       const data = await response.json();
 
+      // AI 응답 추가
       setMessages(prev => [...prev, {
         role: 'AI',
         text: data.answer || '답변을 생성할 수 없습니다.'
@@ -383,7 +376,6 @@ const ChatBot: React.FC = () => {
       setIsAiLoading(false);
     }
   }, [API_BASE_URL]);
-
 
   // 메시지 전송 (AI 또는 상담사)
   const sendMessage = useCallback(() => {
@@ -555,9 +547,9 @@ const ChatBot: React.FC = () => {
   }, [isAgentConnected, resetInactivityTimer]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-2 md:py-8">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
       <div className="mx-auto px-4 md:px-14" style={{ maxWidth: '1440px' }}>
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-2 md:mb-8 gap-2 md:gap-0">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-8 gap-4 md:gap-0">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">고객지원센터</h1>
             {isAgentConnected && (
@@ -569,7 +561,7 @@ const ChatBot: React.FC = () => {
           <div className="flex items-center gap-2 w-full md:w-auto justify-end">
             <button
               onClick={clearMessages}
-              className="px-3 py-2 md:px-4 md:py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg transition shadow-sm"
+              className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
             >
               🗑️ 대화 삭제
             </button>
@@ -580,14 +572,14 @@ const ChatBot: React.FC = () => {
                     disconnectAgent();
                   }
                 }}
-                className="px-3 py-2 md:px-4 md:py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg transition shadow-sm"
+                className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
               >
                 해제하기
               </button>
             ) : (
               <button
                 onClick={requestHandoff}
-                className="px-3 py-2 md:px-4 md:py-2 text-sm font-bold text-white rounded-lg transition hover:shadow-lg shadow-md active:scale-95"
+                className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-white rounded-lg transition hover:opacity-90"
                 style={{ backgroundColor: '#006AFF' }}
               >
                 상담사 연결
@@ -596,8 +588,8 @@ const ChatBot: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gray-100 border border-gray-200 rounded-xl overflow-hidden flex flex-col h-[calc(100dvh-130px)] md:h-[600px] md:min-h-[600px] shadow-sm relative">
-          <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 pb-[80px] md:pb-4">
+        <div className="bg-gray-100 border border-gray-200 rounded-xl overflow-hidden flex flex-col h-[calc(100vh-180px)] md:h-[600px] md:min-h-[600px]">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((m, idx) => {
               const isUser = m.role === 'USER';
               const isSystem = m.role === 'SYS';
@@ -619,7 +611,7 @@ const ChatBot: React.FC = () => {
               return (
                 <div key={idx} className={`flex items-start gap-2 md:gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
                   {!isUser && (
-                    <div className="w-8 h-8 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                       <img
                         src={m.role === 'ADMIN' ? '/images/agent.png' : '/images/ai-bot.png'}
                         alt={m.role === 'ADMIN' ? 'Admin' : 'AI Bot'}
@@ -646,9 +638,9 @@ const ChatBot: React.FC = () => {
                     )}
 
                     <div
-                      className={`px-3 py-1.5 md:px-4 md:py-2.5 text-[15px] md:text-base rounded-2xl break-words leading-relaxed ${isUser
-                        ? 'text-white rounded-tr-sm shadow-md'
-                        : 'bg-white text-gray-800 rounded-tl-sm shadow-sm border border-gray-100'
+                      className={`px-3 py-2 md:px-4 md:py-2.5 text-sm md:text-base rounded-2xl break-words ${isUser
+                          ? 'text-white rounded-tr-sm'
+                          : 'bg-gray-50 text-gray-800 rounded-tl-sm shadow-sm'
                         }`}
                       style={isUser ? { backgroundColor: '#006AFF' } : {}}
                     >
@@ -661,7 +653,7 @@ const ChatBot: React.FC = () => {
 
             {isAiLoading && (
               <div className="flex items-start gap-3 justify-start">
-                <div className="w-8 h-8 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                   <img
                     src="/images/ai-bot.png"
                     alt="AI Bot"
@@ -687,9 +679,8 @@ const ChatBot: React.FC = () => {
             <div ref={messagesEndRef} />
 
             {/* FAQ 토글 버튼과 아코디언 */}
-            <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[55px] h-full flex flex-col">
-              {/* 헤더 */}
-              <div className="flex justify-between items-center mb-2 flex-shrink-0">
+            <div className="mt-8 pt-4">
+              <div className="flex items-start gap-3">
                 {/* 토글 버튼 */}
                 <button
                   onClick={() => setIsFaqVisible(!isFaqVisible)}
@@ -757,7 +748,7 @@ const ChatBot: React.FC = () => {
           </div>
 
           {/* 입력 영역 */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 bg-white border-t border-gray-200 md:relative md:border-t-0 md:bg-transparent z-10">
+          <div className="p-3 bg-white">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -772,12 +763,12 @@ const ChatBot: React.FC = () => {
                       : "AI 챗봇에게 질문하세요"
                 }
                 disabled={isAiLoading}
-                className="flex-1 px-3 rounded-lg border-0 focus:outline-none text-base disabled:bg-gray-100 bg-gray-50 md:bg-white"
+                className="flex-1 px-2 rounded-lg border-0 focus:outline-none text-sm md:text-base disabled:bg-gray-100"
               />
               <button
                 onClick={sendMessage}
                 disabled={isAiLoading || !input.trim()}
-                className="p-2 text-[#006AFF] hover:text-blue-600 disabled:text-gray-300 transition-colors"
+                className="p-2 text-gray-500 hover:text-blue-500 disabled:text-gray-300 transition-colors"
                 title="메시지 전송"
               >
                 <svg
