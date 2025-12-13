@@ -138,7 +138,7 @@ export default function Header() {
 
             <Link to="/cover-letter"
               className="inline-block whitespace-nowrap font-bord text-xs sm:text-sm md:text-[15px] lg:text-[16px] text-black hover:text-[#006AFF] transition">
-              자소서 수정
+              자소서 첨삭
             </Link>
 
             <Link to="/job-matching"
@@ -238,7 +238,7 @@ export default function Header() {
                     onClick={() => setShowMobileMenu(false)}
                     className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#006AFF]"
                   >
-                    자소서 수정
+                    자소서 첨삭
                   </Link>
                   <Link
                     to="/job-matching"
