@@ -112,16 +112,25 @@ export default function CoverLetterPage() {
       const resume = await myPageApi.getResumeDetail(resumeId);
       setSelectedResumeTitle(resume.title || '');
 
+      console.log('📄 이력서 상세 데이터:', resume);
+
       let text = '';
       const essayTitle = resume.essayTitle ?? resume.essayTittle ?? '';
       const essayContent = resume.essayContent ?? '';
 
-      let parsedData: any = null;
-      if (resume.htmlContent) {
+      // JSON 파싱 헬퍼 함수
+      const parseJsonField = (json?: string | null, fallback?: any[]) => {
+        if (Array.isArray(fallback) && fallback.length > 0) return fallback;
         try {
-          parsedData = JSON.parse(resume.htmlContent);
-        } catch { }
-      }
+          if (json && typeof json === 'string') {
+            const parsed = JSON.parse(json);
+            return Array.isArray(parsed) ? parsed : [];
+          }
+          return fallback || [];
+        } catch {
+          return fallback || [];
+        }
+      };
 
       if (inputMode === 'essay') {
         text = essayContent || '자기소개서 내용이 없습니다.';
@@ -132,45 +141,64 @@ export default function CoverLetterPage() {
           text += `=== 자기소개서 ===\n${essayTitle}\n\n${essayContent}\n\n`;
         }
 
-        const educations = parsedData?.education ?? resume.educationDtos ?? [];
+        // 모달과 동일한 방식으로 데이터 가져오기
+        const educations = (resume as any).educationList
+          || parseJsonField(resume.educationJson, resume.educations)
+          || [];
+
         if (educations.length > 0) {
           text += `=== 학력 ===\n`;
           educations.forEach((edu: any) => {
-            text += `${edu.name} | ${edu.major || ''} | ${edu.status}\n`;
+            text += `${edu.name || edu.school || ''} | ${edu.major || ''} | ${edu.status || ''}\n`;
           });
           text += `\n`;
         }
 
-        const careers = parsedData?.career ?? resume.careerLevelDtos ?? (resume as any).careers ?? [];
+        const careers = (resume as any).careerList
+          || parseJsonField(resume.careerJson, resume.careers)
+          || [];
+
         if (careers.length > 0) {
           text += `=== 경력 ===\n`;
           careers.forEach((c: any) => {
-            text += `${c.companyName} | ${c.position}\n${c.content || ''}\n\n`;
+            text += `${c.companyName || c.company || ''} | ${c.position || c.role || ''}\n${c.content || c.desc || ''}\n\n`;
           });
         }
 
-        const certificates = parsedData?.certificate ?? resume.certificateDtos ?? [];
+        const certificates = (resume as any).certificateList
+          || parseJsonField(resume.certJson, resume.certs)
+          || [];
+
         if (certificates.length > 0) {
           text += `=== 자격증 ===\n`;
           certificates.forEach((cert: any) => {
-            text += `- ${cert.name}\n`;
+            text += `- ${cert.name || cert.certName || ''}\n`;
           });
           text += `\n`;
         }
 
-        const skills = parsedData?.skill ?? resume.skillDtos ?? [];
+        const skills = (resume as any).skillList
+          || parseJsonField(resume.skillJson, resume.skills)
+          || [];
+
         if (skills.length > 0) {
-          text += `=== 기술 스택 ===\n${skills.map((s: any) => s.name).join(', ')}\n\n`;
+          text += `=== 기술 스택 ===\n${skills.map((s: any) => s.name || s.skill || s.skillName || '').join(', ')}\n\n`;
         }
 
-        const languages = parsedData?.language ?? [];
+        const languages = (resume as any).languageList
+          || parseJsonField(resume.langJson, resume.langs)
+          || [];
+
         if (languages.length > 0) {
-          text += `=== 언어 ===\n${languages.map((lang: any) => lang.name).join(', ')}\n\n`;
+          text += `=== 언어 ===\n${languages.map((lang: any) => lang.language || lang.name || '').join(', ')}\n\n`;
         }
+
+        console.log('📝 생성된 텍스트 미리보기:', text.substring(0, 500));
       }
 
       setOriginalText(text);
-    } catch {
+    } catch (error) {
+      console.error('❌ 이력서 로드 실패:', error);
       alert('이력서를 불러오는 중 오류가 발생했습니다.');
     }
   };
