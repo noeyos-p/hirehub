@@ -58,6 +58,28 @@ const Resume = () => {
   const handleCreate = async () => {
     try {
       setLoading(true);
+
+      // ✅ 이력서 자동기입정보 확인
+      const userInfo = await myPageApi.getMyInfo();
+
+      const missingFields: string[] = [];
+      if (!userInfo.dob) missingFields.push("생년월일");
+      if (!userInfo.address) missingFields.push("주소");
+      if (!userInfo.gender || userInfo.gender === "UNKNOWN") missingFields.push("성별");
+
+      if (missingFields.length > 0) {
+        const fieldsText = missingFields.join(", ");
+        const confirmResult = window.confirm(
+          `이력서 자동기입정보(${fieldsText})가 입력되지 않았습니다.\n\n내 정보 페이지에서 먼저 입력해주세요.\n\n지금 내 정보 페이지로 이동하시겠습니까?`
+        );
+
+        if (confirmResult) {
+          navigate("/myPage/MyInfo");
+        }
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         title: "새 이력서",
         idPhoto: null,
