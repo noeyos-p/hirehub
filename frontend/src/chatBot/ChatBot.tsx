@@ -348,7 +348,11 @@ const ChatBot: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ message: question })
+        body: JSON.stringify({
+          message: question,
+          userId: userInfo.current.userId || 'guest',
+          sessionId: roomId
+        })
       });
 
       if (!response.ok) {
