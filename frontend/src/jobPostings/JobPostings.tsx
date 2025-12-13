@@ -673,10 +673,11 @@ const JobPostings: React.FC = () => {
           </div>
         )}
 
-        {/* ✅ 필터 드롭다운 */}
-        <div className="flex items-center justify-center gap-2 mb-3 max-w-[390px] md:max-w-none md:justify-start">
-          {/* Position Filter */}
-          <div className="relative flex-1 md:flex-none" ref={positionRef}>
+        {/* ✅ 필터 드롭다운 및 정렬 옵션 */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-3">
+          <div className="flex items-center justify-center gap-2 w-full md:w-auto max-w-[390px] md:max-w-none">
+            {/* Position Filter */}
+            <div className="relative flex-1 md:flex-none" ref={positionRef}>
             <button
               onClick={() => toggleDropdown("position")}
               disabled={isLoading}
@@ -811,6 +812,29 @@ const JobPostings: React.FC = () => {
               </div>
             )}
           </div>
+          </div>
+
+          {/* 정렬 옵션 (필터 오른쪽) */}
+          <div className="flex bg-gray-100 p-1 rounded-lg w-full md:w-auto md:mr-6">
+            <button
+              onClick={() => setSortBy("recent")}
+              className={`flex-1 md:flex-none px-3 py-1.5 text-xs md:text-sm rounded-md transition-all focus:outline-none ${sortBy === "recent"
+                ? "bg-white text-blue-600 shadow-sm font-semibold"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
+            >
+              최신 작성순
+            </button>
+            <button
+              onClick={() => setSortBy("deadline")}
+              className={`flex-1 md:flex-none px-3 py-1.5 text-xs md:text-sm rounded-md transition-all focus:outline-none ${sortBy === "deadline"
+                ? "bg-white text-blue-600 shadow-sm font-semibold"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
+            >
+              마감일 순
+            </button>
+          </div>
         </div>
 
         {/* ✅ 선택된 기술스택 칩 표시 */}
@@ -838,30 +862,6 @@ const JobPostings: React.FC = () => {
             </button>
           </div>
         )}
-
-        {/* 우측 정렬 옵션 (최신순 / 마감일순) */}
-        <div className="flex justify-end mb-4">
-          <div className="flex bg-gray-100 p-1 rounded-lg">
-            <button
-              onClick={() => setSortBy("recent")}
-              className={`px-3 py-1.5 text-xs md:text-sm rounded-md transition-all focus:outline-none ${sortBy === "recent"
-                ? "bg-white text-blue-600 shadow-sm font-semibold"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
-            >
-              최신 작성순
-            </button>
-            <button
-              onClick={() => setSortBy("deadline")}
-              className={`px-3 py-1.5 text-xs md:text-sm rounded-md transition-all focus:outline-none ${sortBy === "deadline"
-                ? "bg-white text-blue-600 shadow-sm font-semibold"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
-            >
-              마감일 순
-            </button>
-          </div>
-        </div>
 
         {/* 공고 목록 */}
         {isLoading ? (
