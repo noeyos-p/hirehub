@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   SparklesIcon, DocumentTextIcon, ClipboardDocumentIcon,
-  CheckCircleIcon, ClockIcon, BookmarkIcon
+  CheckCircleIcon, ClockIcon, BookmarkIcon, Bars3Icon, XMarkIcon
 } from '@heroicons/react/24/outline';
 import { myPageApi } from '../api/myPageApi';
 import api from '../api/api';
@@ -19,6 +19,9 @@ type InputMode = 'text' | 'essay' | 'resume';
 
 export default function CoverLetterPage() {
   const navigate = useNavigate();
+
+  // 모바일 사이드바 상태
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   /** 로그인 체크 */
   useEffect(() => {
@@ -296,12 +299,9 @@ export default function CoverLetterPage() {
     }
   };
 
-  return (
-    <div className="max-w-[1440px] mx-auto px-0 md:px-8 lg:px-12 xl:px-[55px]">
-      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg">
-        {/* 왼쪽 사이드바 */}
-        <aside className="hidden md:block w-[200px] xl:w-[250px] border-r border-gray-200 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pl-6 xl:pl-[44px] pr-6 xl:pr-[44px] bg-white flex-shrink-0">
-          <nav className="space-y-4 xl:space-y-6">
+  // 사이드바 콘텐츠 렌더러
+  const renderSidebarContent = () => (
+    <nav className="space-y-4 xl:space-y-6">
             <button
               onClick={() => {
                 setSelectedHistory(null);
@@ -359,14 +359,61 @@ export default function CoverLetterPage() {
               </div>
             </div>
           </nav>
+  );
+
+  return (
+    <div className="max-w-[1440px] mx-auto px-0 md:px-6 lg:px-8 xl:px-[55px]">
+      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 md:bg-white shadow-none md:shadow-sm rounded-none md:rounded-lg relative">
+        {/* 왼쪽 사이드바 (데스크탑) */}
+        <aside className="hidden md:block w-[200px] xl:w-[250px] border-r border-gray-200 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pl-6 xl:pl-[44px] pr-6 xl:pr-[44px] bg-white flex-shrink-0">
+          {renderSidebarContent()}
         </aside>
 
+        {/* 모바일 사이드바 (오버레이) */}
+        {isMobileSidebarOpen && (
+          <div className="fixed inset-0 z-50 flex md:hidden">
+            {/* 배경 (Backdrop) */}
+            <div
+              className="fixed inset-0 bg-black/50 transition-opacity"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+
+            {/* 사이드바 패널 */}
+            <div className="relative w-[80%] max-w-[300px] bg-white h-full shadow-xl flex flex-col p-6">
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-2">
+                  <DocumentTextIcon className="w-6 h-6 text-[#006AFF]" />
+                  <span className="font-bold text-lg text-gray-900">메뉴</span>
+                </div>
+                <button
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="text-gray-500 hover:text-gray-900"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {renderSidebarContent()}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 메인 콘텐츠 영역 */}
-        <main className="flex-1 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pr-6 xl:pr-[44px] pl-6 md:pl-8 xl:pl-12 bg-gray-50">
+        <main className="flex-1 pt-6 xl:pt-[44px] pb-6 xl:pb-[44px] pr-4 md:pr-6 xl:pr-[44px] pl-4 md:pl-8 xl:pl-12 bg-gray-50">
           <div>
             {/* 헤더 */}
-            <div className="mb-8">
-              <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="mb-8 relative flex items-center justify-center md:block">
+              {/* 모바일 햄버거 버튼 */}
+              <button
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="absolute left-0 p-2 -ml-2 text-gray-600 hover:text-[#006AFF] md:hidden"
+              >
+                <Bars3Icon className="w-7 h-7" />
+              </button>
+
+              <div className="flex items-center justify-center gap-3">
                 <DocumentTextIcon className="w-8 h-8 md:w-10 md:h-10 text-[#006AFF]" />
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">AI 자기소개서 첨삭</h1>
               </div>
