@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { myPageApi } from "../../api/myPageApi";
 import api from "../../api/api";
 import type { UsersRequest, UsersResponse } from "../../types/interface";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
 
 /* SVG 아이콘 */
 const Svg = (p: React.SVGProps<SVGSVGElement>) => (
@@ -156,6 +156,10 @@ const MyInfo: React.FC = () => {
   const [isPhoneCodeSent, setIsPhoneCodeSent] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
 
+  /* 메뉴 드롭다운 상태 */
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
   const emailFallback = useMemo(() => readJwtEmail(), []);
 
   useEffect(() => {
@@ -181,6 +185,11 @@ const MyInfo: React.FC = () => {
         !educationRef.current.contains(event.target as Node)
       ) {
         setOpenDropdown(null);
+      }
+
+      // 메뉴 외부 클릭 감지
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -256,12 +265,69 @@ const MyInfo: React.FC = () => {
   const genderLabel = (code?: string) =>
     (code && GENDER_LABEL[code]) || "-";
 
+  // 회원 탈퇴
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "정말로 탈퇴하시겠습니까?\n\n탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다."
+    );
+
+    if (!confirmed) return;
+
+    const doubleConfirm = window.confirm(
+      "정말로 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+    );
+
+    if (!doubleConfirm) return;
+
+    try {
+      await api.delete("/api/users/me");
+      alert("회원 탈퇴가 완료되었습니다.");
+
+      // 로컬 스토리지 클리어
+      localStorage.clear();
+
+      // 로그인 페이지로 이동
+      window.location.href = "/";
+    } catch (error) {
+      console.error("회원 탈퇴 실패:", error);
+      alert("회원 탈퇴 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
       <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-          내 정보
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
+            내 정보
+          </h2>
+
+          {/* 메뉴 버튼 */}
+          <div className="relative -mr-4" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              aria-label="메뉴"
+            >
+              <EllipsisVerticalIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            </button>
+
+            {/* 드롭다운 메뉴 */}
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handleDeleteAccount();
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                >
+                  탈퇴하기
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* 프로필 섹션 */}
         <div className="mb-4">

@@ -108,16 +108,6 @@ const MyPage: React.FC = () => {
 
             ))}
           </ul>
-
-          {/* 탈퇴하기 버튼 - 하단에 여백을 두고 위치 (내 정보 탭에서만 표시) */}
-          {activeTab === "MyInfo" && (
-            <button
-              onClick={handleWithdraw}
-              className="text-red-500 text-sm xl:text-[16px] hover:text-red-600 transition text-left mt-112"
-            >
-              탈퇴하기
-            </button>
-          )}
         </aside>
 
         {/* 본문 */}
@@ -132,18 +122,6 @@ const MyPage: React.FC = () => {
               <Route path="edit/:id" element={<EditMyPost />} />
             </Routes>
           </div>
-
-          {/* 모바일 탈퇴하기 버튼 (최하단 배치, 내 정보 탭에서만 표시) */}
-          {activeTab === "MyInfo" && (
-            <div className="md:hidden mt-8 mb-4 flex justify-center">
-              <button
-                onClick={handleWithdraw}
-                className="text-sm font-medium text-red-500 underline decoration-red-500/30 underline-offset-4"
-              >
-                회원 탈퇴하기
-              </button>
-            </div>
-          )}
         </main>
       </div>
     </div>

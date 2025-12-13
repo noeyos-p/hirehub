@@ -57,8 +57,8 @@ const CompanyCharts: React.FC<CompanyChartsProps> = ({ companyId }) => {
 
             {/* 상단: 요약 정보 (카드 형태) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                <div className="bg-blue-50 rounded-xl p-5 flex items-center space-x-4 border border-blue-100">
-                    <div className="p-3 bg-white rounded-full text-blue-400 shadow-sm">
+                <div className="bg-gray-100 rounded-xl p-5 flex items-center space-x-4 border border-gray-200">
+                    <div className="p-3 bg-white rounded-full text-gray-700 shadow-sm">
                         <UsersIcon className="w-6 h-6" />
                     </div>
                     <div>
@@ -68,8 +68,8 @@ const CompanyCharts: React.FC<CompanyChartsProps> = ({ companyId }) => {
                         </p>
                     </div>
                 </div>
-                <div className="bg-orange-50 rounded-xl p-5 flex items-center space-x-4 border border-orange-100">
-                    <div className="p-3 bg-white rounded-full text-orange-400 shadow-sm">
+                <div className="bg-gray-100 rounded-xl p-5 flex items-center space-x-4 border border-gray-200">
+                    <div className="p-3 bg-white rounded-full text-gray-700 shadow-sm">
                         <UserGroupIcon className="w-6 h-6" />
                     </div>
                     <div>
@@ -94,8 +94,8 @@ const CompanyCharts: React.FC<CompanyChartsProps> = ({ companyId }) => {
                                     formatter={(value: number) => [`${value} 억원`, '매출액']}
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
                                 />
-                                <Bar dataKey="sales" fill="#4F46E5" fillOpacity={0.4} barSize={20} radius={[4, 4, 0, 0]} />
-                                <Line type="monotone" dataKey="sales" stroke="#4F46E5" strokeWidth={2} dot={{ r: 3 }} />
+                                <Bar dataKey="sales" fill="#818CF8" fillOpacity={0.4} barSize={20} radius={[4, 4, 0, 0]} />
+                                <Line type="monotone" dataKey="sales" stroke="#818CF8" strokeWidth={2} dot={{ r: 3 }} />
                             </ComposedChart>
                         </ResponsiveContainer>
                     </div>

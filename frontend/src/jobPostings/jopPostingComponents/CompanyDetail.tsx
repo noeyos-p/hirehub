@@ -266,7 +266,18 @@
     
                 {/* 기업 분석 차트 */}
                 <CompanyCharts companyId={company.id} />
-    
+
+                {/* 회사 위치 지도 */}
+                {company.lat != null && company.lng != null && (
+                  <section className="mt-6 md:mt-10">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">회사위치</h2>
+                    <div className="w-full h-[200px] sm:h-[280px] rounded-lg overflow-hidden border border-gray-200">
+                      <KakaoMap lat={company.lat} lng={company.lng} />
+                    </div>
+                    <p className="mt-3 ml-2 text-gray-700 font-medium">{company.address}</p>
+                  </section>
+                )}
+
                 {/* 리뷰 섹션 */}
                 <div className="mt-6 md:mt-10">
     
@@ -392,17 +403,7 @@
                 {/* 기업 정보 박스 */}
                 <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
                   <h3 className="text-lg font-semibold mb-4">기업 정보</h3>
-                  {/* 지도 영역 */}
-                  {company.lat != null && company.lng != null && (
-                    <div className="mt-4">
-                      <KakaoMap lat={company.lat} lng={company.lng} />
-                    </div>
-                  )}
                   <div className="space-y-4">
-                    <div>
-                      <p className="text-gray-500 mb-1 text-sm">주소</p>
-                      <p className="font-medium text-gray-900">{company.address}</p>
-                    </div>
                     <div>
                       <p className="text-gray-500 mb-1 text-sm">홈페이지</p>
                       <p className="font-medium text-gray-900">{company.website}</p>
@@ -410,7 +411,13 @@
                     <div>
                       <p className="text-gray-500 mb-1 text-sm">설립년도</p>
                       <p className="font-medium text-gray-900">
-                        {company.since ? new Date(company.since).toISOString().slice(0, 10).replace(/-/g, ".") : "-"}
+                        {company.since ? (
+                          typeof company.since === 'number'
+                            ? `${company.since}년`
+                            : company.since.toString().includes('-')
+                              ? `${company.since.split('-')[0]}년`
+                              : `${company.since}년`
+                        ) : "-"}
                       </p>
                     </div>
                     <div>
@@ -420,14 +427,6 @@
                     <div>
                       <p className="text-gray-500 mb-1 text-sm">복리후생</p>
                       <p className="font-medium text-gray-900">{company.benefits || (company.benefitsList ? company.benefitsList.join(", ") : "-")}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 mb-1 text-sm">인원</p>
-                      <p className="font-medium text-gray-900">
-                        {(!company.count || company.count === "0" || company.count === "0명")
-                          ? "사원수 비공개"
-                          : company.count}
-                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 mb-1 text-sm">대표자명</p>

@@ -334,6 +334,17 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                     </div>
                   </section>
                 )}
+
+                {/* 근무지역 지도 */}
+                {job.lat != null && job.lng != null && (
+                  <section>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 md:mb-4">근무지역</h2>
+                    <div className="w-full h-[200px] sm:h-[280px] rounded-lg overflow-hidden border border-gray-200">
+                      <KakaoMap lat={job.lat} lng={job.lng} />
+                    </div>
+                    <p className="mt-3 ml-2 text-gray-700 font-medium">{job.location}</p>
+                  </section>
+                )}
               </div>
             </div>
           </div>
@@ -360,19 +371,6 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
                     <p className="text-gray-500 mb-1 text-sm">고용형태</p>
                     <p className="font-medium text-gray-900">{job.type || "정규직"}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500 mb-1 text-sm">근무지역</p>
-                    <p className="font-medium text-gray-900">{job.location}</p>
-                  </div>
-                  {/* 🗺 회사 위치 지도 */}
-                  {job.lat != null && job.lng != null && (
-                    <div className="mt-4">
-                      <p className="text-gray-500 mb-1 text-sm">회사 위치</p>
-                      <KakaoMap lat={job.lat} lng={job.lng} />
-                    </div>
-                  )}
-
-
                   {!job.endAt ? (
                     <div>
                       <p className="text-gray-500 mb-1 text-sm">채용기간</p>
