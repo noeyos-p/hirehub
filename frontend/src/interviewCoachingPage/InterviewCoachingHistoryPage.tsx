@@ -39,9 +39,9 @@ export default function InterviewCoachingHistoryPage() {
       const filtered = historyList.filter(h => h.resumeId === resumeId);
       setFilteredHistoryList(filtered);
 
-      // 모든 sessions를 하나의 배열로 합치기
+      // 모든 sessions를 하나의 배열로 합치기 (시간순: 오래된 것부터)
       const combined: Array<{ history: InterviewCoachingHistory; session: InterviewSession; sessionIndex: number }> = [];
-      filtered.forEach(history => {
+      [...filtered].reverse().forEach(history => {
         history.sessions.forEach((session, index) => {
           combined.push({ history, session, sessionIndex: index });
         });
@@ -60,9 +60,9 @@ export default function InterviewCoachingHistoryPage() {
     } else {
       setFilteredHistoryList(historyList);
 
-      // 모든 sessions를 하나의 배열로 합치기
+      // 모든 sessions를 하나의 배열로 합치기 (시간순: 오래된 것부터)
       const combined: Array<{ history: InterviewCoachingHistory; session: InterviewSession; sessionIndex: number }> = [];
-      historyList.forEach(history => {
+      [...historyList].reverse().forEach(history => {
         history.sessions.forEach((session, index) => {
           combined.push({ history, session, sessionIndex: index });
         });

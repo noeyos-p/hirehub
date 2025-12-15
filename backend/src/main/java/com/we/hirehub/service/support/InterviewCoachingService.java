@@ -169,6 +169,9 @@ public class InterviewCoachingService {
       throw new RuntimeException("코칭 기록이 없습니다.");
     }
 
+    // 🔥 ID 오름차순으로 정렬 (질문 순서 보장)
+    coaches.sort((a, b) -> Long.compare(a.getId(), b.getId()));
+
     Coach firstCoach = coaches.get(0);
 
     // 링크가 있는 coach 찾기

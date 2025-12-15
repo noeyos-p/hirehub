@@ -18,6 +18,18 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [scrappedJobs, setScrappedJobs] = useState<Set<number>>(new Set());
   const [error, setError] = useState("");
+
+  // API 베이스 URL 가져오기
+  const getApiBaseUrl = () => {
+    const envUrl = import.meta.env.VITE_API_BASE_URL;
+    if (envUrl) return envUrl;
+    if (window.location.protocol === 'https:') {
+      return window.location.origin;
+    }
+    return 'http://localhost:8080';
+  };
+
+  const API_BASE_URL = getApiBaseUrl();
   const [isScrapped, setIsScrapped] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isFavoriteProcessing, setIsFavoriteProcessing] = useState(false);
@@ -251,17 +263,28 @@ const JobDetail: React.FC<JobDetailProps> = ({ jobId, onBack }) => {
 
               {/* 공고 사진 */}
               {job.photo ? (
-                <img
-                  src={job.photo}
-                  alt={job.title}
-                  className="w-full h-auto object-cover rounded-lg mb-4 mx-auto max-w-full md:max-w-[860px]"
-                  onLoad={() => console.log('✅ 이미지 로드 성공:', job.photo)}
-                  onError={(e) => {
-                    console.error('❌ 이미지 로드 실패:', job.photo);
-                    console.error('❌ Error event:', e);
-                  }}
-                />
-              ) : (
+                (() => {
+                  const imageSrc = job.photo.startsWith('http') ? job.photo : `${API_BASE_URL}${job.photo}`;
+                  return (
+                    <img
+                      src={imageSrc}
+                      alt={job.title}
+                      className="w-full h-auto object-cover rounded-lg mb-4 mx-auto max-w-full md:max-w-[860px]"
+                      onError={(e) => {
+                        // 이미지 로드 실패 시 기본 플레이스홀더 표시
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  );
+                })()
+              ) : null}
+              {job.photo && (
+                <div className="w-full h-48 sm:h-56 md:h-64 bg-gray-200 rounded-lg mb-4 flex items-center justify-center hidden">
+                  <PhotoIcon className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-gray-400" />
+                </div>
+              )}
+              {!job.photo && (
                 <div className="w-full h-48 sm:h-56 md:h-64 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
                   <PhotoIcon className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-gray-400" />
                 </div>

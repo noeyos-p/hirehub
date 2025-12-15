@@ -14,10 +14,22 @@
     const CompanyDetail: React.FC<CompanyDetailProps> = ({ onBack }) => {
       const { companyId } = useParams<{ companyId: string }>();
       const navigate = useNavigate();
-    
+
       const numericCompanyId = companyId && !isNaN(Number(companyId)) ? parseInt(companyId, 10) : null;
       const companyName = companyId && isNaN(Number(companyId)) ? decodeURIComponent(companyId) : null;
-    
+
+      // API 베이스 URL 가져오기
+      const getApiBaseUrl = () => {
+        const envUrl = import.meta.env.VITE_API_BASE_URL;
+        if (envUrl) return envUrl;
+        if (window.location.protocol === 'https:') {
+          return window.location.origin;
+        }
+        return 'http://localhost:8080';
+      };
+
+      const API_BASE_URL = getApiBaseUrl();
+
       const [company, setCompany] = useState<CompanyResponse | null>(null);
       const [reviews, setReviews] = useState<ReviewResponse[]>([]);
       const [newReview, setNewReview] = useState("");
@@ -238,7 +250,7 @@
                     {/* 회사 사진 */}
                     {company.photo ? (
                       <img
-                        src={company.photo}
+                        src={company.photo.startsWith('http') ? company.photo : `${API_BASE_URL}${company.photo}`}
                         alt={company.name}
                         className="w-full sm:w-auto h-auto object-cover rounded-lg mb-2 max-w-[120px] sm:max-w-[150px]"
                       />
