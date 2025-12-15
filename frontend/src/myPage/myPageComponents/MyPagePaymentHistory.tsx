@@ -119,21 +119,21 @@ const MyPagePaymentHistory: React.FC = () => {
                     <td className="px-6 py-4 text-sm text-gray-600">
                       <div className="flex items-center">
                         <CalendarIcon className="w-4 h-4 mr-1.5 text-gray-400" />
-                        {u.createdAt?.substring(0, 10)}
+                        {u.createdAt?.substring(0, 10) || '-'}
                         <span className="text-gray-400 mx-1">|</span>
-                        {u.createdAt?.substring(11, 16)}
+                        {u.createdAt?.substring(11, 16) || '-'}
                       </div>
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {featureLabel(u.feature)}
+                      {featureLabel(u.feature || '')}
                     </td>
 
-                    <td className="px-6 py-4 text-sm text-gray-700">{u.description}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{u.description || '-'}</td>
 
                     {/* amount는 DB에 이미 부호가 있어 그대로 표시 */}
-                    <td className={`px-6 py-4 text-right font-bold ${u.amount > 0 ? "text-blue-600" : "text-red-500"}`}>
-                      {u.amount > 0 ? `+${u.amount}개` : `${u.amount}개`}
+                    <td className={`px-6 py-4 text-right font-bold ${(u.amount || 0) > 0 ? "text-blue-600" : "text-red-500"}`}>
+                      {(u.amount || 0) > 0 ? `+${u.amount || 0}개` : `${u.amount || 0}개`}
                     </td>
                   </tr>
                 ))}
@@ -179,20 +179,20 @@ const MyPagePaymentHistory: React.FC = () => {
                       <td className="px-6 py-4 text-sm text-gray-600">
                         <div className="flex items-center">
                           <CalendarIcon className="w-4 h-4 mr-1.5 text-gray-400" />
-                          {item.createdAt?.substring(0, 10)}
+                          {item.createdAt?.substring(0, 10) || '-'}
                           <span className="text-gray-400 mx-1">|</span>
-                          {item.createdAt?.substring(11, 16)}
+                          {item.createdAt?.substring(11, 16) || '-'}
                         </div>
                       </td>
 
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                          토큰 {tokenCount}개
+                          토큰 {tokenCount || 0}개
                         </span>
                       </td>
 
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {item.payMethod === "KAKAOPAY" ? (
+                        {(item.payMethod || '').toUpperCase() === "KAKAOPAY" ? (
                           <span className="flex items-center">
                             <span className="w-2 h-2 rounded-full bg-yellow-400 mr-2"></span>
                             카카오페이
@@ -206,7 +206,7 @@ const MyPagePaymentHistory: React.FC = () => {
                       </td>
 
                       <td className="px-6 py-4 text-right font-bold text-gray-900">
-                        {item.amount.toLocaleString()}원
+                        {(item.amount || 0).toLocaleString()}원
                       </td>
                     </tr>
                   );
