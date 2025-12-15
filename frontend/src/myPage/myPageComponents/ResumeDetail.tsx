@@ -498,12 +498,12 @@ const ResumeDetail: React.FC = () => {
         <button
           type="button"
           onClick={handlePickPhoto}
-          className="w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] bg-gray-200 flex items-center justify-center text-xs sm:text-sm text-gray-500 overflow-hidden rounded flex-shrink-0"
+          className="w-24 h-32 sm:w-24 sm:h-32 bg-gray-200 flex items-center justify-center text-xs sm:text-sm text-gray-500 overflow-hidden rounded flex-shrink-0"
         >
           {photoPreview ? (
-            <img src={photoPreview} alt="프로필" className="w-full h-full object-cover" />
+            <img src={photoPreview} alt="증명사진" className="w-full h-full object-cover" />
           ) : (
-            "사진"
+            "증명사진"
           )}
         </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
