@@ -172,7 +172,7 @@ const MyPagePaymentHistory: React.FC = () => {
 
               <tbody className="divide-y divide-gray-100">
                 {payments.map((item) => {
-                  const tokenCount = parseInt(item.goodName.replace(/[^0-9]/g, ""), 10);
+                  const tokenCount = parseInt((item.goodName || "0").replace(/[^0-9]/g, ""), 10) || 0;
 
                   return (
                     <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
