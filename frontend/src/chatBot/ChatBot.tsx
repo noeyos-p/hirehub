@@ -759,9 +759,10 @@ const ChatBot: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  // 한글 입력 중복 방지
-                  if (e.nativeEvent.isComposing) return;
-                  if (e.key === 'Enter') sendMessage();
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
                 }}
                 placeholder={
                   isAgentConnected
