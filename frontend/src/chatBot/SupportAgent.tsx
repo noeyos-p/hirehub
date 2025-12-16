@@ -132,7 +132,11 @@ const SupportAgent: React.FC = () => {
                   className="flex-1 border rounded px-2 py-1"
                   value={input}
                   onChange={(e)=>setInput(e.target.value)}
-                  onKeyDown={(e)=>{ if(e.key==='Enter') sendToRoom(); }}
+                  onKeyDown={(e)=>{
+                    // 한글 입력 중복 방지
+                    if(e.nativeEvent.isComposing) return;
+                    if(e.key==='Enter') sendToRoom();
+                  }}
                   placeholder="메시지 입력"
                 />
                 <button className="px-3 py-1 rounded bg-black text-white" onClick={sendToRoom}>
