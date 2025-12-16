@@ -16,6 +16,7 @@ const SupportAgent: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);
   const stompRef = useRef<CompatClient | null>(null);
   const roomSubRef = useRef<any>(null);
+  const isComposingRef = useRef(false);
 
   useEffect(() => {
     // SockJS는 상대 경로를 사용하면 현재 페이지의 프로토콜을 자동으로 따릅니다
@@ -132,9 +133,11 @@ const SupportAgent: React.FC = () => {
                   className="flex-1 border rounded px-2 py-1"
                   value={input}
                   onChange={(e)=>setInput(e.target.value)}
+                  onCompositionStart={() => { isComposingRef.current = true; }}
+                  onCompositionEnd={() => { isComposingRef.current = false; }}
                   onKeyDown={(e)=>{
                     // 한글 입력 중복 방지
-                    if(e.nativeEvent.isComposing) return;
+                    if(isComposingRef.current) return;
                     if(e.key==='Enter') sendToRoom();
                   }}
                   placeholder="메시지 입력"

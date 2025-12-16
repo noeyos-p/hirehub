@@ -106,6 +106,7 @@ const ChatBot: React.FC = () => {
   const cleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const userInfo = useRef(getUserInfo());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isComposingRef = useRef(false);
 
   // 자동 스크롤
   const scrollToBottom = () => {
@@ -758,9 +759,11 @@ const ChatBot: React.FC = () => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onCompositionStart={() => { isComposingRef.current = true; }}
+                onCompositionEnd={() => { isComposingRef.current = false; }}
                 onKeyDown={(e) => {
                   // 한글 입력 중복 방지
-                  if (e.nativeEvent.isComposing) return;
+                  if (isComposingRef.current) return;
                   if (e.key === 'Enter') sendMessage();
                 }}
                 placeholder={
